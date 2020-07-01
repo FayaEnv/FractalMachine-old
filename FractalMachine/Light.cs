@@ -66,10 +66,8 @@ namespace FractalMachine
 
         public class AST
         {
-            private AST parent;
+            private AST parent, current;
             private List<AST> childs = new List<AST>();
-            private bool lastWasSymbol = false;
-            private string strBuffer;
 
             #region Constructor
 
@@ -85,39 +83,42 @@ namespace FractalMachine
 
             #endregion
 
-            #region MainAST
-
-            public void Push(char Char)
+            public class Amanuensis
             {
-                var charType = new CharType(Char);
+                private AST current;
+                private bool lastWasSymbol = false;
+                private string strBuffer;
 
-                if(charType.CharacterType == CharType.CharTypeEnum.Symbol)
+                public void Push(char Char)
                 {
-                    if (!lastWasSymbol)
-                    {
-                        //todo: flush string
-                        flushText();
-                    }
+                    var charType = new CharType(Char);
 
-                    lastWasSymbol = true;
+                    if (charType.CharacterType == CharType.CharTypeEnum.Symbol)
+                    {
+                        if (!lastWasSymbol)
+                        {
+                            //todo: flush string
+                            flushText();
+                        }
+
+                        lastWasSymbol = true;
+                    }
+                    else
+                    {
+                        if (!lastWasSymbol)
+                        {
+
+                        }
+
+                        strBuffer += Char;
+                    }
                 }
-                else
-                {
-                    if (!lastWasSymbol)
-                    {
 
-                    }
-                    
-                    strBuffer += Char;
+                private void flushText()
+                {
+                    //todo: continue here
                 }
             }
-
-            private void flushText()
-            {
-                //todo: continue here
-            }
-
-            #endregion
         }
 
         void Parse(string Script)
@@ -125,11 +126,11 @@ namespace FractalMachine
             ///
             /// Cycle string
             ///
-            var main = new AST();
+            var amanuensis = new AST.Amanuensis();
 
             foreach (char ch in Script)
             {
-                main.Push(ch);
+                amanuensis.Push(ch);
             } 
 
         }
