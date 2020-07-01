@@ -17,7 +17,9 @@ namespace FractalMachine
 
         #region Parse
 
-        class WordsDispatcher
+        
+
+        /*class WordsDispatcher
         {
             public class Word
             {
@@ -60,27 +62,75 @@ namespace FractalMachine
                 curString = "";
             }
 
+        }*/
+
+        public class AST
+        {
+            private AST parent;
+            private List<AST> childs = new List<AST>();
+            private bool lastWasSymbol = false;
+            private string strBuffer;
+
+            #region Constructor
+
+            public AST()
+            {
+
+            }
+
+            public AST(AST Parent)
+            {
+                parent = Parent;
+            }
+
+            #endregion
+
+            #region MainAST
+
+            public void Push(char Char)
+            {
+                var charType = new CharType(Char);
+
+                if(charType.CharacterType == CharType.CharTypeEnum.Symbol)
+                {
+                    if (!lastWasSymbol)
+                    {
+                        //todo: flush string
+                        flushText();
+                    }
+
+                    lastWasSymbol = true;
+                }
+                else
+                {
+                    if (!lastWasSymbol)
+                    {
+
+                    }
+                    
+                    strBuffer += Char;
+                }
+            }
+
+            private void flushText()
+            {
+                //todo: continue here
+            }
+
+            #endregion
         }
 
         void Parse(string Script)
         {
-            WordsDispatcher dispatcher = new WordsDispatcher();
-
-            dispatcher.OnDispatch = delegate (WordsDispatcher.Word Word)
-            {
-
-            };
-
-
             ///
             /// Cycle string
             ///
+            var main = new AST();
+
             foreach (char ch in Script)
             {
-                dispatcher.Push(ch);
-            }
-
-            dispatcher.Flush();
+                main.Push(ch);
+            } 
 
         }
 
