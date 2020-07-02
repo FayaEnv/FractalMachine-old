@@ -178,6 +178,13 @@ namespace FractalMachine
                         {
                             current.Eat(strBuffer);
                         }
+                        else
+                        {
+                            if (strBuffer.Length > 0)
+                            {
+                                throw new Exception("Symbol not recognized");
+                            }
+                        }
 
                         strBuffer = "";
                     };
@@ -189,12 +196,14 @@ namespace FractalMachine
                     var charType = new CharType(Char);
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
 
+                    strBuffer += Char;
+
+                    // and if it's a string?
+
                     if (isSymbol.Value)
                     {
 
-                    }
-
-                    strBuffer += Char;
+                    } 
                 }
 
                 /*private void initCallbacks()
