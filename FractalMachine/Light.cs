@@ -64,6 +64,48 @@ namespace FractalMachine
 
         }*/
 
+        class Switches
+        {
+            Dictionary<string, bool> _abc = new Dictionary<string, bool>();
+
+            public delegate void OnSwitchChangedDelegate(bool Value);
+            Dictionary<string, OnSwitchChangedDelegate> _delegates = new Dictionary<string, OnSwitchChangedDelegate>();            
+
+            public bool this[string property]
+            {
+                get
+                {
+                    bool o;
+                    if (_abc.TryGetValue(property, out o))
+                    {
+                        return o;
+                    }
+
+                    return default;
+                }
+
+                set
+                {
+                    bool o;
+                    if (_abc.TryGetValue(property, out o) && o != value)
+                    {
+                        OnSwitchChangedDelegate del;
+                        if (_delegates.TryGetValue(property, out del))
+                        {
+                            del(o);
+                        }
+                    }
+
+                    _abc[property] = value;
+                }
+            }
+
+            public void OnSwitchChanged(string Switch, OnSwitchChangedDelegate Delegate)
+            {
+                _delegates.Add(Switch, Delegate);
+            }
+        }
+
         public class AST
         {
             private AST parent, current;
@@ -83,40 +125,49 @@ namespace FractalMachine
 
             #endregion
 
+            internal void Eat(string value)
+            {
+                // generate new child and put it inside
+            }
+
             public class Amanuensis
             {
+                private Switches switches;
                 private AST current;
-                private bool lastWasSymbol = false;
                 private string strBuffer;
+
+                public Amanuensis()
+                {
+                    current = new AST();
+                    initCallbacks();
+                }
 
                 public void Push(char Char)
                 {
                     var charType = new CharType(Char);
-
-                    if (charType.CharacterType == CharType.CharTypeEnum.Symbol)
-                    {
-                        if (!lastWasSymbol)
-                        {
-                            //todo: flush string
-                            flushText();
-                        }
-
-                        lastWasSymbol = true;
-                    }
-                    else
-                    {
-                        if (!lastWasSymbol)
-                        {
-
-                        }
-
-                        strBuffer += Char;
-                    }
+                    switches["isSymbol"] = charType.CharacterType == CharType.CharTypeEnum.Symbol;
+                    strBuffer += Char;
                 }
 
-                private void flushText()
+                private void initCallbacks()
                 {
-                    //todo: continue here
+                    switches = new Switches();
+
+                    switches.OnSwitchChanged("isSymbol", delegate (bool Value)
+                    {
+                        if (Value == false)
+                        {
+                            // Is text
+                            current.Eat(strBuffer);
+                        }
+                        else
+                        {
+                            // Is symbol
+
+                        }
+
+                        strBuffer = "";
+                    });
                 }
             }
         }
