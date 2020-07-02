@@ -20,92 +20,7 @@ namespace FractalMachine
 
         
 
-        /*class WordsDispatcher
-        {
-            public class Word
-            {
-                public string String;
-                public bool IsAlphanumeric;
-            }
-
-            public delegate void OnDispatchDelegate(Word Word);
-            public OnDispatchDelegate OnDispatch;
-
-            public CharType prevCharType;
-            List<string> strings = new List<string>();
-            string curString = "";
-
-            public void Push(char Char)
-            {
-                var charType = new CharType(Char);
-
-                if(prevCharType != null)
-                {
-                    if(charType.IsAlphanumeric != prevCharType.IsAlphanumeric)
-                    {
-                        Flush();
-                    }
-                }
-
-                curString += Char;
-                prevCharType = charType;
-
-                // check for corrispondece
-            }
-
-            public void Flush()
-            {
-                var word = new Word();
-                word.String = curString;
-                word.IsAlphanumeric = prevCharType.IsAlphanumeric;
-
-                OnDispatch(word);
-                curString = "";
-            }
-
-        }*/
-
-        class Switches
-        {
-            Dictionary<string, bool> _abc = new Dictionary<string, bool>();
-
-            public delegate void OnSwitchChangedDelegate(bool Value);
-            Dictionary<string, OnSwitchChangedDelegate> _delegates = new Dictionary<string, OnSwitchChangedDelegate>();            
-
-            public bool this[string property]
-            {
-                get
-                {
-                    bool o;
-                    if (_abc.TryGetValue(property, out o))
-                    {
-                        return o;
-                    }
-
-                    return default;
-                }
-
-                set
-                {
-                    bool o;
-                    if (_abc.TryGetValue(property, out o) && o != value)
-                    {
-                        OnSwitchChangedDelegate del;
-                        if (_delegates.TryGetValue(property, out del))
-                        {
-                            del(o);
-                        }
-                    }
-
-                    _abc[property] = value;
-                }
-            }
-
-            public void OnSwitchChanged(string Switch, OnSwitchChangedDelegate Delegate)
-            {
-                _delegates.Add(Switch, Delegate);
-            }
-        }
+        
 
         class Switch
         {
@@ -161,11 +76,8 @@ namespace FractalMachine
             public class Amanuensis
             {
                 private StatusSwitcher statusSwitcher;
-                private Switches switches;
                 private AST current;
                 private string strBuffer;
-
-                private Triggers triggersSymbols = new Triggers();
 
                 private Switch isSymbol = new Switch();
                 private bool isString;
@@ -173,7 +85,6 @@ namespace FractalMachine
                 public Amanuensis()
                 {
                     current = new AST();
-                    //initCallbacks();
 
                     isSymbol.OnSwitchChanged = delegate
                     {
@@ -201,13 +112,18 @@ namespace FractalMachine
                     ///
                     /// Define triggers
                     ///
+
+                    /// Default
                     var statusDefault = statusSwitcher.Define("default");
 
-                    var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"" });
+                    var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "inString" });
                     trgString.OnTriggered = delegate
                     {
-                        switches["isString"] = isString = true;
+                        isString = true;
                     };
+
+                    /// InString
+                    var statusInString = statusSwitcher.Define("inString");
                 }
 
 
@@ -222,26 +138,6 @@ namespace FractalMachine
                     
                 }
 
-                /*private void initCallbacks()
-                {
-                    switches = new Switches();
-
-                    switches.OnSwitchChanged("isSymbol", delegate (bool Value)
-                    {
-                        if (Value == false)
-                        {
-                            // Is text
-                            current.Eat(strBuffer);
-                        }
-                        else
-                        {
-                            // Is symbol
-
-                        }
-
-                        strBuffer = "";
-                    });
-                }*/
 
                 public class StatusSwitcher
                 {
@@ -275,6 +171,7 @@ namespace FractalMachine
 
                         public OnTriggeredDelegate OnTriggered;
                         public string Delimiter;
+                        public string ActivateStatus;
                     }
                 }
             }
