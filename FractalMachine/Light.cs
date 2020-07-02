@@ -110,7 +110,10 @@ namespace FractalMachine
         class Switch
         {
             public delegate void OnSwitchChangedDelegate();
+            public delegate bool EnableInvokeDelegate();
+
             public OnSwitchChangedDelegate OnSwitchChanged;
+            public EnableInvokeDelegate EnableInvoke;
 
             bool val;
 
@@ -156,7 +159,8 @@ namespace FractalMachine
             }
 
             public class Amanuensis
-            {                
+            {
+                private StatusSwitcher statusSwitcher;
                 private Switches switches;
                 private AST current;
                 private string strBuffer;
@@ -164,13 +168,12 @@ namespace FractalMachine
                 private Triggers triggersSymbols = new Triggers();
 
                 private Switch isSymbol = new Switch();
+                private bool isString;
 
                 public Amanuensis()
                 {
                     current = new AST();
                     //initCallbacks();
-
-                    var trgString = triggersSymbols.Add(new Triggers.Trigger { Delimiter = "\"" });
 
                     isSymbol.OnSwitchChanged = delegate
                     {
@@ -188,6 +191,23 @@ namespace FractalMachine
 
                         strBuffer = "";
                     };
+
+                    /*isSymbol.EnableInvoke = delegate
+                    {
+                        return !isString.Value;
+                    };*/
+
+
+                    ///
+                    /// Define triggers
+                    ///
+                    var statusDefault = statusSwitcher.Define("default");
+
+                    var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"" });
+                    trgString.OnTriggered = delegate
+                    {
+                        switches["isString"] = isString = true;
+                    };
                 }
 
 
@@ -198,12 +218,8 @@ namespace FractalMachine
 
                     strBuffer += Char;
 
-                    // and if it's a string?
-
-                    if (isSymbol.Value)
-                    {
-
-                    } 
+                    // mainStatus: invoke here
+                    
                 }
 
                 /*private void initCallbacks()
@@ -227,6 +243,22 @@ namespace FractalMachine
                     });
                 }*/
 
+                public class StatusSwitcher
+                {
+                    public delegate void OnInvokeDelegate();
+
+                    public OnInvokeDelegate OnInvoke;
+                    public string Name;
+                    public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
+
+                    public Triggers Define(string Name)
+                    {
+                        var status = new Triggers();
+                        statuses.Add(Name, status);
+                        return status;
+                    }
+                }
+
                 public class Triggers
                 {
                     List<Trigger> triggers = new List<Trigger>();
@@ -239,6 +271,9 @@ namespace FractalMachine
 
                     public class Trigger
                     {
+                        public delegate void OnTriggeredDelegate();
+
+                        public OnTriggeredDelegate OnTriggered;
                         public string Delimiter;
                     }
                 }
