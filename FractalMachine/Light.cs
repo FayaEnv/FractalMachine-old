@@ -18,10 +18,6 @@ namespace FractalMachine
 
         #region Parse
 
-        
-
-        
-
         class Switch
         {
             public delegate void OnSwitchChangedDelegate();
@@ -103,12 +99,7 @@ namespace FractalMachine
                         strBuffer = "";
                     };
 
-                    /*isSymbol.EnableInvoke = delegate
-                    {
-                        return !isString.Value;
-                    };*/
-
-
+                   
                     ///
                     /// Define triggers
                     ///
@@ -124,6 +115,15 @@ namespace FractalMachine
 
                     /// InString
                     var statusInString = statusSwitcher.Define("inString");
+
+                    ///
+                    /// Enables
+                    ///
+
+                    isSymbol.EnableInvoke = delegate
+                    {
+                        return statusDefault.Enabled;
+                    };
                 }
 
 
@@ -135,34 +135,64 @@ namespace FractalMachine
                     strBuffer += Char;
 
                     // mainStatus: invoke here
-                    
+                    statusSwitcher.Ping(ref strBuffer);
                 }
 
 
                 public class StatusSwitcher
                 {
-                    public delegate void OnInvokeDelegate();
+                    public delegate void OnTriggeredDelegate(Triggers.Trigger Trigger);
 
-                    public OnInvokeDelegate OnInvoke;
-                    public string Name;
+                    public OnTriggeredDelegate OnTriggered;
+                    public Triggers CurrentStatus;
                     public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
 
                     public Triggers Define(string Name)
                     {
                         var status = new Triggers();
+
+                        if (Name == "default")
+                        {
+                            CurrentStatus = status;
+                            status.Enabled = true;
+                        }
+
                         statuses.Add(Name, status);
                         return status;
+                    }
+
+                    public void Ping(ref string buffer)
+                    {
+                        var trigger = CurrentStatus.CheckString(buffer);
+
+                        if(trigger != null)
+                        {
+                            OnTriggered?.Invoke(trigger);
+                            buffer = "";
+                        }
                     }
                 }
 
                 public class Triggers
                 {
+                    public bool Enabled = false;
                     List<Trigger> triggers = new List<Trigger>();
 
                     public Trigger Add(Trigger Trigger)
                     {
                         triggers.Add(Trigger);
                         return Trigger;
+                    }
+
+                    public Trigger CheckString(string str)
+                    {
+                        foreach(Trigger t in triggers)
+                        {
+                            if (t.Delimiter == str)
+                                return t;
+                        }
+
+                        return null;
                     }
 
                     public class Trigger
