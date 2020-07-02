@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 
 namespace FractalMachine
@@ -106,6 +107,30 @@ namespace FractalMachine
             }
         }
 
+        class Switch
+        {
+            public delegate void OnSwitchChangedDelegate();
+            public OnSwitchChangedDelegate OnSwitchChanged;
+
+            bool val;
+
+            public bool Value
+            {
+                get
+                {
+                    return val;
+                }
+
+                set
+                {
+                    if (val != value)
+                        OnSwitchChanged?.Invoke();
+
+                    val = value;
+                }
+            }
+        }
+
         public class AST
         {
             private AST parent, current;
@@ -131,25 +156,48 @@ namespace FractalMachine
             }
 
             public class Amanuensis
-            {
+            {                
                 private Switches switches;
                 private AST current;
                 private string strBuffer;
 
+                private Triggers triggersSymbols = new Triggers();
+
+                private Switch isSymbol = new Switch();
+
                 public Amanuensis()
                 {
                     current = new AST();
-                    initCallbacks();
+                    //initCallbacks();
+
+                    var trgString = triggersSymbols.Add(new Triggers.Trigger { Delimiter = "\"" });
+
+                    isSymbol.OnSwitchChanged = delegate
+                    {
+                        if (!isSymbol.Value)
+                        {
+                            current.Eat(strBuffer);
+                        }
+
+                        strBuffer = "";
+                    };
                 }
+
 
                 public void Push(char Char)
                 {
                     var charType = new CharType(Char);
-                    switches["isSymbol"] = charType.CharacterType == CharType.CharTypeEnum.Symbol;
+                    isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
+
+                    if (isSymbol.Value)
+                    {
+
+                    }
+
                     strBuffer += Char;
                 }
 
-                private void initCallbacks()
+                /*private void initCallbacks()
                 {
                     switches = new Switches();
 
@@ -168,6 +216,22 @@ namespace FractalMachine
 
                         strBuffer = "";
                     });
+                }*/
+
+                public class Triggers
+                {
+                    List<Trigger> triggers = new List<Trigger>();
+
+                    public Trigger Add(Trigger Trigger)
+                    {
+                        triggers.Add(Trigger);
+                        return Trigger;
+                    }
+
+                    public class Trigger
+                    {
+                        public string Delimiter;
+                    }
                 }
             }
         }
