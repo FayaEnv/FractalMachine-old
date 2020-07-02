@@ -124,6 +124,11 @@ namespace FractalMachine
                     {
                         return statusDefault.Enabled;
                     };
+
+                    statusSwitcher.OnTriggered = delegate
+                    {
+
+                    };
                 }
 
 
