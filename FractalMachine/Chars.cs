@@ -130,14 +130,6 @@ namespace FractalMachine
             public Char Previous;
         }
 
-        public int Length
-        {
-            set
-            {
-
-            }
-        }
-
         public void Push(char ch)
         {
             last = new Char { Value = ch, Previous = last };

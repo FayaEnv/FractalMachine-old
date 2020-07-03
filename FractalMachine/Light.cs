@@ -148,7 +148,7 @@ namespace FractalMachine
 
                     isSymbol.EnableInvoke = delegate
                     {
-                        return statusDefault.Enabled;
+                        return statusDefault.IsEnabled;
                     };
                 }
 
@@ -168,7 +168,7 @@ namespace FractalMachine
 
                     strBuffer += Char;
 
-                    statusSwitcher.Ping(strBuffer);
+                    statusSwitcher.Ping(Char);
 
                     Cycle++;
                 }
@@ -196,16 +196,16 @@ namespace FractalMachine
                         if (Name == "default")
                         {
                             CurrentStatus = status;
-                            status.Enabled = true;
+                            status.IsEnabled = true;
                         }
 
                         statuses.Add(Name, status);
                         return status;
                     }
 
-                    public void Ping(string buffer)
+                    public void Ping(char ch)
                     {
-                        var trigger = CurrentStatus.CheckString(buffer);
+                        var trigger = CurrentStatus.CheckString(ch);
 
                         if(trigger != null)
                         {
@@ -232,9 +232,9 @@ namespace FractalMachine
 
                     public void SwitchStatus(string status)
                     {
-                        CurrentStatus.Enabled = false;
+                        CurrentStatus.IsEnabled = false;
                         CurrentStatus = statuses[status];
-                        CurrentStatus.Enabled = true;
+                        CurrentStatus.IsEnabled = true;
                     }
                 }
 
@@ -244,11 +244,13 @@ namespace FractalMachine
 
                     public OnCycleDelegate OnCycleEnd;
                     public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
-                    public bool Enabled = false;
+                    public Dictionary<string, string> Abc = new Dictionary<string, string>();
+                    public bool IsEnabled = false;
 
                     internal StatusSwitcher Parent;
                     List<Trigger> triggers = new List<Trigger>();
-                    public Dictionary<string, string> Abc = new Dictionary<string, string>();
+                    
+                    private StringQueue stringQueue = new StringQueue();
 
                     public Triggers(StatusSwitcher Parent)
                     {
@@ -297,17 +299,11 @@ namespace FractalMachine
                         return del;
                     }
 
-                    private bool strCompare(string cnt, string prt)
+                    public Trigger CheckString(char ch)
                     {
-                        if (prt == null)
-                            return false;
+                        stringQueue.Push(ch);
 
-                        return cnt.EndsWith(prt);
-                    }
-
-                    public Trigger CheckString(string str)
-                    {
-                        foreach(Trigger t in triggers)
+                        foreach (Trigger t in triggers)
                         {
                             bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
 
@@ -318,7 +314,7 @@ namespace FractalMachine
                                 {
                                     foreach (string del in t.Delimiters)
                                     {
-                                        if (strCompare(str,parseDelimiter(del)))
+                                        if (stringQueue.Check(parseDelimiter(del)))
                                         {
                                             // should be putted in new environment
                                             t.activatorDelimiter = del;
@@ -327,7 +323,7 @@ namespace FractalMachine
                                     }
                                 }
 
-                                if (strCompare(str,parseDelimiter(t.Delimiter)))
+                                if (stringQueue.Check(parseDelimiter(t.Delimiter)))
                                     return t;
                             }
                         }
