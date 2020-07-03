@@ -64,9 +64,10 @@ namespace FractalMachine
 
             #endregion
 
-            internal void Eat(string value)
+            internal AST Eat(string value)
             {
                 // generate new child and put it inside
+                return null;
             }
 
             public class Amanuensis
@@ -88,7 +89,7 @@ namespace FractalMachine
                     {
                         if (!isSymbol.Value)
                         {
-                            current.Eat(strBuffer);
+                            eatBufferAndClear();
                         }
                         else
                         {
@@ -97,8 +98,6 @@ namespace FractalMachine
                                 throw new Exception("Symbol not recognized");
                             }
                         }
-
-                        strBuffer = "";
                     };
 
                    
@@ -141,7 +140,8 @@ namespace FractalMachine
 
                     trgExitString.OnTriggered = delegate
                     {
-                        Console.WriteLine("here");
+                        Console.WriteLine("here " + strBuffer);
+                        eatBufferAndClear();
                     };
 
                     /// Symbols
@@ -150,6 +150,13 @@ namespace FractalMachine
                     {
                         return statusDefault.IsEnabled;
                     };
+                }
+
+                AST eatBufferAndClear()
+                {
+                    var ast = current.Eat(strBuffer);
+                    strBuffer = "";
+                    return ast;
                 }
 
                 public AST GetAST
@@ -166,6 +173,7 @@ namespace FractalMachine
                     var charType = new CharType(Char);
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
 
+                    //todo: muovi in situazione specializzata
                     strBuffer += Char;
 
                     statusSwitcher.Ping(Char);
