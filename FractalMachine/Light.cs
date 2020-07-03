@@ -243,6 +243,7 @@ namespace FractalMachine
                         CurrentStatus.IsEnabled = false;
                         CurrentStatus = statuses[status];
                         CurrentStatus.IsEnabled = true;
+                        CurrentStatus.OnFirstCall?.Invoke();
                     }
                 }
 
@@ -250,7 +251,7 @@ namespace FractalMachine
                 {
                     public delegate void OnCycleDelegate();
 
-                    public OnCycleDelegate OnCycleEnd;
+                    public OnCycleDelegate OnCycleEnd, OnFirstCall;
                     public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
                     public Dictionary<string, string> Abc = new Dictionary<string, string>();
                     public bool IsEnabled = false;
