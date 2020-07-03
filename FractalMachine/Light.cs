@@ -139,12 +139,25 @@ namespace FractalMachine
                         return !onEscapeString;
                     };
 
+                    trgExitString.OnTriggered = delegate
+                    {
+                        Console.WriteLine("here");
+                    };
+
                     /// Symbols
 
                     isSymbol.EnableInvoke = delegate
                     {
                         return statusDefault.Enabled;
                     };
+                }
+
+                public AST GetAST
+                {
+                    get
+                    {
+                        return current;
+                    }
                 }
 
 
@@ -155,7 +168,7 @@ namespace FractalMachine
 
                     strBuffer += Char;
 
-                    statusSwitcher.Ping(ref strBuffer);
+                    statusSwitcher.Ping(strBuffer);
 
                     Cycle++;
                 }
@@ -190,7 +203,7 @@ namespace FractalMachine
                         return status;
                     }
 
-                    public void Ping(ref string buffer)
+                    public void Ping(string buffer)
                     {
                         var trigger = CurrentStatus.CheckString(buffer);
 
@@ -202,9 +215,10 @@ namespace FractalMachine
                             if (trigger.ActivateStatus != null)
                             {
                                 SwitchStatus(trigger.ActivateStatus);
-                            }
 
-                            buffer = "";
+                                if(!string.IsNullOrEmpty(trigger.activatorDelimiter))
+                                    CurrentStatus.Abc["activatorDelimiter"] = trigger.activatorDelimiter;
+                            }
                         }
 
                         UpdateCurrentStatus();
@@ -234,7 +248,7 @@ namespace FractalMachine
 
                     internal StatusSwitcher Parent;
                     List<Trigger> triggers = new List<Trigger>();
-                    Dictionary<string, string> abc = new Dictionary<string, string>();
+                    public Dictionary<string, string> Abc = new Dictionary<string, string>();
 
                     public Triggers(StatusSwitcher Parent)
                     {
@@ -276,11 +290,19 @@ namespace FractalMachine
                         {
                             string name = del.Substring(2);
                             string o;
-                            abc.TryGetValue(name, out o);
+                            Abc.TryGetValue(name, out o);
                             return o;
                         }
 
                         return del;
+                    }
+
+                    private bool strCompare(string cnt, string prt)
+                    {
+                        if (prt == null)
+                            return false;
+
+                        return cnt.EndsWith(prt);
                     }
 
                     public Trigger CheckString(string str)
@@ -296,15 +318,16 @@ namespace FractalMachine
                                 {
                                     foreach (string del in t.Delimiters)
                                     {
-                                        if (parseDelimiter(del) == str)
+                                        if (strCompare(str,parseDelimiter(del)))
                                         {
-                                            abc["activatorDelimiter"] = del;
+                                            // should be putted in new environment
+                                            t.activatorDelimiter = del;
                                             return t;
                                         }
                                     }
                                 }
 
-                                if (parseDelimiter(t.Delimiter) == str)
+                                if (strCompare(str,parseDelimiter(t.Delimiter)))
                                     return t;
                             }
                         }
@@ -323,6 +346,8 @@ namespace FractalMachine
                         public string Delimiter;
                         public string[] Delimiters;
                         public string ActivateStatus;
+
+                        public string activatorDelimiter;
                     }
                 }
             }
@@ -338,7 +363,10 @@ namespace FractalMachine
             foreach (char ch in Script)
             {
                 amanuensis.Push(ch);
-            } 
+            }
+
+            var ast = amanuensis.GetAST;
+            Console.WriteLine("Here we arrived");
 
         }
 
