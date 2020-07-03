@@ -119,6 +119,12 @@ namespace FractalMachine
                     /// Delegates
                     ///
 
+                    /// StatusSwitcher
+                    statusSwitcher.OnTriggered = delegate (Triggers.Trigger trigger)
+                    {
+                        Console.WriteLine("Trigger activated by " + trigger.activatorDelimiter);
+                    };
+
                     /// Strings
 
                     bool onEscapeString = false;
@@ -173,10 +179,10 @@ namespace FractalMachine
                     var charType = new CharType(Char);
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
 
-                    //todo: muovi in situazione specializzata
-                    strBuffer += Char;
-
-                    statusSwitcher.Ping(Char);
+                    if (!statusSwitcher.Ping(Char))
+                    {
+                        strBuffer += Char;
+                    }
 
                     Cycle++;
                 }
@@ -211,12 +217,15 @@ namespace FractalMachine
                         return status;
                     }
 
-                    public void Ping(char ch)
+                    public bool Ping(char ch)
                     {
+                        bool triggered = false;
+
                         var trigger = CurrentStatus.CheckString(ch);
 
                         if(trigger != null)
                         {
+                            triggered = true;
                             OnTriggered?.Invoke(trigger);
                             trigger.OnTriggered?.Invoke();
 
@@ -230,6 +239,8 @@ namespace FractalMachine
                         }
 
                         UpdateCurrentStatus();
+
+                        return triggered;
                     }
 
                     public void UpdateCurrentStatus()
@@ -333,7 +344,10 @@ namespace FractalMachine
                                 }
 
                                 if (stringQueue.Check(parseDelimiter(t.Delimiter)))
+                                {
+                                    t.activatorDelimiter = t.Delimiter; // yes, it is obvious...
                                     return t;
+                                }
                             }
                         }
 
