@@ -107,18 +107,38 @@ namespace FractalMachine
                     /// Default
                     var statusDefault = statusSwitcher.Define("default");
 
-                    var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "inString" });
-                    trgString.OnTriggered = delegate
-                    {
-                        isString = true;
-                    };
+                    var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
 
                     /// InString
                     var statusInString = statusSwitcher.Define("inString");
+                    var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
+                    var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "$activatorDelimiter" });
 
                     ///
-                    /// Enables
+                    /// Delegates
                     ///
+
+                    /// Strings
+
+                    bool onEscapeString = false;
+
+                    /*trgString.OnTriggered = delegate
+                    {
+                        isString = true;
+                    };*/
+
+                    trgEscapeString.OnTriggered = delegate
+                    {
+                        onEscapeString = true;
+                        // make a "turn off" delegate?
+                    };
+
+                    statusInString.OnCycle = delegate
+                    {
+                        onEscapeString = false;
+                    };
+
+                    /// Symbols
 
                     isSymbol.EnableInvoke = delegate
                     {
@@ -139,8 +159,8 @@ namespace FractalMachine
 
                     strBuffer += Char;
 
-                    // mainStatus: invoke here
                     statusSwitcher.Ping(ref strBuffer);
+                    statusSwitcher.UpdateCurrentStatus();
                 }
 
 
@@ -173,13 +193,35 @@ namespace FractalMachine
                         if(trigger != null)
                         {
                             OnTriggered?.Invoke(trigger);
+                            trigger.OnTriggered?.Invoke();
+
+                            if (trigger.ActivateStatus != null)
+                            {
+                                SwitchStatus(trigger.ActivateStatus);
+                            }
+
                             buffer = "";
                         }
+                    }
+
+                    public void UpdateCurrentStatus()
+                    {
+                        CurrentStatus.OnCycle?.Invoke();
+                    }
+
+                    public void SwitchStatus(string status)
+                    {
+                        CurrentStatus.Enabled = false;
+                        CurrentStatus = statuses[status];
+                        CurrentStatus.Enabled = true;
                     }
                 }
 
                 public class Triggers
                 {
+                    public delegate void OnCycleDelegate();
+
+                    public OnCycleDelegate OnCycle;
                     public bool Enabled = false;
                     List<Trigger> triggers = new List<Trigger>();
 
@@ -193,6 +235,7 @@ namespace FractalMachine
                     {
                         foreach(Trigger t in triggers)
                         {
+                            //priority to Delimiters
                             if (t.Delimiter == str)
                                 return t;
                         }
@@ -206,6 +249,7 @@ namespace FractalMachine
 
                         public OnTriggeredDelegate OnTriggered;
                         public string Delimiter;
+                        public string[] Delimiters;
                         public string ActivateStatus;
                     }
                 }
