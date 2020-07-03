@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace FractalMachine
@@ -116,5 +117,64 @@ namespace FractalMachine
         }
 
         #endregion
+    }
+
+    public class StringQueue
+    {
+        int maxLength = 0;
+        Char last;
+
+        public class Char
+        {
+            public char Value;
+            public Char Previous;
+        }
+
+        public int Length
+        {
+            set
+            {
+
+            }
+        }
+
+        public void Push(char ch)
+        {
+            last = new Char { Value = ch, Previous = last };
+
+            if(maxLength > 0)
+            {
+                Char Ch = last;
+                for(int i=0; i<maxLength; i++)
+                {           
+                    Ch = Ch.Previous;
+                    if (Ch == null) goto End;
+                }
+
+                Ch.Previous = null;
+
+                End:;
+            }
+        }
+
+        public bool Check(string str)
+        {
+            if (str.Length > maxLength)
+                maxLength = str.Length;
+
+            Char Ch = null;
+            foreach(char ch in str)
+            {
+                if (Ch == null)
+                    Ch = last;
+                else if ((Ch = Ch.Previous) == null)
+                    return false;
+
+                if (ch != Ch.Value)
+                    return false;
+            }
+
+            return true;
+        }
     }
 }
