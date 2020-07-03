@@ -37,7 +37,7 @@ namespace FractalMachine
 
                 set
                 {
-                    if (val != value)
+                    if (val != value && (EnableInvoke == null || EnableInvoke.Invoke()))
                         OnSwitchChanged?.Invoke();
 
                     val = value;
@@ -76,10 +76,12 @@ namespace FractalMachine
                 private string strBuffer;
 
                 private Switch isSymbol = new Switch();
-                private bool isString;
+
+                internal int Cycle = 0;
 
                 public Amanuensis()
                 {
+                    statusSwitcher = new StatusSwitcher(this);
                     current = new AST();
 
                     isSymbol.OnSwitchChanged = delegate
@@ -112,7 +114,7 @@ namespace FractalMachine
                     /// InString
                     var statusInString = statusSwitcher.Define("inString");
                     var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
-                    var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "$activatorDelimiter" });
+                    var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "€$activatorDelimiter" });
 
                     ///
                     /// Delegates
@@ -122,20 +124,19 @@ namespace FractalMachine
 
                     bool onEscapeString = false;
 
-                    /*trgString.OnTriggered = delegate
-                    {
-                        isString = true;
-                    };*/
-
                     trgEscapeString.OnTriggered = delegate
                     {
                         onEscapeString = true;
-                        // make a "turn off" delegate?
+
+                        statusInString.OnNextCycleEnd = delegate
+                        {
+                            onEscapeString = false;
+                        };
                     };
 
-                    statusInString.OnCycle = delegate
+                    trgExitString.IsEnabled = delegate
                     {
-                        onEscapeString = false;
+                        return !onEscapeString;
                     };
 
                     /// Symbols
@@ -143,11 +144,6 @@ namespace FractalMachine
                     isSymbol.EnableInvoke = delegate
                     {
                         return statusDefault.Enabled;
-                    };
-
-                    statusSwitcher.OnTriggered = delegate
-                    {
-
                     };
                 }
 
@@ -160,7 +156,8 @@ namespace FractalMachine
                     strBuffer += Char;
 
                     statusSwitcher.Ping(ref strBuffer);
-                    statusSwitcher.UpdateCurrentStatus();
+
+                    Cycle++;
                 }
 
 
@@ -172,9 +169,16 @@ namespace FractalMachine
                     public Triggers CurrentStatus;
                     public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
 
+                    internal Amanuensis Parent;
+
+                    public StatusSwitcher(Amanuensis Parent)
+                    {
+                        this.Parent = Parent;
+                    }
+
                     public Triggers Define(string Name)
                     {
-                        var status = new Triggers();
+                        var status = new Triggers(this);
 
                         if (Name == "default")
                         {
@@ -202,11 +206,14 @@ namespace FractalMachine
 
                             buffer = "";
                         }
+
+                        UpdateCurrentStatus();
                     }
 
                     public void UpdateCurrentStatus()
                     {
-                        CurrentStatus.OnCycle?.Invoke();
+                        CurrentStatus.OnCycleEnd?.Invoke();
+                        CurrentStatus.OnNextCycleEnd?.Invoke();
                     }
 
                     public void SwitchStatus(string status)
@@ -221,23 +228,85 @@ namespace FractalMachine
                 {
                     public delegate void OnCycleDelegate();
 
-                    public OnCycleDelegate OnCycle;
+                    public OnCycleDelegate OnCycleEnd;
+                    public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
                     public bool Enabled = false;
+
+                    internal StatusSwitcher Parent;
                     List<Trigger> triggers = new List<Trigger>();
+                    Dictionary<string, string> abc = new Dictionary<string, string>();
+
+                    public Triggers(StatusSwitcher Parent)
+                    {
+                        this.Parent = Parent;
+                    }
 
                     public Trigger Add(Trigger Trigger)
                     {
+                        Trigger.Parent = this;
                         triggers.Add(Trigger);
                         return Trigger;
+                    }
+
+                    public OnCycleDelegate OnNextCycleEnd
+                    {
+                        get
+                        {
+                            var cycle = Parent.Parent.Cycle;
+                            OnCycleDelegate onCycle;
+
+                            if(OnSpecificCycle.TryGetValue(cycle, out onCycle))
+                            {
+                                OnSpecificCycle.Remove(cycle);
+                                return onCycle;
+                            }
+
+                            return null;
+                        }
+
+                        set
+                        {
+                            OnSpecificCycle.Add(Parent.Parent.Cycle + 1, value);
+                        }
+                    }
+
+                    private string parseDelimiter(string del)
+                    {
+                        if (del.StartsWith("€$"))
+                        {
+                            string name = del.Substring(2);
+                            string o;
+                            abc.TryGetValue(name, out o);
+                            return o;
+                        }
+
+                        return del;
                     }
 
                     public Trigger CheckString(string str)
                     {
                         foreach(Trigger t in triggers)
                         {
-                            //priority to Delimiters
-                            if (t.Delimiter == str)
-                                return t;
+                            bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
+
+                            if (enabled)
+                            {
+                                //priority to Delimiters
+                                if (t.Delimiters != null)
+                                {
+                                    foreach (string del in t.Delimiters)
+                                    {
+                                        if (parseDelimiter(del) == str)
+                                        {
+                                            abc["activatorDelimiter"] = del;
+                                            return t;
+                                        }
+                                    }
+                                }
+
+                                if (parseDelimiter(t.Delimiter) == str)
+                                    return t;
+                            }
                         }
 
                         return null;
@@ -246,8 +315,11 @@ namespace FractalMachine
                     public class Trigger
                     {
                         public delegate void OnTriggeredDelegate();
+                        public delegate bool IsEnabledDelegate();
 
+                        public Triggers Parent;
                         public OnTriggeredDelegate OnTriggered;
+                        public IsEnabledDelegate IsEnabled;
                         public string Delimiter;
                         public string[] Delimiters;
                         public string ActivateStatus;
@@ -256,7 +328,7 @@ namespace FractalMachine
             }
         }
 
-        void Parse(string Script)
+        public void Parse(string Script)
         {
             ///
             /// Cycle string
