@@ -9,9 +9,12 @@ namespace FractalMachine
     {
         #region Static
 
-        public static void OpenScript(string FileName)
+        public static Light OpenScript(string FileName)
         {
-
+            var text = System.IO.File.ReadAllText(FileName);
+            var light = new Light();
+            light.Parse(text);
+            return light;
         }
 
         #endregion
@@ -47,41 +50,73 @@ namespace FractalMachine
 
         public class AST
         {
-            private AST parent, current;
+            private AST parent, next;
             private List<AST> childs = new List<AST>();
 
             // Instruction preview
-            private string subject; // variable name, if,
-            private Type type;
-            private AST value; // see childs
+            internal string subject; // variable name, if,
+            internal Type type;
+            internal AST value; // see childs
+            internal int line, pos;
 
             // e creare un AST specializzato per ogni tipologia di istruzione?
             // no, ma crei un descrittore per ogni tipologia di AST, così da dare un ordine a childs
 
             public enum Type {
                 Block,
-                Instruction
+                Instruction,
+                Attribute
             }
 
             #region Constructor
 
             public AST()
             {
-
             }
 
-            public AST(AST Parent)
+            public AST(AST Parent) 
             {
                 parent = Parent;
             }
 
             #endregion
 
-            internal AST Eat(string value)
+            #region Properties
+
+            public AST Child
             {
-                // generate new child and put it inside
-                return null;
+                get
+                {
+                    if (childs.Count == 0)
+                        NewChild();
+
+                    return childs[childs.Count - 1];
+                }
             }
+
+            #endregion
+
+            #region InternalMethods
+
+            internal AST NewChild(Type type = Type.Instruction)
+            {
+                var child = new AST(this) { type = type };
+                childs.Add(child);
+                return child;
+            }
+
+            internal void Eat(string Value, int Line, int Pos)
+            {
+                var child = Child;
+                child.Insert(Value, Line, Pos);
+            }
+
+            internal void Insert(string Value, int Line, int Pos)
+            {
+                childs.Add(new AST { subject = Value, line = Line, pos = Pos, type = Type.Attribute });
+            }
+
+            #endregion
 
             public class Amanuensis
             {
@@ -92,6 +127,8 @@ namespace FractalMachine
                 private Switch isSymbol = new Switch();
 
                 internal int Cycle = 0;
+
+                int Line = 0, Pos = 0;
 
                 public Amanuensis()
                 {
@@ -113,15 +150,18 @@ namespace FractalMachine
                         }
                     };
 
-                   
+
                     ///
                     /// Define triggers
                     ///
+
+                    statusSwitcher.IgnoreChars = new char[] { '\r' };
 
                     /// Default
                     var statusDefault = statusSwitcher.Define("default");
 
                     var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
+                    var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t" } });
 
                     /// InString
                     var statusInString = statusSwitcher.Define("inString");
@@ -175,11 +215,10 @@ namespace FractalMachine
                     };
                 }
 
-                AST eatBufferAndClear()
+                void eatBufferAndClear()
                 {
-                    var ast = current.Eat(strBuffer);
+                    current.Eat(strBuffer, Line, Pos - strBuffer.Length);
                     strBuffer = "";
-                    return ast;
                 }
 
                 public AST GetAST
@@ -196,11 +235,17 @@ namespace FractalMachine
                     var charType = new CharType(Char);
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
 
-                    if (!statusSwitcher.Ping(Char))
+                    if(Char == '\n')
+                    {
+                        Pos = 0;
+                        Line++;
+                    }
+                    else if (!statusSwitcher.Ping(Char))
                     {
                         strBuffer += Char;
                     }
 
+                    Pos++;
                     Cycle++;
                 }
 
@@ -212,6 +257,7 @@ namespace FractalMachine
                     public OnTriggeredDelegate OnTriggered;
                     public Triggers CurrentStatus;
                     public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
+                    public char[] IgnoreChars;
 
                     internal Amanuensis Parent;
 
@@ -236,10 +282,18 @@ namespace FractalMachine
 
                     public bool Ping(char ch)
                     {
+                        if(IgnoreChars != null)
+                        {
+                            foreach(char ignCh in IgnoreChars)
+                            {
+                                if (ignCh == ch)
+                                    return false;
+                            }
+                        }
+
                         bool triggered = false;
 
                         var trigger = CurrentStatus.CheckString(ch);
-
                         if(trigger != null)
                         {
                             triggered = true;
@@ -360,7 +414,7 @@ namespace FractalMachine
                                     }
                                 }
 
-                                if (stringQueue.Check(parseDelimiter(t.Delimiter)))
+                                if (t.Delimiter != null && stringQueue.Check(parseDelimiter(t.Delimiter)))
                                 {
                                     t.activatorDelimiter = t.Delimiter; // yes, it is obvious...
                                     return t;

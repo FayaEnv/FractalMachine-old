@@ -155,8 +155,10 @@ namespace FractalMachine
                 maxLength = str.Length;
 
             Char Ch = null;
-            foreach(char ch in str)
+            for(int i=str.Length-1; i>=0; i--)
             {
+                var ch = str[i];
+
                 if (Ch == null)
                     Ch = last;
                 else if ((Ch = Ch.Previous) == null)
