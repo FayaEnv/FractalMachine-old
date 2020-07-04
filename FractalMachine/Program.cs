@@ -13,7 +13,8 @@ namespace FractalMachine
 
             var assetsDir = Resources.Solve("Assets");
             var light = Light.OpenScript(assetsDir + "/test.light");
-            
+
+            Console.WriteLine("leggi qui");
         }
     }
 }
