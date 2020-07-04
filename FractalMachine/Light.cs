@@ -50,6 +50,19 @@ namespace FractalMachine
             private AST parent, current;
             private List<AST> childs = new List<AST>();
 
+            // Instruction preview
+            private string subject; // variable name, if,
+            private Type type;
+            private AST value; // see childs
+
+            // e creare un AST specializzato per ogni tipologia di istruzione?
+            // no, ma crei un descrittore per ogni tipologia di AST, così da dare un ordine a childs
+
+            public enum Type {
+                Block,
+                Instruction
+            }
+
             #region Constructor
 
             public AST()
@@ -128,6 +141,12 @@ namespace FractalMachine
                     /// Strings
 
                     bool onEscapeString = false;
+
+                    statusInString.OnEnter = delegate {
+                        Console.WriteLine("First call");
+
+
+	                };
 
                     trgEscapeString.OnTriggered = delegate
                     {
@@ -254,7 +273,7 @@ namespace FractalMachine
                         CurrentStatus.IsEnabled = false;
                         CurrentStatus = statuses[status];
                         CurrentStatus.IsEnabled = true;
-                        CurrentStatus.OnFirstCall?.Invoke();
+                        CurrentStatus.OnEnter?.Invoke();
                     }
                 }
 
@@ -262,7 +281,7 @@ namespace FractalMachine
                 {
                     public delegate void OnCycleDelegate();
 
-                    public OnCycleDelegate OnCycleEnd, OnFirstCall;
+                    public OnCycleDelegate OnCycleEnd, OnEnter;
                     public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
                     public Dictionary<string, string> Abc = new Dictionary<string, string>();
                     public bool IsEnabled = false;
