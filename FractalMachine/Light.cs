@@ -144,8 +144,6 @@ namespace FractalMachine
 
                     statusInString.OnEnter = delegate {
                         Console.WriteLine("First call");
-
-
 	                };
 
                     trgEscapeString.OnTriggered = delegate
