@@ -108,7 +108,7 @@ namespace FractalMachine
 
         #region Properties
 
-        public AST Child
+        public AST Instruction
         {
             get
             {
@@ -117,23 +117,10 @@ namespace FractalMachine
 
                 var child = childs[childs.Count - 1];
 
-                if(child.Child != null && child.Child.type == Type.Instruction)
+                if(child.Instruction != null && child.Instruction.type == Type.Instruction)
                 {
-                    return child.Child;
+                    return child.Instruction;
                 }
-
-                return child;
-            }
-        }
-
-        public AST GetDeeperInstruction
-        {
-            get
-            {
-                var child = Child;
-
-                while (child.type != Type.Instruction)
-                    child = child.Child;
 
                 return child;
             }
@@ -168,7 +155,7 @@ namespace FractalMachine
 
         internal void InsertAttribute(int Line, int Pos, string Content)
         {
-            var ast = GetDeeperInstruction;
+            var ast = Instruction;
             var child = ast.NewChild(Line, Pos, Type.Attribute);
             child.subject = Content;
         }
@@ -252,14 +239,14 @@ namespace FractalMachine
 
                 trgAssign.OnTriggered = delegate
                 {
-                    var child = curAst.Child.NewChild(Line, Pos, Type.Instruction);
+                    var child = curAst.Instruction.NewChild(Line, Pos, Type.Instruction);
                     child.subject = "=";
                     clearBuffer();
                 };
 
                 trgOpenParenthesis.OnTriggered = delegate
                 {
-                    var child = curAst.Child.NewChild(Line, Pos, Type.Block);
+                    var child = curAst.Instruction.NewChild(Line, Pos, Type.Block);
                     child.subject = "(";
                     curAst = child;
                     clearBuffer();
