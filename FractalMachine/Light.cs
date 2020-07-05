@@ -209,11 +209,8 @@ namespace FractalMachine
                 var trgAssign = statusDefault.Add(new Triggers.Trigger { Delimiter = "=" });
                 var trgDeeper = statusDefault.Add(new Triggers.Trigger { Delimiter = "." });
 
-                var trgOpenParenthesis = statusDefault.Add(new Triggers.Trigger { Delimiter = "(" });
-                var trgCloseParenthesis = statusDefault.Add(new Triggers.Trigger { Delimiter = ")" });
-
-                var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiter = "{" });
-                var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiter = "}" });
+                var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
+                var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
 
                 /// InString
                 var statusInString = statusSwitcher.Define("inString");
@@ -244,27 +241,17 @@ namespace FractalMachine
                     clearBuffer();
                 };
 
-                trgOpenParenthesis.OnTriggered = delegate
+                trgOpenBlock.OnTriggered = delegate(Triggers.Trigger trigger)
                 {
                     var child = curAst.Instruction.NewChild(Line, Pos, Type.Block);
-                    child.subject = "(";
+                    child.subject = trigger.activatorDelimiter;
                     curAst = child;
                     clearBuffer();
                 };
 
-                trgCloseParenthesis.OnTriggered = delegate
-                {
-                    closeBlock();
-                };
-
-                trgOpenBlock.OnTriggered = delegate
-                {
-
-                };
-
                 trgCloseBlock.OnTriggered = delegate
                 {
-
+                    closeBlock();
                 };
 
                 /// Symbols
