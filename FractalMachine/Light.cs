@@ -133,7 +133,7 @@ namespace FractalMachine
         internal AST SetNext(int Line, int Pos)
         {
             var child = new AST(this, Line, Pos) { };
-            childs.Add(child);
+            next = child;
             return child;
         }
 
@@ -229,6 +229,7 @@ namespace FractalMachine
                     //qui entra in gioco next
                     var child = ast.Child.SetNext(Line, Pos);
                     child.subject = "=";
+                    clearBuffer();
                     //child.next
                 };
 
@@ -269,11 +270,20 @@ namespace FractalMachine
 
             }
 
+            #region Buffer
+
             void eatBufferAndClear()
             {
                 ast.Eat(strBuffer, Line, Pos - strBuffer.Length);
+                clearBuffer();
+            }
+
+            void clearBuffer()
+            {
                 strBuffer = "";
             }
+
+            #endregion
 
             public AST GetAST
             {
