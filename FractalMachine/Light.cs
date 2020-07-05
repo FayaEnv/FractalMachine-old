@@ -80,7 +80,6 @@ namespace FractalMachine
         internal string subject; // variable name, if,
         internal Type type;
         internal int line, pos;
-        internal AST next;
 
         // e creare un AST specializzato per ogni tipologia di istruzione?
         // no, ma crei un descrittore per ogni tipologia di AST, così da dare un ordine a childs
@@ -94,9 +93,15 @@ namespace FractalMachine
 
         #region Constructor
 
-        public AST(AST Parent, int Line, int Pos) : base()
+        public AST(AST Parent, int Line, int Pos, Type type = Type.Block) : base()
         {
             parent = Parent;
+            line = Line;
+            pos = Pos;
+            this.type = type;
+
+            if (type == Type.Block)
+                NewChild(Line, Pos, Type.Instruction);
         }
 
         #endregion
@@ -108,49 +113,64 @@ namespace FractalMachine
             get
             {
                 if (childs.Count == 0)
-                    NewChild(line, pos);
+                    return null;
 
                 var child = childs[childs.Count - 1];
 
-                while (child.next != null)
-                    child = child.next;
+                if(child.Child != null && child.Child.type == Type.Instruction)
+                {
+                    return child.Child;
+                }
 
                 return child;
             }
         }
 
+        public AST GetDeeperInstruction
+        {
+            get
+            {
+                var child = Child;
+
+                while (child.type != Type.Instruction)
+                    child = child.Child;
+
+                return child;
+            }
+        }
+
+        public AST GetTopBlock
+        {
+            get
+            {
+                var a = parent;
+                while (a.type != Type.Block)
+                    a = a.parent;
+                return a;
+            }
+        }
+
         #endregion
 
-        #region InternalMethods
+        #region Methods
 
-        internal AST NewChild(int Line, int Pos, Type type = Type.Instruction)
+        internal AST NewChild(int Line, int Pos, Type type)
         {
-            var child = new AST(this, Line, Pos) { type = type };
+            var child = new AST(this, Line, Pos, type);
             childs.Add(child);
             return child;
         }
 
-        internal AST SetNext(int Line, int Pos)
+        internal AST NewInstruction(int Line, int Pos)
         {
-            var child = new AST(this, Line, Pos) { };
-            next = child;
-            return child;
+            return NewChild(Line, Pos, Type.Instruction);
         }
 
-        internal void Next(int Line, int Pos)
+        internal void InsertAttribute(int Line, int Pos, string Content)
         {
-            NewChild(Line, Pos);
-        }
-
-        internal void Eat(string Value, int Line, int Pos)
-        {
-            var child = Child;
-            child.Insert(Value, Line, Pos);
-        }
-
-        internal void Insert(string Value, int Line, int Pos)
-        {
-            childs.Add(new AST (this, Line, Pos) { subject = Value, type = Type.Attribute });
+            var ast = GetDeeperInstruction;
+            var child = ast.NewChild(Line, Pos, Type.Attribute);
+            child.subject = Content;
         }
 
         #endregion
@@ -158,7 +178,7 @@ namespace FractalMachine
         public class Amanuensis
         {
             private StatusSwitcher statusSwitcher;
-            private AST ast;
+            private AST mainAst, curAst;
             private string strBuffer;
 
             private Switch isSymbol = new Switch();
@@ -170,7 +190,7 @@ namespace FractalMachine
             public Amanuensis()
             {
                 statusSwitcher = new StatusSwitcher(this);
-                ast = new AST(null, 0, 0);
+                curAst = mainAst = new AST(null, 0, 0);
 
                 isSymbol.OnSwitchChanged = delegate
                 {
@@ -187,7 +207,6 @@ namespace FractalMachine
                     }
                 };
 
-
                 ///
                 /// Define triggers
                 ///
@@ -198,9 +217,10 @@ namespace FractalMachine
                 var statusDefault = statusSwitcher.Define("default");
 
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
-                var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t" } });
+                var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgAssign = statusDefault.Add(new Triggers.Trigger { Delimiter = "=" });
+                var trgDeeper = statusDefault.Add(new Triggers.Trigger { Delimiter = "." });
 
                 var trgOpenParenthesis = statusDefault.Add(new Triggers.Trigger { Delimiter = "(" });
                 var trgCloseParenthesis = statusDefault.Add(new Triggers.Trigger { Delimiter = ")" });
@@ -227,26 +247,27 @@ namespace FractalMachine
 
                 trgNewInstruction.OnTriggered = delegate
                 {
-                    ast.NewChild(Line, Pos);
+                    curAst.NewInstruction(Line, Pos);
                 };
 
                 trgAssign.OnTriggered = delegate
                 {
-                    //qui entra in gioco next
-                    var child = ast.Child.SetNext(Line, Pos);
+                    var child = curAst.Child.NewChild(Line, Pos, Type.Instruction);
                     child.subject = "=";
                     clearBuffer();
-                    //child.next
                 };
 
                 trgOpenParenthesis.OnTriggered = delegate
                 {
-
+                    var child = curAst.Child.NewChild(Line, Pos, Type.Block);
+                    child.subject = "(";
+                    curAst = child;
+                    clearBuffer();
                 };
 
                 trgCloseParenthesis.OnTriggered = delegate
                 {
-
+                    closeBlock();
                 };
 
                 trgOpenBlock.OnTriggered = delegate
@@ -298,9 +319,14 @@ namespace FractalMachine
 
             #region Buffer
 
+            void topAst()
+            {
+                curAst = curAst.parent;
+            }
+
             void eatBufferAndClear()
             {
-                ast.Eat(strBuffer, Line, Pos - strBuffer.Length);
+                curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
                 clearBuffer();
             }
 
@@ -309,13 +335,18 @@ namespace FractalMachine
                 strBuffer = "";
             }
 
+            void closeBlock()
+            {
+                curAst = curAst.GetTopBlock;
+            }
+
             #endregion
 
             public AST GetAST
             {
                 get
                 {
-                    return ast;
+                    return mainAst;
                 }
             }
 
@@ -388,7 +419,7 @@ namespace FractalMachine
                     {
                         triggered = true;
                         OnTriggered?.Invoke(trigger);
-                        trigger.OnTriggered?.Invoke();
+                        trigger.OnTriggered?.Invoke(trigger);
 
                         if (trigger.ActivateStatus != null)
                         {
@@ -517,11 +548,11 @@ namespace FractalMachine
 
                 public class Trigger
                 {
-                    public delegate void OnTriggeredDelegate();
+                    //public delegate void OnTriggeredDelegate();
                     public delegate bool IsEnabledDelegate();
 
                     public Triggers Parent;
-                    public OnTriggeredDelegate OnTriggered;
+                    public StatusSwitcher.OnTriggeredDelegate OnTriggered;
                     public IsEnabledDelegate IsEnabled;
                     public string Delimiter;
                     public string[] Delimiters;

@@ -1,4 +1,4 @@
 ﻿var test = "ciao amici";
 var miao = 2;
 
-print("ciao");
+IO.print("ciao", 2);
