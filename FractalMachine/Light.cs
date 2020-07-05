@@ -201,6 +201,10 @@ namespace FractalMachine
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t" } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgAssign = statusDefault.Add(new Triggers.Trigger { Delimiter = "=" });
+
+                var trgOpenParenthesis = statusDefault.Add(new Triggers.Trigger { Delimiter = "(" });
+                var trgCloseParenthesis = statusDefault.Add(new Triggers.Trigger { Delimiter = ")" });
+
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiter = "{" });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiter = "}" });
 
@@ -233,6 +237,16 @@ namespace FractalMachine
                     child.subject = "=";
                     clearBuffer();
                     //child.next
+                };
+
+                trgOpenParenthesis.OnTriggered = delegate
+                {
+
+                };
+
+                trgCloseParenthesis.OnTriggered = delegate
+                {
+
                 };
 
                 trgOpenBlock.OnTriggered = delegate
