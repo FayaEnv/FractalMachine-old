@@ -112,17 +112,25 @@ namespace FractalMachine
         {
             get
             {
-                if (childs.Count == 0)
-                    return null;
+                var child = LastChild;
 
-                var child = childs[childs.Count - 1];
-
-                if(child.Instruction != null && child.Instruction.type == Type.Instruction)
+                if(child?.LastChild != null && child.LastChild.type == Type.Instruction)
                 {
-                    return child.Instruction;
+                    return child.LastChild;
                 }
 
                 return child;
+            }
+        }
+
+        public AST LastChild
+        {
+            get
+            {
+                if (childs.Count == 0)
+                    return null;
+
+                return childs[childs.Count - 1];
             }
         }
 
