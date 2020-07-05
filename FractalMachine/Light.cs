@@ -201,11 +201,13 @@ namespace FractalMachine
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t" } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgAssign = statusDefault.Add(new Triggers.Trigger { Delimiter = "=" });
+                var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiter = "{" });
+                var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiter = "}" });
 
                 /// InString
                 var statusInString = statusSwitcher.Define("inString");
                 var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
-                var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "€$activatorDelimiter" });
+                var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "€$activatorDelimiter", ActivateStatus = "default" });
 
                 ///
                 /// Delegates
@@ -221,7 +223,7 @@ namespace FractalMachine
 
                 trgNewInstruction.OnTriggered = delegate
                 {
-                    ast.Next(Line, Pos);
+                    ast.NewChild(Line, Pos);
                 };
 
                 trgAssign.OnTriggered = delegate
@@ -231,6 +233,16 @@ namespace FractalMachine
                     child.subject = "=";
                     clearBuffer();
                     //child.next
+                };
+
+                trgOpenBlock.OnTriggered = delegate
+                {
+
+                };
+
+                trgCloseBlock.OnTriggered = delegate
+                {
+
                 };
 
                 /// Symbols
@@ -351,7 +363,7 @@ namespace FractalMachine
                         foreach (char ignCh in IgnoreChars)
                         {
                             if (ignCh == ch)
-                                return false;
+                                return true;
                         }
                     }
 
