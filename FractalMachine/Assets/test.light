@@ -1,2 +1,8 @@
 ﻿var test = "ciao amici";
 var miao = 2;
+
+if(miao == 2){
+		
+} else {
+	
+}
