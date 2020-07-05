@@ -206,8 +206,7 @@ namespace FractalMachine
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
-                var trgAssign = statusDefault.Add(new Triggers.Trigger { Delimiter = "=" });
-                var trgDeeper = statusDefault.Add(new Triggers.Trigger { Delimiter = "." });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "=", ".", "+", "-", "/", "%" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
@@ -234,10 +233,10 @@ namespace FractalMachine
                     curAst.NewInstruction(Line, Pos);
                 };
 
-                trgAssign.OnTriggered = delegate
+                trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
                     var child = curAst.Instruction.NewChild(Line, Pos, Type.Instruction);
-                    child.subject = "=";
+                    child.subject = trigger.activatorDelimiter;
                     clearBuffer();
                 };
 
@@ -249,9 +248,12 @@ namespace FractalMachine
                     clearBuffer();
                 };
 
-                trgCloseBlock.OnTriggered = delegate
+                trgCloseBlock.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
                     closeBlock();
+
+                    if (trigger.activatorDelimiter == "}")
+                        trgNewInstruction.Trig();
                 };
 
                 /// Symbols
@@ -511,7 +513,7 @@ namespace FractalMachine
 
                             if (t.Delimiter != null && stringQueue.Check(parseDelimiter(t.Delimiter)))
                             {
-                                t.activatorDelimiter = t.Delimiter; // yes, it is obvious...
+                                t.activatorDelimiter = t.Delimiter; // yes, it is obvious but...
                                 return t;
                             }
                         }
@@ -533,6 +535,11 @@ namespace FractalMachine
                     public string ActivateStatus;
 
                     public string activatorDelimiter;
+
+                    public void Trig()
+                    {
+                        OnTriggered?.Invoke(this);
+                    }
                 }
             }
         }
