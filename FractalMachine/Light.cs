@@ -73,13 +73,14 @@ namespace FractalMachine
     public class AST
     {
         private AST parent;
+        //private Dictionary<string, List<AST>> subs = new Dictionary<string, List<AST>>();
         private List<AST> childs = new List<AST>();
 
         // Instruction preview
         internal string subject; // variable name, if,
         internal Type type;
         internal int line, pos;
-        internal AST value;
+        internal AST next;
 
         // e creare un AST specializzato per ogni tipologia di istruzione?
         // no, ma crei un descrittore per ogni tipologia di AST, così da dare un ordine a childs
@@ -93,11 +94,7 @@ namespace FractalMachine
 
         #region Constructor
 
-        public AST()
-        {
-        }
-
-        public AST(AST Parent)
+        public AST(AST Parent, int Line, int Pos) : base()
         {
             parent = Parent;
         }
@@ -111,9 +108,14 @@ namespace FractalMachine
             get
             {
                 if (childs.Count == 0)
-                    NewChild();
+                    NewChild(line, pos);
 
-                return childs[childs.Count - 1];
+                var child = childs[childs.Count - 1];
+
+                while (child.next != null)
+                    child = child.next;
+
+                return child;
             }
         }
 
@@ -121,16 +123,23 @@ namespace FractalMachine
 
         #region InternalMethods
 
-        internal AST NewChild(Type type = Type.Instruction)
+        internal AST NewChild(int Line, int Pos, Type type = Type.Instruction)
         {
-            var child = new AST(this) { type = type };
+            var child = new AST(this, Line, Pos) { type = type };
             childs.Add(child);
             return child;
         }
 
-        internal void Next()
+        internal AST SetNext(int Line, int Pos)
         {
-            NewChild();
+            var child = new AST(this, Line, Pos) { };
+            childs.Add(child);
+            return child;
+        }
+
+        internal void Next(int Line, int Pos)
+        {
+            NewChild(Line, Pos);
         }
 
         internal void Eat(string Value, int Line, int Pos)
@@ -141,7 +150,7 @@ namespace FractalMachine
 
         internal void Insert(string Value, int Line, int Pos)
         {
-            childs.Add(new AST { subject = Value, line = Line, pos = Pos, type = Type.Attribute });
+            childs.Add(new AST (this, Line, Pos) { subject = Value, type = Type.Attribute });
         }
 
         #endregion
@@ -161,7 +170,7 @@ namespace FractalMachine
             public Amanuensis()
             {
                 statusSwitcher = new StatusSwitcher(this);
-                ast = new AST();
+                ast = new AST(null, 0, 0);
 
                 isSymbol.OnSwitchChanged = delegate
                 {
@@ -212,12 +221,15 @@ namespace FractalMachine
 
                 trgNewInstruction.OnTriggered = delegate
                 {
-                    ast.Next();
+                    ast.Next(Line, Pos);
                 };
 
                 trgAssign.OnTriggered = delegate
                 {
-                    //qui entra in gioco value
+                    //qui entra in gioco next
+                    var child = ast.Child.SetNext(Line, Pos);
+                    child.subject = "=";
+                    //child.next
                 };
 
                 /// Symbols
