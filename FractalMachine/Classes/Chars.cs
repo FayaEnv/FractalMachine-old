@@ -119,6 +119,45 @@ namespace FractalMachine
         #endregion
     }
 
+    public class CharTree
+    {
+        internal Dictionary<char, CharTree> tree = new Dictionary<char, CharTree>();
+
+        public void Insert(string str)
+        {
+            CharTree ct;
+
+            if(!tree.TryGetValue(str[0], out ct))
+            {
+                ct = new CharTree();
+                tree.Add(str[0], ct);
+            }
+
+            var sub = str.Substring(1);
+            if (sub.Length > 0)
+                ct.Insert(sub);
+        }
+
+        public CharTree CheckString(string str)
+        {
+            var ct = this;
+
+            foreach(char ch in str)
+            {
+                if (!ct.tree.TryGetValue(ch, out ct))
+                    return null;
+            }
+
+            return ct;
+        }
+
+        public bool CheckAlone(string str)
+        {
+            var ct = CheckString(str);
+            return ct.tree.Count == 0;
+        }
+    }
+
     public class StringQueue
     {
         int maxLength = 0;

@@ -2,3 +2,7 @@
 var miao = 2;
 
 IO.print("ciao", 2);
+
+if(miao == 2){
+	print("eccomi");
+}

@@ -206,7 +206,7 @@ namespace FractalMachine
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "=", ".", "+", "-", "/", "%" } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
@@ -253,7 +253,10 @@ namespace FractalMachine
                     closeBlock();
 
                     if (trigger.activatorDelimiter == "}")
+                    {
+                        // todo if "official block"
                         trgNewInstruction.Trig();
+                    }
                 };
 
                 /// Symbols
@@ -291,6 +294,7 @@ namespace FractalMachine
                     eatBufferAndClear();
                 };
 
+                statusSwitcher.DefineCompleted();
             }
 
             #region Buffer
@@ -356,6 +360,8 @@ namespace FractalMachine
                 public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
                 public char[] IgnoreChars;
 
+                Triggers.Trigger triggerInTheBarrel;
+
                 internal Amanuensis Parent;
 
                 public StatusSwitcher(Amanuensis Parent)
@@ -377,8 +383,26 @@ namespace FractalMachine
                     return status;
                 }
 
+                public void DefineCompleted()
+                {
+                    foreach(var status in statuses)
+                    {
+                        status.Value.DefineCompleted();
+                    }
+                }
+
                 public bool Ping(char ch)
                 {
+                    if (triggerInTheBarrel != null)
+                    {
+                        triggerInTheBarrel.inTheBarrelFor += ch;
+                        if (!triggerInTheBarrel.StillHasAdversary())
+                        {
+                            trig(triggerInTheBarrel);
+                            triggerInTheBarrel = null;
+                        }
+                    }
+
                     if (IgnoreChars != null)
                     {
                         foreach (char ignCh in IgnoreChars)
@@ -394,21 +418,36 @@ namespace FractalMachine
                     if (trigger != null)
                     {
                         triggered = true;
-                        OnTriggered?.Invoke(trigger);
-                        trigger.OnTriggered?.Invoke(trigger);
 
-                        if (trigger.ActivateStatus != null)
+                        if (trigger.HasAdversary())
                         {
-                            SwitchStatus(trigger.ActivateStatus);
-
-                            if (!string.IsNullOrEmpty(trigger.activatorDelimiter))
-                                CurrentStatus.Abc["activatorDelimiter"] = trigger.activatorDelimiter;
+                            trigger.inTheBarrelFor = trigger.activatorDelimiter;
+                            triggerInTheBarrel = trigger;
+                        }
+                        else
+                        {
+                            triggerInTheBarrel = null;
+                            trig(trigger);
                         }
                     }
 
                     UpdateCurrentStatus();
 
                     return triggered;
+                }
+
+                private void trig(Triggers.Trigger trigger)
+                {
+                    OnTriggered?.Invoke(trigger);
+                    trigger.OnTriggered?.Invoke(trigger);
+
+                    if (trigger.ActivateStatus != null)
+                    {
+                        SwitchStatus(trigger.ActivateStatus);
+
+                        if (!string.IsNullOrEmpty(trigger.activatorDelimiter))
+                            CurrentStatus.Abc["activatorDelimiter"] = trigger.activatorDelimiter;
+                    }
                 }
 
                 public void UpdateCurrentStatus()
@@ -436,6 +475,7 @@ namespace FractalMachine
                 public bool IsEnabled = false;
 
                 internal StatusSwitcher Parent;
+                internal CharTree delimetersTree = new CharTree();
                 List<Trigger> triggers = new List<Trigger>();
 
                 private StringQueue stringQueue = new StringQueue();
@@ -445,10 +485,34 @@ namespace FractalMachine
                     this.Parent = Parent;
                 }
 
+                public void DefineCompleted()
+                {
+                    foreach(var trigger in triggers)
+                    {
+                        foreach(var del in trigger.Delimiters)
+                        {
+                            if (!delimetersTree.CheckAlone(del))
+                            {
+                                trigger.adversaries.Add(del);
+                            }
+                        }
+                    }
+                }
+
                 public Trigger Add(Trigger Trigger)
                 {
+                    if (Trigger.Delimiter != null)
+                        Trigger.Delimiters = new string[] { Trigger.Delimiter };
+
+                    if (Trigger.Delimiters == null)
+                        throw new Exception("No delimiter is specified");
+
                     Trigger.Parent = this;
                     triggers.Add(Trigger);
+
+                    foreach (var del in Trigger.Delimiters)
+                        delimetersTree.Insert(del);
+
                     return Trigger;
                 }
 
@@ -497,24 +561,14 @@ namespace FractalMachine
 
                         if (enabled)
                         {
-                            //priority to Delimiters
-                            if (t.Delimiters != null)
+                            foreach (string del in t.Delimiters)
                             {
-                                foreach (string del in t.Delimiters)
+                                if (stringQueue.Check(parseDelimiter(del)))
                                 {
-                                    if (stringQueue.Check(parseDelimiter(del)))
-                                    {
-                                        // should be putted in new environment
-                                        t.activatorDelimiter = del;
-                                        return t;
-                                    }
+                                    // should be putted in new environment
+                                    t.activatorDelimiter = del;
+                                    return t;
                                 }
-                            }
-
-                            if (t.Delimiter != null && stringQueue.Check(parseDelimiter(t.Delimiter)))
-                            {
-                                t.activatorDelimiter = t.Delimiter; // yes, it is obvious but...
-                                return t;
                             }
                         }
                     }
@@ -527,18 +581,30 @@ namespace FractalMachine
                     //public delegate void OnTriggeredDelegate();
                     public delegate bool IsEnabledDelegate();
 
-                    public Triggers Parent;
+                    public Triggers Parent;                  
                     public StatusSwitcher.OnTriggeredDelegate OnTriggered;
                     public IsEnabledDelegate IsEnabled;
                     public string Delimiter;
                     public string[] Delimiters;
                     public string ActivateStatus;
 
+                    public List<string> adversaries = new List<string>();
                     public string activatorDelimiter;
-
+                    public string inTheBarrelFor = "";
+                 
                     public void Trig()
                     {
                         OnTriggered?.Invoke(this);
+                    }
+
+                    public bool HasAdversary()
+                    {
+                        return adversaries.Contains(activatorDelimiter);
+                    }
+
+                    public bool StillHasAdversary()
+                    {
+                        return (Parent.delimetersTree.CheckString(inTheBarrelFor) != null);
                     }
                 }
             }
