@@ -6,15 +6,26 @@ namespace FractalMachine
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-
-            /*var light = new Light();
-            light.Parse("'ciao come \\' stai'");*/
+            Console.WriteLine("Hello fractal!");
 
             var assetsDir = Resources.Solve("Assets");
-            var light = Light.OpenScript(assetsDir + "/test.light");
+            Light light;
 
-            Console.WriteLine("leggi qui");
+            var test = "test.light";
+            switch (test)
+            {
+                case "short":
+                    light = new Light();
+                    light.Parse("'ciao come \\' stai'");
+                    break;
+
+                case "test.light":
+                    
+                    light = Light.OpenScript(assetsDir + "/test.light");
+                    break;
+            }
+
+            Debug.Print("leggi qui");
         }
     }
 }

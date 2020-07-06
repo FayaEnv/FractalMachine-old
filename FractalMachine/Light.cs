@@ -231,7 +231,7 @@ namespace FractalMachine
                 /// StatusSwitcher
                 statusSwitcher.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
-                    Console.WriteLine("Trigger activated by " + trigger.activatorDelimiter);
+                    Debug.Print("Trigger activated by " + trigger.activatorDelimiter);
                 };
 
                 /// Default
@@ -281,7 +281,7 @@ namespace FractalMachine
                 bool onEscapeString = false;
 
                 /*statusInString.OnEnter = delegate {
-                    Console.WriteLine("First call");
+                    Debug.Print("First call");
                 };*/
 
                 trgEscapeString.OnTriggered = delegate
