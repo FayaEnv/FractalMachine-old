@@ -121,21 +121,39 @@ namespace FractalMachine
 
     public class CharTree
     {
+        internal CharTree parent;
         internal Dictionary<char, CharTree> tree = new Dictionary<char, CharTree>();
+        internal char ch;
+        internal object value;
+        internal int length = 0;
 
-        public void Insert(string str)
+        public string String
+        {
+            get
+            {
+                return ch + parent?.String;
+            }
+        }
+
+        public void Insert(string str, object val)
         {
             CharTree ct;
 
-            if(!tree.TryGetValue(str[0], out ct))
+            var ch = str[0];
+            if (!tree.TryGetValue(ch, out ct))
             {
                 ct = new CharTree();
-                tree.Add(str[0], ct);
+                ct.parent = this;
+                ct.ch = ch;
+                tree.Add(ch, ct);
+                ct.length = length + 1;
             }
 
             var sub = str.Substring(1);
             if (sub.Length > 0)
-                ct.Insert(sub);
+                ct.Insert(sub, val);
+            else
+                value = val;
         }
 
         public CharTree CheckString(string str)
@@ -151,11 +169,20 @@ namespace FractalMachine
             return ct;
         }
 
+        public CharTree CheckChar(char ch)
+        {
+            CharTree ct;
+            tree.TryGetValue(ch, out ct);
+            return ct;
+        }
+
         public bool CheckAlone(string str)
         {
             var ct = CheckString(str);
             return ct.tree.Count == 0;
         }
+
+
     }
 
     public class StringQueue

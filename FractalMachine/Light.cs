@@ -188,31 +188,14 @@ namespace FractalMachine
                 statusSwitcher = new StatusSwitcher(this);
                 curAst = mainAst = new AST(null, 0, 0);
 
-                isSymbol.OnSwitchChanged = delegate
-                {
-                    if (!isSymbol.Value)
-                    {
-                        eatBufferAndClear();
-                    }
-                    else
-                    {
-                        if (strBuffer.Length > 0)
-                        {
-                            throw new Exception("Symbol not recognized");
-                        }
-                    }
-                };
-
                 ///
                 /// Define triggers
                 ///
 
-                statusSwitcher.IgnoreChars = new char[] { '\r' };
-
                 /// Default
                 var statusDefault = statusSwitcher.Define("default");
 
-                var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
+                var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "inString" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
@@ -227,7 +210,7 @@ namespace FractalMachine
                 /// InString
                 var statusInString = statusSwitcher.Define("inString");
                 var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
-                var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "€$activatorDelimiter", ActivateStatus = "default" });
+                var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "default" });
 
                 /// InlineComment
                 var statusInInlineComment = statusSwitcher.Define("inInlineComment");
@@ -289,6 +272,22 @@ namespace FractalMachine
                     return statusDefault.IsEnabled;
                 };
 
+                isSymbol.OnSwitchChanged = delegate
+                {
+                    if (!isSymbol.Value)
+                    {
+                        eatBufferAndClear();
+                    }
+                    else
+                    {
+                        if (strBuffer.Length > 0)
+                        {
+                            statusSwitcher.Ping(strBuffer);
+                            clearBuffer();
+                        }
+                    }
+                };
+
                 /// Strings
 
                 bool onEscapeString = false;
@@ -330,6 +329,7 @@ namespace FractalMachine
             void eatBufferAndClear()
             {
                 curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
+                Count(strBuffer);
                 clearBuffer();
             }
 
@@ -354,24 +354,35 @@ namespace FractalMachine
             }
 
 
+            char[] ignoreChars = new char[] { '\r' };
+
             public void Push(char Char)
             {
                 var charType = new CharType(Char);
                 isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
 
-                if (Char == '\n')
+                foreach (char ignCh in ignoreChars)
                 {
-                    Pos = 0;
-                    Line++;
-                }
-                
-                if (!statusSwitcher.Ping(Char))
-                {
-                    strBuffer += Char;
+                    if (ignCh == Char) return;
                 }
 
-                Pos++;
-                Cycle++;
+                strBuffer += Char;
+            }
+
+
+
+            public void Count(string str)
+            {
+                foreach(char ch in str)
+                {
+                    if (ch == '\n')
+                    {
+                        Pos = 0;
+                        Line++;
+                    }
+                    else
+                        Pos++;
+                }
             }
 
 
@@ -415,9 +426,31 @@ namespace FractalMachine
                     }
                 }
 
-                public bool Ping(char ch)
+                public bool Ping(string str)
                 {
-                    if (triggerInTheBarrel != null)
+                    for(int c=0; c<str.Length; c++)
+                    {
+                        CharTree ct;
+                        CharTree val = null;
+                        var cc = c;
+
+                        while(cc < str.Length && (ct = CurrentStatus.delimetersTree.CheckChar(str[cc++])) != null)
+                        {
+                            if (ct.value != null)
+                                val = ct;
+                        }
+
+                        if(val != null)
+                        {
+                            Triggers.Trigger trigger = (Triggers.Trigger) val.value;
+                            trigger.activatorDelimiter = val.String;
+                        }
+                    }
+
+                    return false;
+
+                    // old ping
+                    /*if (triggerInTheBarrel != null)
                     {
                         triggerInTheBarrel.inTheBarrelFor += ch;
                         if (!triggerInTheBarrel.StillHasAdversary())
@@ -427,14 +460,7 @@ namespace FractalMachine
                         }
                     }
 
-                    if (IgnoreChars != null)
-                    {
-                        foreach (char ignCh in IgnoreChars)
-                        {
-                            if (ignCh == ch)
-                                return true;
-                        }
-                    }
+
 
                     bool triggered = false;
 
@@ -457,7 +483,12 @@ namespace FractalMachine
 
                     UpdateCurrentStatus();
 
-                    return triggered;
+                    if (!triggered)
+                    {
+
+                    }
+
+                    return triggered;*/
                 }
 
                 private void trig(Triggers.Trigger trigger)
@@ -468,9 +499,6 @@ namespace FractalMachine
                     if (trigger.ActivateStatus != null)
                     {
                         SwitchStatus(trigger.ActivateStatus);
-
-                        if (!string.IsNullOrEmpty(trigger.activatorDelimiter))
-                            CurrentStatus.Abc["activatorDelimiter"] = trigger.activatorDelimiter;
                     }
                 }
 
@@ -495,7 +523,6 @@ namespace FractalMachine
 
                 public OnCycleDelegate OnCycleEnd, OnEnter;
                 public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
-                public Dictionary<string, string> Abc = new Dictionary<string, string>();
                 public bool IsEnabled = false;
 
                 internal StatusSwitcher Parent;
@@ -547,7 +574,7 @@ namespace FractalMachine
                     triggers.Add(Trigger);
 
                     foreach (var del in Trigger.Delimiters)
-                        delimetersTree.Insert(del);
+                        delimetersTree.Insert(del, Trigger);
 
                     return Trigger;
                 }
@@ -572,19 +599,6 @@ namespace FractalMachine
                     {
                         OnSpecificCycle.Add(Parent.Parent.Cycle + 1, value);
                     }
-                }
-
-                private string parseDelimiter(string del)
-                {
-                    if (del.StartsWith("€$"))
-                    {
-                        string name = del.Substring(2);
-                        string o;
-                        Abc.TryGetValue(name, out o);
-                        return o;
-                    }
-
-                    return del;
                 }
 
                 public Trigger CheckString(char ch)
@@ -617,7 +631,7 @@ namespace FractalMachine
                         {
                             foreach (string del in t.Delimiters)
                             {
-                                if (stringQueue.Check(parseDelimiter(del)))
+                                if (stringQueue.Check(del))
                                 {
                                     // should be putted in new environment
                                     t.activatorDelimiter = del;
