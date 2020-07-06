@@ -272,6 +272,11 @@ namespace FractalMachine
                     }
                 };
 
+                trgSpace.OnTriggered = delegate
+                {
+                    eatBufferAndClear();
+                };
+
                 /// Symbols
 
                 isSymbol.EnableInvoke = delegate
@@ -325,7 +330,11 @@ namespace FractalMachine
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
                 };
 
-                
+                statusDefault.OnExit = delegate ()
+                {
+                    isSymbol.Toggle();
+                };
+
 
                 statusSwitcher.DefineCompleted();
             }
@@ -339,9 +348,13 @@ namespace FractalMachine
 
             void eatBufferAndClear()
             {
-                curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
-                Count(strBuffer);
-                clearBuffer();
+                //todo: check if strBuffer is text
+                if (strBuffer.Length > 0)
+                {
+                    curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
+                    Count(strBuffer);
+                    clearBuffer();
+                }
             }
 
             void clearBuffer()
@@ -412,8 +425,9 @@ namespace FractalMachine
                             Pos += add;
                         }
                         else
-                        {
+                        { 
                             statusSwitcher.Cycle(Char);
+                            strBuffer += Char;
                         }
                     }
                 }
@@ -445,7 +459,7 @@ namespace FractalMachine
                 public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
                 public char[] IgnoreChars;
 
-                Triggers.Trigger triggerInTheBarrel;
+                //Triggers.Trigger triggerInTheBarrel;
 
                 internal Amanuensis Parent;
 
