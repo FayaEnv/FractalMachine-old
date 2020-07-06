@@ -257,12 +257,14 @@ namespace FractalMachine
                 };
 
                 trgCloseBlock.OnTriggered = delegate (Triggers.Trigger trigger)
-                {
+                {                    
+                    var ast = curAst;
+
                     closeBlock();
 
-                    if (trigger.activatorDelimiter == "}")
+                    bool isFirstLevelBlock = ast.parent.parent.type == Type.Block;
+                    if (trigger.activatorDelimiter == "}" && isFirstLevelBlock)
                     {
-                        // todo if "official block"
                         trgNewInstruction.Trig();
                     }
                 };

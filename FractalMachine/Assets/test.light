@@ -6,3 +6,6 @@ IO.print("ciao", 2);
 if(miao == 2){
 	print("eccomi");
 }
+
+var ciao = { "test" };
+
