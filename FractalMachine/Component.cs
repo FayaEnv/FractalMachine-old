@@ -4,11 +4,7 @@ using System.Text;
 
 namespace FractalMachine
 {
-    public class Machine
+    class Component
     {
-        public void Execute(Light Script)
-        {
-
-        }
     }
 }
