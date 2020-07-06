@@ -16,7 +16,7 @@ namespace FractalMachine
             {
                 case "short":
                     light = new Light();
-                    light.Parse("'ciao come \\' stai'");
+                    light.Parse("IO.test(\"ciao\")");
                     break;
 
                 case "test.light":

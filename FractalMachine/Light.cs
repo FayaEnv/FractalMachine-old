@@ -321,7 +321,7 @@ namespace FractalMachine
                 };
 
                 ///
-                /// Cycles
+                /// Statuses
                 ///
 
                 statusDefault.OnCharCycle = delegate (char ch)
@@ -330,9 +330,14 @@ namespace FractalMachine
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
                 };
 
-                statusDefault.OnExit = delegate ()
+                statusDefault.OnTriggered = delegate 
                 {
                     isSymbol.Toggle();
+                };
+
+                statusInComment.OnExit = statusInInlineComment.OnExit = delegate
+                {
+                    clearBuffer();
                 };
 
 
@@ -410,14 +415,20 @@ namespace FractalMachine
                             if (ct == null) break;
 
                             if (ct.value != null)
-                                val = ct;
+                            {
+                                // check first if enabled
+                                var t = (Triggers.Trigger)ct.value;
+
+                                if(t.IsEnabled == null || t.IsEnabled.Invoke())
+                                    val = ct;
+                            }
                         }
 
                         if (val != null)
                         {
-                            Triggers.Trigger trigger = (Triggers.Trigger)val.value;
+                            var trigger = (Triggers.Trigger)val.value;
                             trigger.activatorDelimiter = val.String;
-                            statusSwitcher.trig(trigger);
+                            statusSwitcher.Triggered(trigger);
 
                             var add = trigger.activatorDelimiter.Length;
                             c += add - 1;
@@ -430,6 +441,7 @@ namespace FractalMachine
                         }
 
                         statusSwitcher.UpdateCurrentStatus();
+                        Cycle++;
                     }
                 }
             }
@@ -469,9 +481,10 @@ namespace FractalMachine
                     CurrentStatus.OnCharCycle?.Invoke(ch);
                 }
 
-                internal void trig(Triggers.Trigger trigger)
+                internal void Triggered(Triggers.Trigger trigger)
                 {
                     OnTriggered?.Invoke(trigger);
+                    CurrentStatus.OnTriggered?.Invoke(trigger);
                     trigger.OnTriggered?.Invoke(trigger);
 
                     if (trigger.ActivateStatus != null)
@@ -505,6 +518,7 @@ namespace FractalMachine
                 public OnCycleDelegate OnCycleEnd, OnEnter, OnExit;
                 public OnCharCycleDelegate OnCharCycle;
                 public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
+                public StatusSwitcher.OnTriggeredDelegate OnTriggered;
                 public bool IsEnabled = false;
 
                 internal StatusSwitcher Parent;
@@ -575,7 +589,7 @@ namespace FractalMachine
                                 {
                                     // should be putted in new environment
                                     t.activatorDelimiter = del;
-                                    Parent.trig(t);
+                                    Parent.Triggered(t);
                                     return true;
                                 }
                             }
