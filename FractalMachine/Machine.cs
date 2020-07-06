@@ -10,12 +10,12 @@ namespace FractalMachine
 
         public void Execute(Light Script)
         {
-            CompileAst(Script.AST);
+            //CompileAst(Script.AST);
         }
 
-        void CompileAst(AST ast)
+        /*void CompileAst(AST ast)
         {
 
-        }
+        }*/
     }
 }

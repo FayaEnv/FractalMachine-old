@@ -38,6 +38,22 @@ namespace FractalMachine
         }
 
         #endregion
+
+        #region Classes
+
+        // Work in progress
+        public class Linear
+        {
+            public Dictionary<string, Linear> Blocks = new Dictionary<string, Linear>();
+            public List<Instruction> Instructions = new List<Instruction>();
+
+            public struct Instruction
+            {
+
+            }
+        }
+
+        #endregion
     }
 
 
