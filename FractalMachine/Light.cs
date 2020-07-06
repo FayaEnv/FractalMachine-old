@@ -420,34 +420,41 @@ namespace FractalMachine
 
                 public void DefineCompleted()
                 {
-                    foreach(var status in statuses)
+                    /*foreach(var status in statuses)
                     {
                         status.Value.DefineCompleted();
-                    }
+                    }*/
                 }
 
-                public bool Ping(string str)
+                public void Ping(string str)
                 {
                     for(int c=0; c<str.Length; c++)
                     {
                         CharTree ct;
                         CharTree val = null;
-                        var cc = c;
 
-                        while(cc < str.Length && (ct = CurrentStatus.delimetersTree.CheckChar(str[cc++])) != null)
+                        for(int cc=c; cc<str.Length; cc++)
                         {
+                            var ch = str[cc];
+
+                            ct = CurrentStatus.delimetersTree.CheckChar(ch);
+
+                            if (ct == null) break;
+
                             if (ct.value != null)
                                 val = ct;
                         }
 
-                        if(val != null)
+                        if (val != null)
                         {
-                            Triggers.Trigger trigger = (Triggers.Trigger) val.value;
+                            Triggers.Trigger trigger = (Triggers.Trigger)val.value;
                             trigger.activatorDelimiter = val.String;
+                            trig(trigger);
+                            Parent.Count(trigger.activatorDelimiter);
                         }
+                        else
+                            Parent.Count(str[c].ToString());
                     }
-
-                    return false;
 
                     // old ping
                     /*if (triggerInTheBarrel != null)
@@ -528,16 +535,16 @@ namespace FractalMachine
                 internal StatusSwitcher Parent;
                 internal CharTree delimetersTree = new CharTree();
                 List<Trigger> triggers = new List<Trigger>();
-                KeyLengthSortedDescDictionary<Trigger> triggersByDelimeters = new KeyLengthSortedDescDictionary<Trigger>();
 
-                private StringQueue stringQueue = new StringQueue();
+                //KeyLengthSortedDescDictionary<Trigger> triggersByDelimeters = new KeyLengthSortedDescDictionary<Trigger>();
+                //private StringQueue stringQueue = new StringQueue();
 
                 public Triggers(StatusSwitcher Parent)
                 {
                     this.Parent = Parent;
                 }
 
-                public void DefineCompleted()
+                /*public void DefineCompleted()
                 {
                     foreach(var trigger in triggers)
                     {
@@ -545,22 +552,13 @@ namespace FractalMachine
 
                         foreach(var del in trigger.Delimiters)
                         {
-                            if (!del.StartsWith("€$"))
+                            if (!delimetersTree.CheckAlone(del))
                             {
-                                if (!delimetersTree.CheckAlone(del))
-                                {
-                                    trigger.adversaries.Add(del);
-                                }
-
-                                triggersByDelimeters.Add(del, trigger);
+                                trigger.adversaries.Add(del);
                             }
-                            else
-                                dynDels.Add(del);
                         }
-
-                        trigger.Delimiters = dynDels.ToArray();
                     }
-                }
+                }*/
 
                 public Trigger Add(Trigger Trigger)
                 {
@@ -601,7 +599,7 @@ namespace FractalMachine
                     }
                 }
 
-                public Trigger CheckString(char ch)
+                /*public Trigger CheckString(char ch)
                 {
                     stringQueue.Push(ch);
 
@@ -642,7 +640,7 @@ namespace FractalMachine
                     }
 
                     return null;
-                }
+                }*/
 
                 public class Trigger
                 {
@@ -656,23 +654,11 @@ namespace FractalMachine
                     public string[] Delimiters;
                     public string ActivateStatus;
 
-                    public List<string> adversaries = new List<string>();
                     public string activatorDelimiter;
-                    public string inTheBarrelFor = "";
                  
                     public void Trig()
                     {
                         OnTriggered?.Invoke(this);
-                    }
-
-                    public bool HasAdversary()
-                    {
-                        return adversaries.Contains(activatorDelimiter);
-                    }
-
-                    public bool StillHasAdversary()
-                    {
-                        return (Parent.delimetersTree.CheckString(inTheBarrelFor) != null);
                     }
                 }
             }

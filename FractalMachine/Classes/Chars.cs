@@ -131,7 +131,11 @@ namespace FractalMachine
         {
             get
             {
-                return ch + parent?.String;
+                var top = "";
+                if (parent.length != 0)
+                    top = parent.String;
+
+                return ch + top;
             }
         }
 
@@ -153,7 +157,7 @@ namespace FractalMachine
             if (sub.Length > 0)
                 ct.Insert(sub, val);
             else
-                value = val;
+                ct.value = val;
         }
 
         public CharTree CheckString(string str)
