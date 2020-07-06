@@ -31,10 +31,12 @@ namespace FractalMachine
             ///
             var amanuensis = new AST.Amanuensis();
 
-            foreach (char ch in Script)
+            amanuensis.Read(Script);
+
+            /*foreach (char ch in Script)
             {
                 amanuensis.Push(ch);
-            }
+            }*/
 
             AST = amanuensis.GetAST;
 
@@ -68,6 +70,11 @@ namespace FractalMachine
 
                 val = value;
             }
+        }
+
+        public void Toggle()
+        {
+            Value = !Value;
         }
     }
 
@@ -278,14 +285,6 @@ namespace FractalMachine
                     {
                         eatBufferAndClear();
                     }
-                    else
-                    {
-                        if (strBuffer.Length > 0)
-                        {
-                            statusSwitcher.Ping(strBuffer);
-                            clearBuffer();
-                        }
-                    }
                 };
 
                 /// Strings
@@ -315,6 +314,18 @@ namespace FractalMachine
                 {
                     eatBufferAndClear();
                 };
+
+                ///
+                /// Cycles
+                ///
+
+                statusDefault.OnCharCycle = delegate (char ch)
+                {
+                    var charType = new CharType(ch);
+                    isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
+                };
+
+                
 
                 statusSwitcher.DefineCompleted();
             }
@@ -352,24 +363,61 @@ namespace FractalMachine
                     return mainAst;
                 }
             }
-
-
-            char[] ignoreChars = new char[] { '\r' };
-
+        
             public void Push(char Char)
             {
-                var charType = new CharType(Char);
-                isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
-
-                foreach (char ignCh in ignoreChars)
-                {
-                    if (ignCh == Char) return;
-                }
-
-                strBuffer += Char;
+                //statusSwitcher.Cycle(Char);
             }
 
+            public void Read(string str)
+            {
+                for(int c=0; c<str.Length; c++)
+                {
+                    var Char = str[c];
 
+                    if (Char != '\r')
+                    {
+                        // Count position
+                        if (Char == '\n')
+                        {
+                            Pos = 0;
+                            Line++;
+                        }
+                        else
+                            Pos++;
+
+                        CharTree ct = statusSwitcher.CurrentStatus.delimetersTree;
+                        CharTree val = null;
+
+                        for (int cc = c; cc < str.Length; cc++)
+                        {
+                            var ch = str[cc];
+
+                            ct = ct.CheckChar(ch);
+
+                            if (ct == null) break;
+
+                            if (ct.value != null)
+                                val = ct;
+                        }
+
+                        if (val != null)
+                        {
+                            Triggers.Trigger trigger = (Triggers.Trigger)val.value;
+                            trigger.activatorDelimiter = val.String;
+                            statusSwitcher.trig(trigger);
+
+                            var add = trigger.activatorDelimiter.Length;
+                            c += add - 1;
+                            Pos += add;
+                        }
+                        else
+                        {
+                            statusSwitcher.Cycle(Char);
+                        }
+                    }
+                }
+            }
 
             public void Count(string str)
             {
@@ -389,8 +437,10 @@ namespace FractalMachine
             public class StatusSwitcher
             {
                 public delegate void OnTriggeredDelegate(Triggers.Trigger Trigger);
+                //public delegate bool OnCycleDelegate();
 
                 public OnTriggeredDelegate OnTriggered;
+                //public OnCycleDelegate OnCycle;
                 public Triggers CurrentStatus;
                 public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
                 public char[] IgnoreChars;
@@ -426,18 +476,26 @@ namespace FractalMachine
                     }*/
                 }
 
+                public void Cycle(char ch)
+                {
+                    CurrentStatus.OnCharCycle?.Invoke(ch);
+                }
+
                 public void Ping(string str)
                 {
                     for(int c=0; c<str.Length; c++)
                     {
-                        CharTree ct;
+                        CharTree ct = CurrentStatus.delimetersTree;
                         CharTree val = null;
 
                         for(int cc=c; cc<str.Length; cc++)
                         {
                             var ch = str[cc];
 
-                            ct = CurrentStatus.delimetersTree.CheckChar(ch);
+                            if (ch == '"')
+                                Debug.Print("");
+
+                            ct = ct.CheckChar(ch);
 
                             if (ct == null) break;
 
@@ -451,6 +509,7 @@ namespace FractalMachine
                             trigger.activatorDelimiter = val.String;
                             trig(trigger);
                             Parent.Count(trigger.activatorDelimiter);
+                            c += trigger.activatorDelimiter.Length - 1;
                         }
                         else
                             Parent.Count(str[c].ToString());
@@ -498,7 +557,7 @@ namespace FractalMachine
                     return triggered;*/
                 }
 
-                private void trig(Triggers.Trigger trigger)
+                internal void trig(Triggers.Trigger trigger)
                 {
                     OnTriggered?.Invoke(trigger);
                     trigger.OnTriggered?.Invoke(trigger);
@@ -518,6 +577,7 @@ namespace FractalMachine
                 public void SwitchStatus(string status)
                 {
                     CurrentStatus.IsEnabled = false;
+                    CurrentStatus.OnExit?.Invoke();
                     CurrentStatus = statuses[status];
                     CurrentStatus.IsEnabled = true;
                     CurrentStatus.OnEnter?.Invoke();
@@ -527,8 +587,11 @@ namespace FractalMachine
             public class Triggers
             {
                 public delegate void OnCycleDelegate();
+                public delegate void OnCharCycleDelegate(char Char);
 
-                public OnCycleDelegate OnCycleEnd, OnEnter;
+                //public StatusSwitcher.OnCycleDelegate OnStatusCycle;
+                public OnCycleDelegate OnCycleEnd, OnEnter, OnExit;
+                public OnCharCycleDelegate OnCharCycle;
                 public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
                 public bool IsEnabled = false;
 
@@ -537,7 +600,7 @@ namespace FractalMachine
                 List<Trigger> triggers = new List<Trigger>();
 
                 //KeyLengthSortedDescDictionary<Trigger> triggersByDelimeters = new KeyLengthSortedDescDictionary<Trigger>();
-                //private StringQueue stringQueue = new StringQueue();
+                private StringQueue stringQueue = new StringQueue();
 
                 public Triggers(StatusSwitcher Parent)
                 {
@@ -597,6 +660,33 @@ namespace FractalMachine
                     {
                         OnSpecificCycle.Add(Parent.Parent.Cycle + 1, value);
                     }
+                }
+
+                public bool PushChar(char ch)
+                {
+                    stringQueue.Push(ch);
+
+                    // Check for dynamic delimiters
+                    foreach (Trigger t in triggers)
+                    {
+                        bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
+
+                        if (enabled)
+                        {
+                            foreach (string del in t.Delimiters)
+                            {
+                                if (stringQueue.Check(del))
+                                {
+                                    // should be putted in new environment
+                                    t.activatorDelimiter = del;
+                                    Parent.trig(t);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+
+                    return false;
                 }
 
                 /*public Trigger CheckString(char ch)
