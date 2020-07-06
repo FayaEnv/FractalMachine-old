@@ -499,7 +499,6 @@ namespace FractalMachine
                 public delegate void OnCycleDelegate();
                 public delegate void OnCharCycleDelegate(char Char);
 
-                //public StatusSwitcher.OnCycleDelegate OnStatusCycle;
                 public OnCycleDelegate OnCycleEnd, OnEnter, OnExit;
                 public OnCharCycleDelegate OnCharCycle;
                 public Dictionary<int, OnCycleDelegate> OnSpecificCycle = new Dictionary<int, OnCycleDelegate>();
@@ -510,7 +509,6 @@ namespace FractalMachine
                 internal CharTree delimetersTree = new CharTree();
                 List<Trigger> triggers = new List<Trigger>();
 
-                //KeyLengthSortedDescDictionary<Trigger> triggersByDelimeters = new KeyLengthSortedDescDictionary<Trigger>();
                 private StringQueue stringQueue = new StringQueue();
 
                 public Triggers(StatusSwitcher Parent)

@@ -8,10 +8,11 @@ namespace FractalMachine
         {
             Console.WriteLine("Hello fractal!");
 
+            Machine machine = new Machine();
             var assetsDir = Resources.Solve("Assets");
             Light light;
 
-            var test = "test.light";
+            var test = "machine.light";
             switch (test)
             {
                 case "short":
@@ -19,9 +20,13 @@ namespace FractalMachine
                     light.Parse("IO.test(\"ciao\")");
                     break;
 
-                case "test.light":
-                    
+                case "test.light":               
                     light = Light.OpenScript(assetsDir + "/test.light");
+                    break;
+
+                case "machine.light":
+                    light = Light.OpenScript(assetsDir + "/machine.light");
+                    machine.Execute(light);
                     break;
             }
 
