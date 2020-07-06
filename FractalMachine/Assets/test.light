@@ -1,6 +1,8 @@
 ﻿var test = "ciao amici";
 var miao = 2;
 
+// test
+
 IO.print("ciao", 2);
 
 if(miao == 2){

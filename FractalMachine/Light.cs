@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Classes;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
@@ -214,15 +215,27 @@ namespace FractalMachine
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "\"", "\'" }, ActivateStatus = "inString" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
+                var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
                 var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
 
+                var trgInlineComment = statusDefault.Add(new Triggers.Trigger { Delimiter = "//", ActivateStatus = "inInlineComment" });
+                var trgComment = statusDefault.Add(new Triggers.Trigger { Delimiter = "/*", ActivateStatus = "inComment" });
+
                 /// InString
                 var statusInString = statusSwitcher.Define("inString");
                 var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
                 var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "€$activatorDelimiter", ActivateStatus = "default" });
+
+                /// InlineComment
+                var statusInInlineComment = statusSwitcher.Define("inInlineComment");
+                var trgExitInlineComment = statusInInlineComment.Add(new Triggers.Trigger { Delimiter = "\n", ActivateStatus = "default" });
+
+                /// Comment
+                var statusInComment = statusSwitcher.Define("inComment");
+                var trgExitComment = statusInComment.Add(new Triggers.Trigger { Delimiter = "*/", ActivateStatus = "default" });
 
                 ///
                 /// Delegates
@@ -351,7 +364,8 @@ namespace FractalMachine
                     Pos = 0;
                     Line++;
                 }
-                else if (!statusSwitcher.Ping(Char))
+                
+                if (!statusSwitcher.Ping(Char))
                 {
                     strBuffer += Char;
                 }
@@ -487,6 +501,7 @@ namespace FractalMachine
                 internal StatusSwitcher Parent;
                 internal CharTree delimetersTree = new CharTree();
                 List<Trigger> triggers = new List<Trigger>();
+                KeyLengthSortedDescDictionary<Trigger> triggersByDelimeters = new KeyLengthSortedDescDictionary<Trigger>();
 
                 private StringQueue stringQueue = new StringQueue();
 
@@ -499,13 +514,24 @@ namespace FractalMachine
                 {
                     foreach(var trigger in triggers)
                     {
+                        List<string> dynDels = new List<string>();
+
                         foreach(var del in trigger.Delimiters)
                         {
-                            if (!delimetersTree.CheckAlone(del))
+                            if (!del.StartsWith("€$"))
                             {
-                                trigger.adversaries.Add(del);
+                                if (!delimetersTree.CheckAlone(del))
+                                {
+                                    trigger.adversaries.Add(del);
+                                }
+
+                                triggersByDelimeters.Add(del, trigger);
                             }
+                            else
+                                dynDels.Add(del);
                         }
+
+                        trigger.Delimiters = dynDels.ToArray();
                     }
                 }
 
@@ -565,6 +591,24 @@ namespace FractalMachine
                 {
                     stringQueue.Push(ch);
 
+                    // Check for static delimiters
+                    foreach(var td in triggersByDelimeters)
+                    {
+                        var t = td.Value;
+                        var del = td.Key;
+
+                        if (stringQueue.Check(del))
+                        {                          
+                            bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
+                            if (enabled)
+                            {
+                                t.activatorDelimiter = del;
+                                return t;
+                            }
+                        }
+                    }
+
+                    // Check for dynamic delimiters
                     foreach (Trigger t in triggers)
                     {
                         bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
