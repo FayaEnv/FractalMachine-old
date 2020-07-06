@@ -336,7 +336,7 @@ namespace FractalMachine
                 };
 
 
-                statusSwitcher.DefineCompleted();
+                //statusSwitcher.DefineCompleted();
             }
 
             #region Buffer
@@ -429,6 +429,8 @@ namespace FractalMachine
                             statusSwitcher.Cycle(Char);
                             strBuffer += Char;
                         }
+
+                        statusSwitcher.UpdateCurrentStatus();
                     }
                 }
             }
@@ -451,15 +453,11 @@ namespace FractalMachine
             public class StatusSwitcher
             {
                 public delegate void OnTriggeredDelegate(Triggers.Trigger Trigger);
-                //public delegate bool OnCycleDelegate();
 
                 public OnTriggeredDelegate OnTriggered;
-                //public OnCycleDelegate OnCycle;
                 public Triggers CurrentStatus;
                 public Dictionary<string, Triggers> statuses = new Dictionary<string, Triggers>();
                 public char[] IgnoreChars;
-
-                //Triggers.Trigger triggerInTheBarrel;
 
                 internal Amanuensis Parent;
 
@@ -482,93 +480,9 @@ namespace FractalMachine
                     return status;
                 }
 
-                public void DefineCompleted()
-                {
-                    /*foreach(var status in statuses)
-                    {
-                        status.Value.DefineCompleted();
-                    }*/
-                }
-
                 public void Cycle(char ch)
                 {
                     CurrentStatus.OnCharCycle?.Invoke(ch);
-                }
-
-                public void Ping(string str)
-                {
-                    for(int c=0; c<str.Length; c++)
-                    {
-                        CharTree ct = CurrentStatus.delimetersTree;
-                        CharTree val = null;
-
-                        for(int cc=c; cc<str.Length; cc++)
-                        {
-                            var ch = str[cc];
-
-                            if (ch == '"')
-                                Debug.Print("");
-
-                            ct = ct.CheckChar(ch);
-
-                            if (ct == null) break;
-
-                            if (ct.value != null)
-                                val = ct;
-                        }
-
-                        if (val != null)
-                        {
-                            Triggers.Trigger trigger = (Triggers.Trigger)val.value;
-                            trigger.activatorDelimiter = val.String;
-                            trig(trigger);
-                            Parent.Count(trigger.activatorDelimiter);
-                            c += trigger.activatorDelimiter.Length - 1;
-                        }
-                        else
-                            Parent.Count(str[c].ToString());
-                    }
-
-                    // old ping
-                    /*if (triggerInTheBarrel != null)
-                    {
-                        triggerInTheBarrel.inTheBarrelFor += ch;
-                        if (!triggerInTheBarrel.StillHasAdversary())
-                        {
-                            trig(triggerInTheBarrel);
-                            triggerInTheBarrel = null;
-                        }
-                    }
-
-
-
-                    bool triggered = false;
-
-                    var trigger = CurrentStatus.CheckString(ch);
-                    if (trigger != null)
-                    {
-                        triggered = true;
-
-                        if (trigger.HasAdversary())
-                        {
-                            trigger.inTheBarrelFor = trigger.activatorDelimiter;
-                            triggerInTheBarrel = trigger;
-                        }
-                        else
-                        {
-                            triggerInTheBarrel = null;
-                            trig(trigger);
-                        }
-                    }
-
-                    UpdateCurrentStatus();
-
-                    if (!triggered)
-                    {
-
-                    }
-
-                    return triggered;*/
                 }
 
                 internal void trig(Triggers.Trigger trigger)
@@ -620,22 +534,6 @@ namespace FractalMachine
                 {
                     this.Parent = Parent;
                 }
-
-                /*public void DefineCompleted()
-                {
-                    foreach(var trigger in triggers)
-                    {
-                        List<string> dynDels = new List<string>();
-
-                        foreach(var del in trigger.Delimiters)
-                        {
-                            if (!delimetersTree.CheckAlone(del))
-                            {
-                                trigger.adversaries.Add(del);
-                            }
-                        }
-                    }
-                }*/
 
                 public Trigger Add(Trigger Trigger)
                 {
@@ -702,49 +600,6 @@ namespace FractalMachine
 
                     return false;
                 }
-
-                /*public Trigger CheckString(char ch)
-                {
-                    stringQueue.Push(ch);
-
-                    // Check for static delimiters
-                    foreach(var td in triggersByDelimeters)
-                    {
-                        var t = td.Value;
-                        var del = td.Key;
-
-                        if (stringQueue.Check(del))
-                        {                          
-                            bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
-                            if (enabled)
-                            {
-                                t.activatorDelimiter = del;
-                                return t;
-                            }
-                        }
-                    }
-
-                    // Check for dynamic delimiters
-                    foreach (Trigger t in triggers)
-                    {
-                        bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
-
-                        if (enabled)
-                        {
-                            foreach (string del in t.Delimiters)
-                            {
-                                if (stringQueue.Check(del))
-                                {
-                                    // should be putted in new environment
-                                    t.activatorDelimiter = del;
-                                    return t;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }*/
 
                 public class Trigger
                 {
