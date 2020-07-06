@@ -33,11 +33,6 @@ namespace FractalMachine
 
             amanuensis.Read(Script);
 
-            /*foreach (char ch in Script)
-            {
-                amanuensis.Push(ch);
-            }*/
-
             AST = amanuensis.GetAST;
 
         }
@@ -344,12 +339,7 @@ namespace FractalMachine
                 //statusSwitcher.DefineCompleted();
             }
 
-            #region Buffer
-
-            void topAst()
-            {
-                curAst = curAst.parent;
-            }
+            #region BufferAndAst
 
             void eatBufferAndClear()
             {
@@ -379,12 +369,7 @@ namespace FractalMachine
                 {
                     return mainAst;
                 }
-            }
-        
-            public void Push(char Char)
-            {
-                //statusSwitcher.Cycle(Char);
-            }
+            }    
 
             public void Read(string str)
             {
