@@ -352,7 +352,6 @@ namespace FractalMachine
                 if (strBuffer.Length > 0)
                 {
                     curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
-                    Count(strBuffer);
                     clearBuffer();
                 }
             }
@@ -434,21 +433,6 @@ namespace FractalMachine
                     }
                 }
             }
-
-            public void Count(string str)
-            {
-                foreach(char ch in str)
-                {
-                    if (ch == '\n')
-                    {
-                        Pos = 0;
-                        Line++;
-                    }
-                    else
-                        Pos++;
-                }
-            }
-
 
             public class StatusSwitcher
             {
