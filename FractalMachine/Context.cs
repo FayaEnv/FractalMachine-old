@@ -4,6 +4,7 @@ using System.Text;
 
 namespace FractalMachine
 {
+    // or "execution context"
     class Context
     {
     }

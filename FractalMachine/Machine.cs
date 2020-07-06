@@ -6,6 +6,8 @@ namespace FractalMachine
 {
     public class Machine
     {
+        Component main;
+
         public void Execute(Light Script)
         {
 

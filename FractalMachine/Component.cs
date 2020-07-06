@@ -4,7 +4,8 @@ using System.Text;
 
 namespace FractalMachine
 {
-    class Component
+    public class Component
     {
+        Dictionary<string, Component> components = new Dictionary<string, Component>();
     }
 }
