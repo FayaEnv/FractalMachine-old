@@ -79,6 +79,7 @@ namespace FractalMachine
 
             private void readInstruction(AST instr, Instruction from = null)
             {
+                bool postpones = false;
                 var i = new Instruction();
                 List<string> attrs = new List<string>();
 
@@ -86,11 +87,11 @@ namespace FractalMachine
                 {
                     if(instr.subject == "=")
                     {
-                        readInstruction(instr);
+                        postpones = true;
                     }
                 }
 
-                Instructions.Add(i);
+                if(!postpones) Instructions.Add(i);
 
                 foreach (var child in instr.Children)
                 {
@@ -111,6 +112,8 @@ namespace FractalMachine
                     }
 
                 }
+
+                if (postpones) Instructions.Add(i);
             }
             #endregion
         }
