@@ -60,6 +60,8 @@ namespace FractalMachine
 
             }
 
+            #region FromAST
+
             public void FromAST(AST ast)
             {
                 if (ast.type != AST.Type.Block)
@@ -67,11 +69,19 @@ namespace FractalMachine
 
                 foreach (var child in ast.Children)
                 {
-
+                    if (child.type == AST.Type.Instruction)
+                        ReadInstruction(child);
+                    else
+                        throw new Exception("Unexcepted " + child.type.ToString());
                 }
-
-                return lin;
             }
+
+            private void ReadInstruction(AST instr)
+            {
+
+            }
+
+            #endregion
         }
 
         #endregion
