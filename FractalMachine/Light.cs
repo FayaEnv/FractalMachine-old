@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace FractalMachine
@@ -55,9 +56,9 @@ namespace FractalMachine
                 FromAST(OriginAST);
             }
 
-            public struct Instruction
+            public class Instruction
             {
-
+                public string Name;
             }
 
             #region FromAST
@@ -70,17 +71,47 @@ namespace FractalMachine
                 foreach (var child in ast.Children)
                 {
                     if (child.type == AST.Type.Instruction)
-                        ReadInstruction(child);
+                        readInstruction(child);
                     else
                         throw new Exception("Unexcepted " + child.type.ToString());
                 }
             }
 
-            private void ReadInstruction(AST instr)
+            private void readInstruction(AST instr, Instruction from = null)
             {
+                var i = new Instruction();
+                List<string> attrs = new List<string>();
 
+                if (instr.aclass == "operator")
+                {
+                    if(instr.subject == "=")
+                    {
+                        readInstruction(instr);
+                    }
+                }
+
+                Instructions.Add(i);
+
+                foreach (var child in instr.Children)
+                {
+                    switch (child.type)
+                    {
+                        case AST.Type.Attribute:
+                            attrs.Add(child.subject);
+                            i.Name = child.subject;
+                            break;
+
+                        case AST.Type.Instruction:
+                            readInstruction(child, i);
+                            break;
+
+                        case AST.Type.Block:
+
+                            break;
+                    }
+
+                }
             }
-
             #endregion
         }
 
@@ -127,7 +158,7 @@ namespace FractalMachine
         private List<AST> children = new List<AST>();
 
         // Instruction preview
-        internal string subject; // variable name, if,
+        internal string subject, aclass; // variable name, if,
         internal Type type;
         internal int line, pos;
 
@@ -302,6 +333,7 @@ namespace FractalMachine
                 {
                     var child = curAst.Instruction.NewChild(Line, Pos, Type.Instruction);
                     child.subject = trigger.activatorDelimiter;
+                    child.aclass = "operator";
                     clearBuffer();
                 };
 
