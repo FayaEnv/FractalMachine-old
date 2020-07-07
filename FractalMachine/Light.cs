@@ -35,14 +35,7 @@ namespace FractalMachine
             amanuensis.Read(Script);
             AST = amanuensis.GetAST;
 
-            linear = AstToLinear(AST);
-
-        }
-
-        public Linear AstToLinear(AST ast)
-        {
-
-            return null;
+            linear = new Linear(AST);
         }
 
         #endregion
@@ -55,9 +48,29 @@ namespace FractalMachine
             public Dictionary<string, Linear> Blocks = new Dictionary<string, Linear>();
             public List<Instruction> Instructions = new List<Instruction>();
 
+            public Linear() { }
+
+            public Linear(AST OriginAST)
+            {
+                FromAST(OriginAST);
+            }
+
             public struct Instruction
             {
 
+            }
+
+            public void FromAST(AST ast)
+            {
+                if (ast.type != AST.Type.Block)
+                    throw new Exception("Top AST must be of type Block");
+
+                foreach (var child in ast.Children)
+                {
+
+                }
+
+                return lin;
             }
         }
 
@@ -101,7 +114,7 @@ namespace FractalMachine
     {
         private AST parent;
         //private Dictionary<string, List<AST>> subs = new Dictionary<string, List<AST>>();
-        private List<AST> childs = new List<AST>();
+        private List<AST> children = new List<AST>();
 
         // Instruction preview
         internal string subject; // variable name, if,
@@ -135,7 +148,19 @@ namespace FractalMachine
 
         #region Properties
 
-        public AST Instruction
+        public AST[] Children
+        {
+            get
+            {
+                return children.ToArray();
+            }
+        }
+
+        #endregion
+
+        #region InternalProperties
+
+        internal AST Instruction
         {
             get
             {
@@ -150,18 +175,18 @@ namespace FractalMachine
             }
         }
 
-        public AST LastChild
+        internal AST LastChild
         {
             get
             {
-                if (childs.Count == 0)
+                if (children.Count == 0)
                     return null;
 
-                return childs[childs.Count - 1];
+                return children[children.Count - 1];
             }
         }
 
-        public AST GetTopBlock
+        internal AST GetTopBlock
         {
             get
             {
@@ -179,7 +204,7 @@ namespace FractalMachine
         internal AST NewChild(int Line, int Pos, Type type)
         {
             var child = new AST(this, Line, Pos, type);
-            childs.Add(child);
+            children.Add(child);
             return child;
         }
 
