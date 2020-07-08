@@ -83,26 +83,25 @@ namespace FractalMachine
             {
                 var i = new Instruction();
               
-                if(instr.aclass == "operator")
+                if(instr.IsAssign)
                 {
-                    if(instr.subject == "=")
+                    i.Op = "assign";
+
+                    if (instr.Children.Length == 1) // assign end
                     {
-                        i.Op = "assign";
-
-                        if (instr.Children.Length == 1) // assign end
-                        {
-                            // todo
-                        }
-                        else // == 2
-                        {
-                            i.Name = instr.Children[0].subject;
-                            var next = instr.Next;
-
-                            readInstruction(next);
-                        }
+                        readInstruction(instr.Next, from);
+                        i.Attributes.Add("@prev");
+                    }
+                    else // == 2
+                    {
+                        i.Name = instr.Children[0].subject;
+                        var next = instr.Next;
+                        if (!next.IsAssign) throw new Exception("Assign excepted");
+                        var res = readInstruction(next, from);
+                        i.Attributes.AddRange(res.Attributes);
                     }
                 }
-
+                
                 Instructions.Add(i);
 
                 foreach (var child in instr.Children)
@@ -223,6 +222,22 @@ namespace FractalMachine
                     return null;
 
                 return children[children.Count - 1];
+            }
+        }
+
+        public bool IsOperator
+        {
+            get
+            {
+                return aclass == "operator";
+            }
+        }
+
+        public bool IsAssign
+        {
+            get
+            {
+                return IsOperator && subject == "=";
             }
         }
 
