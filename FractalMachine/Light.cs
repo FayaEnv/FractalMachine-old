@@ -53,7 +53,7 @@ namespace FractalMachine
 
             public Linear(AST OriginAST)
             {
-                FromAST(OriginAST);
+                readAst(OriginAST);
             }
 
             public class Instruction
@@ -65,46 +65,32 @@ namespace FractalMachine
 
             #region FromAST
 
-            public void FromAST(AST ast)
+            private void readAst(AST instr, Instruction from = null)
             {
-                if (ast.type != AST.Type.Block)
-                    throw new Exception("Top AST must be of type Block");
-
-                foreach (var child in ast.Children)
+                switch (instr.type)
                 {
-                    if (child.type == AST.Type.Instruction)
-                        readInstruction(child);
-                    else
-                        throw new Exception("Unexcepted " + child.type.ToString());
-                }
+                    case AST.Type.Block:
+                        readAstBlock(instr);
+                        break;
+
+                    case AST.Type.Instruction:
+                        readAstStatement(instr);
+                        break;
+
+                    case AST.Type.Attribute:
+                        readAstAttribute(instr);
+                        break;
+                }                                           
             }
 
-            private Instruction readInstruction(AST instr, Instruction from = null)
+            private void readAstBlock(AST instr)
             {
                 var i = new Instruction();
-              
-                if(instr.IsAssign)
-                {
-                    i.Op = "assign";
+                var Children = instr.Children;
 
-                    if (instr.Children.Length == 1) // assign end
-                    {
-                        readInstruction(instr.Next, from);
-                        i.Attributes.Add("@prev");
-                    }
-                    else // == 2
-                    {
-                        i.Name = instr.Children[0].subject;
-                        var next = instr.Next;
-                        if (!next.IsAssign) throw new Exception("Assign excepted");
-                        var res = readInstruction(next, from);
-                        i.Attributes.AddRange(res.Attributes);
-                    }
-                }
-                
                 Instructions.Add(i);
 
-                foreach (var child in instr.Children)
+                foreach (var child in Children)
                 {
                     switch (child.type)
                     {
@@ -114,7 +100,7 @@ namespace FractalMachine
                             break;
 
                         case AST.Type.Instruction:
-                            readInstruction(child, i);
+                            readAst(child, i);
 
                             break;
 
@@ -123,8 +109,36 @@ namespace FractalMachine
                             break;
                     }
                 }
+            }
 
-                return i;
+            private void readAstStatement(AST instr)
+            {
+                var i = new Instruction();
+                var Children = instr.Children;
+
+                if (instr.IsAssign)
+                {
+                    i.Op = "assign";
+
+                    if (Children.Length == 1) // assign end
+                    {
+                        readAst(instr.Next);
+                        i.Attributes.Add("@prev");
+                    }
+                    else // == 2
+                    {
+                        i.Name = Children[0].subject;
+                        var next = instr.Next;
+                        if (!next.IsAssign) throw new Exception("Assign excepted");
+                        readAst(next);
+                        //i.Attributes.AddRange(res.Attributes);
+                    }
+                }
+            }
+
+            private void readAstAttribute(AST instr)
+            {
+
             }
 
 
