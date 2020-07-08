@@ -87,23 +87,11 @@ namespace FractalMachine
                 {
                     if(instr.subject == "=")
                     {
+                        i.Op = "assign";
+                        i.Name = instr.Children[0].subject;
+                        var next = instr.Next;
 
-                        var assignInstr = instr;
-                        i.Op = "";
-
-                        while (assignInstr != null)
-                        {
-                            //todo: assert children
-                            var subj = assignInstr.Children[0];
-                            var next = assignInstr.Next;
-
-                            if (next == null)
-                                throw new Exception("Uhm...");
-
-                            if (!(next.aclass == "operator" && next.subject == "="))
-                                break;
-                        }
-                        
+                        readInstruction(next);
                     }
                 }
 
