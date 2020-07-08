@@ -88,10 +88,18 @@ namespace FractalMachine
                     if(instr.subject == "=")
                     {
                         i.Op = "assign";
-                        i.Name = instr.Children[0].subject;
-                        var next = instr.Next;
 
-                        readInstruction(next);
+                        if (instr.Children.Length == 1) // assign end
+                        {
+                            // todo
+                        }
+                        else // == 2
+                        {
+                            i.Name = instr.Children[0].subject;
+                            var next = instr.Next;
+
+                            readInstruction(next);
+                        }
                     }
                 }
 
