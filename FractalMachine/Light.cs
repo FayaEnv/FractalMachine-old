@@ -65,6 +65,8 @@ namespace FractalMachine
 
             #region FromAST
 
+            string curName;
+
             private void readAst(AST instr, Instruction from = null)
             {
                 switch (instr.type)
@@ -74,16 +76,25 @@ namespace FractalMachine
                         break;
 
                     case AST.Type.Instruction:
-                        readAstStatement(instr);
+                        readAstInstruction(instr);
                         break;
 
                     case AST.Type.Attribute:
                         readAstAttribute(instr);
                         break;
-                }                                           
+                }
             }
 
             private void readAstBlock(AST instr)
+            {
+                foreach(var child in instr.Children)
+                {
+                    // always excpeted Type.Instruction
+                    readAst(child);
+                }
+            }
+
+            private void readAstInstruction(AST instr)
             {
                 var i = new Instruction();
                 var Children = instr.Children;
@@ -96,44 +107,46 @@ namespace FractalMachine
                     {
                         case AST.Type.Attribute:
                             i.Attributes.Add(child.subject);
-                            i.Name = child.subject;
+                            curName = i.Name = child.subject;
                             break;
 
                         case AST.Type.Instruction:
-                            readAst(child, i);
+
+                            if (child.IsAssign)
+                                readAstAssign(child);
+                            else
+                                readAstInstruction(child);
 
                             break;
 
                         case AST.Type.Block:
-
+                            readAstBlock(child);
                             break;
                     }
                 }
             }
 
-            private void readAstStatement(AST instr)
+            private void readAstAssign(AST instr)
             {
                 var i = new Instruction();
                 var Children = instr.Children;
 
-                if (instr.IsAssign)
-                {
-                    i.Op = "assign";
+                i.Op = "assign";
+                i.Name = curName;
 
-                    if (Children.Length == 1) // assign end
-                    {
-                        readAst(instr.Next);
-                        i.Attributes.Add("@prev");
-                    }
-                    else // == 2
-                    {
-                        i.Name = Children[0].subject;
-                        var next = instr.Next;
-                        if (!next.IsAssign) throw new Exception("Assign excepted");
-                        readAst(next);
-                        //i.Attributes.AddRange(res.Attributes);
-                    }
+                if (Children.Length == 1) // assign end
+                {
+                    readAst(instr.Next);
                 }
+                else // == 2
+                {
+                    i.Name = Children[0].subject;
+                    var next = instr.Next;
+                    if (!next.IsAssign) throw new Exception("Assign excepted");
+                    readAst(next);
+                }
+
+                Instructions.Add(i);
             }
 
             private void readAstAttribute(AST instr)
