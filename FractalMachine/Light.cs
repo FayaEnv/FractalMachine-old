@@ -58,7 +58,9 @@ namespace FractalMachine
 
             public class Instruction
             {
+                public string Op;
                 public string Name;
+                public List<string> Attributes = new List<string>();
             }
 
             #region FromAST
@@ -77,44 +79,61 @@ namespace FractalMachine
                 }
             }
 
-            private void readInstruction(AST instr, Instruction from = null)
+            private Instruction readInstruction(AST instr, Instruction from = null)
             {
-                bool postpones = false;
                 var i = new Instruction();
-                List<string> attrs = new List<string>();
-
-                if (instr.aclass == "operator")
+              
+                if(instr.aclass == "operator")
                 {
                     if(instr.subject == "=")
                     {
-                        postpones = true;
+
+                        var assignInstr = instr;
+                        i.Op = "";
+
+                        while (assignInstr != null)
+                        {
+                            //todo: assert children
+                            var subj = assignInstr.Children[0];
+                            var next = assignInstr.Next;
+
+                            if (next == null)
+                                throw new Exception("Uhm...");
+
+                            if (!(next.aclass == "operator" && next.subject == "="))
+                                break;
+                        }
+                        
                     }
                 }
 
-                if(!postpones) Instructions.Add(i);
+                Instructions.Add(i);
 
                 foreach (var child in instr.Children)
                 {
                     switch (child.type)
                     {
                         case AST.Type.Attribute:
-                            attrs.Add(child.subject);
+                            i.Attributes.Add(child.subject);
                             i.Name = child.subject;
                             break;
 
                         case AST.Type.Instruction:
                             readInstruction(child, i);
+
                             break;
 
                         case AST.Type.Block:
 
                             break;
                     }
-
                 }
 
-                if (postpones) Instructions.Add(i);
+                return i;
             }
+
+
+
             #endregion
         }
 
@@ -197,6 +216,17 @@ namespace FractalMachine
             get
             {
                 return children.ToArray();
+            }
+        }
+
+        public AST Next
+        {
+            get
+            {
+                if (children.Count == 0)
+                    return null;
+
+                return children[children.Count - 1];
             }
         }
 
