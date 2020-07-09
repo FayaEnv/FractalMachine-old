@@ -10,12 +10,31 @@ namespace FractalMachine
 
         public void Execute(Light Script)
         {
-            //CompileAst(Script.AST);
+            ReadAst(Script.AST);
         }
 
-        /*void CompileAst(AST ast)
+        void ReadAst(AST ast)
+        {
+            switch (ast.type)
+            {
+                case AST.Type.Block:
+                    readAstBlock(ast);
+                    break;
+
+                case AST.Type.Instruction:
+                    readAstInstruction(ast);
+                    break;
+            }
+        }
+
+        void readAstBlock(AST ast)
         {
 
-        }*/
+        }
+
+        void readAstInstruction(AST ast)
+        {
+
+        }
     }
 }

@@ -66,9 +66,7 @@ namespace FractalMachine
             #region FromAST
 
             int blockRtrn = 0;
-            Instruction cur;
             
-
             private void readAst(AST instr, Instruction from = null)
             {
                 switch (instr.type)
@@ -104,7 +102,7 @@ namespace FractalMachine
                 }
             }
 
-            private Instruction readAstInstruction(AST instr, Instruction from = null)
+            private void readAstInstruction(AST instr, Instruction from = null)
             {
                 var i = new Instruction();
 
@@ -123,6 +121,7 @@ namespace FractalMachine
                     i.Attributes.Add(from.Attributes.Pop());
                 }
 
+                AST prevAst = null;
                 foreach (var child in instr.children)
                 {
                     switch (child.type)
@@ -138,18 +137,29 @@ namespace FractalMachine
                             break;
 
                         case AST.Type.Block:
-                            readAstBlock(child, i);
+
+                            if (child.subject == "(" && prevAst?.type == AST.Type.Attribute)
+                                readAstFunctionCall(child, i);
+                            else
+                                readAstBlock(child, i);
+
                             break;
                     }
+
+                    prevAst = child;
                 }
 
                 if (instr.IsOperator)
                 {
                     Instructions.Add(i);
                 }
+
+            }
             
-                return i;
-            }         
+            private void readAstFunctionCall(AST instr, Instruction from)
+            {
+                var name = from.Attributes.Pop();
+            }
 
             #endregion
         }
@@ -269,6 +279,21 @@ namespace FractalMachine
                 }
 
                 return numAttr>1;
+            }
+        }
+
+        public AST BeforeMe
+        {
+            get
+            {
+                if (parent == null)
+                    return null;
+                var pos = parent.children.IndexOf(this);
+                
+                if (pos == 0) 
+                    return null;
+
+                return parent.children[pos - 1];
             }
         }
 
