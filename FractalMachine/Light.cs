@@ -60,101 +60,96 @@ namespace FractalMachine
             {
                 public string Op;
                 public string Name;
-                public List<string> Attributes = new List<string>();
+                public ListString Attributes = new ListString();
             }
 
             #region FromAST
 
-            string curName;
+            int blockRtrn = 0;
+            Instruction cur;
+            
 
             private void readAst(AST instr, Instruction from = null)
             {
                 switch (instr.type)
                 {
                     case AST.Type.Block:
-                        readAstBlock(instr);
+                        readAstBlock(instr, from);
                         break;
 
                     case AST.Type.Instruction:
-                        readAstInstruction(instr);
-                        break;
-
-                    case AST.Type.Attribute:
-                        readAstAttribute(instr);
+                        readAstInstruction(instr, from);
                         break;
                 }
             }
 
-            private void readAstBlock(AST instr)
+            private void readAstBlock(AST instr, Instruction from = null)
             {
-                foreach(var child in instr.Children)
+                foreach(var child in instr.children)
                 {
                     // always excpeted Type.Instruction
                     readAst(child);
                 }
+
+                if (from != null)
+                {
+                    if (instr.subject == "(")
+                    {
+                        var ret = "@rtrn" + (blockRtrn++);
+                        var i = new Instruction { Op = "assign" };
+                        i.Attributes.Add(ret);
+                        Instructions.Add(i);
+                        from.Attributes.Add(ret);
+                    }
+                }
             }
 
-            private void readAstInstruction(AST instr)
+            private Instruction readAstInstruction(AST instr, Instruction from = null)
             {
                 var i = new Instruction();
-                var Children = instr.Children;
 
-                Instructions.Add(i);
+                if(instr.IsDeclaration)
+                    Instructions.Add(i);
 
-                foreach (var child in Children)
+                if (instr.IsOperator)
+                {
+                    i.Op = instr.subject;
+
+                    if (instr.IsAssign)
+                    {
+                        i.Op = "assign";
+                    }
+
+                    i.Attributes.Add(from.Attributes.Pop());
+                }
+
+                foreach (var child in instr.children)
                 {
                     switch (child.type)
                     {
                         case AST.Type.Attribute:
                             i.Attributes.Add(child.subject);
-                            curName = i.Name = child.subject;
+                            i.Name = child.subject;
                             break;
 
                         case AST.Type.Instruction:
-
-                            if (child.IsAssign)
-                                readAstAssign(child);
-                            else
-                                readAstInstruction(child);
+                            readAstInstruction(child, i);
 
                             break;
 
                         case AST.Type.Block:
-                            readAstBlock(child);
+                            readAstBlock(child, i);
                             break;
                     }
                 }
-            }
 
-            private void readAstAssign(AST instr)
-            {
-                var i = new Instruction();
-                var Children = instr.Children;
-
-                i.Op = "assign";
-                i.Name = curName;
-
-                if (Children.Length == 1) // assign end
+                if (instr.IsOperator)
                 {
-                    readAst(instr.Next);
+                    Instructions.Add(i);
                 }
-                else // == 2
-                {
-                    i.Name = Children[0].subject;
-                    var next = instr.Next;
-                    if (!next.IsAssign) throw new Exception("Assign excepted");
-                    readAst(next);
-                }
-
-                Instructions.Add(i);
-            }
-
-            private void readAstAttribute(AST instr)
-            {
-
-            }
-
-
+            
+                return i;
+            }         
 
             #endregion
         }
@@ -199,7 +194,7 @@ namespace FractalMachine
     {
         private AST parent;
         //private Dictionary<string, List<AST>> subs = new Dictionary<string, List<AST>>();
-        private List<AST> children = new List<AST>();
+        internal List<AST> children = new List<AST>();
 
         // Instruction preview
         internal string subject, aclass; // variable name, if,
@@ -233,14 +228,6 @@ namespace FractalMachine
 
         #region Properties
 
-        public AST[] Children
-        {
-            get
-            {
-                return children.ToArray();
-            }
-        }
-
         public AST Next
         {
             get
@@ -265,6 +252,23 @@ namespace FractalMachine
             get
             {
                 return IsOperator && subject == "=";
+            }
+        }
+
+        public bool IsDeclaration
+        {
+            get
+            {
+                var numAttr = 0;
+                foreach(var child in children)
+                {
+                    if (child.type == Type.Attribute)
+                        numAttr++;
+                    else
+                        break;
+                }
+
+                return numAttr>1;
             }
         }
 

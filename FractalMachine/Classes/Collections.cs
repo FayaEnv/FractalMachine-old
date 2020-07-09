@@ -19,4 +19,17 @@ namespace FractalMachine.Classes
 
 		public KeyLengthSortedDescDictionary() : base(new StringLengthComparer()) { }
 	}
+
+	public class ListString : List<string>
+    {
+		public string Pop()
+        {
+			if (Count == 0)
+				return null;
+
+			string v = this[Count - 1];
+			RemoveAt(Count - 1);
+			return v;
+        }
+    }
 }
