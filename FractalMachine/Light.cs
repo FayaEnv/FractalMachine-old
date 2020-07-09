@@ -278,9 +278,9 @@ namespace FractalMachine
             {
                 var child = LastChild;
 
-                if(child?.LastChild != null && child.LastChild.type == Type.Instruction)
+                while(child?.LastChild != null && child.LastChild.type == Type.Instruction)
                 {
-                    return child.LastChild;
+                    child = child.LastChild;
                 }
 
                 return child;
@@ -362,7 +362,7 @@ namespace FractalMachine
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%" } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
