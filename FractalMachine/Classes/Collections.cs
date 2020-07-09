@@ -31,5 +31,10 @@ namespace FractalMachine.Classes
 			RemoveAt(Count - 1);
 			return v;
         }
+
+		public void AddToLast(string str)
+        {
+			this[Count - 1] += str;
+		}
     }
 }

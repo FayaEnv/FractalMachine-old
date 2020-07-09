@@ -10,10 +10,10 @@ namespace FractalMachine
 
         public void Execute(Light Script)
         {
-            ReadAst(Script.AST);
+            //ReadAst(Script.AST);
         }
 
-        void ReadAst(AST ast)
+        /*void ReadAst(AST ast)
         {
             switch (ast.type)
             {
@@ -35,6 +35,6 @@ namespace FractalMachine
         void readAstInstruction(AST ast)
         {
 
-        }
+        }*/
     }
 }

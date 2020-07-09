@@ -81,30 +81,36 @@ namespace FractalMachine
                 }
             }
 
+
             private void readAstBlock(AST instr, Instruction from = null)
             {
-                foreach(var child in instr.children)
+                foreach (var child in instr.children)
                 {
                     // always excpeted Type.Instruction
                     readAst(child);
                 }
 
+                if (instr.subject == "(")
+                    readAstParenthesis(instr, from);
+            }
+
+            private void readAstParenthesis(AST instr, Instruction from = null)
+            {
                 if (from != null)
                 {
-                    if (instr.subject == "(")
-                    {
-                        var ret = "@rtrn" + (blockRtrn++);
-                        var i = new Instruction { Op = "assign" };
-                        i.Attributes.Add(ret);
-                        Instructions.Add(i);
-                        from.Attributes.Add(ret);
-                    }
+                    var ret = "@rtrn" + (blockRtrn++);
+                    var i = new Instruction { Op = "assign" };
+                    i.Attributes.Add(ret);
+                    Instructions.Add(i);
+                    from.Attributes.Add(ret);
                 }
             }
 
             private void readAstInstruction(AST instr, Instruction from = null)
             {
                 var i = new Instruction();
+
+                bool accumulator = false;
 
                 if(instr.IsDeclaration)
                     Instructions.Add(i);
@@ -113,13 +119,23 @@ namespace FractalMachine
                 {
                     i.Op = instr.subject;
 
+                    if (instr.subject == ".")
+                    {
+                        accumulator = true;
+                        goto readChildren;
+                    }
+                        
+
                     if (instr.IsAssign)
                     {
                         i.Op = "assign";
                     }
 
                     i.Attributes.Add(from.Attributes.Pop());
+                    
                 }
+
+                readChildren:
 
                 AST prevAst = null;
                 foreach (var child in instr.children)
@@ -127,7 +143,11 @@ namespace FractalMachine
                     switch (child.type)
                     {
                         case AST.Type.Attribute:
-                            i.Attributes.Add(child.subject);
+                            if (!accumulator)
+                                i.Attributes.Add(child.subject);
+                            else
+                                from.Attributes.AddToLast(child.subject);
+
                             i.Name = child.subject;
                             break;
 
@@ -149,7 +169,7 @@ namespace FractalMachine
                     prevAst = child;
                 }
 
-                if (instr.IsOperator)
+                if (instr.IsOperator && instr.subject != ".")
                 {
                     Instructions.Add(i);
                 }
@@ -158,7 +178,11 @@ namespace FractalMachine
             
             private void readAstFunctionCall(AST instr, Instruction from)
             {
-                var name = from.Attributes.Pop();
+                var i = new Instruction();
+                i.Op = "call";
+                i.Name = from.Attributes.Pop();
+
+                Instructions.Add(i);
             }
 
             #endregion
