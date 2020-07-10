@@ -288,6 +288,15 @@ namespace FractalMachine
             }
         }
 
+        public bool IsBlockDeclaration
+        {
+            get
+            {
+                //todo: has up to 2 attributes, 1 block ( and 1 block {
+                return false;
+            }
+        }
+
         public bool IsDeclaration
         {
             get
