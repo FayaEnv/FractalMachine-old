@@ -125,7 +125,6 @@ namespace FractalMachine
                         goto readChildren;
                     }
                         
-
                     if (instr.IsAssign)
                     {
                         i.Op = "assign";
