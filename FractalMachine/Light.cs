@@ -187,7 +187,7 @@ namespace FractalMachine
 
             #endregion
         }
-
+        
         #endregion
     }
 
