@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -329,6 +330,24 @@ namespace FractalMachine
             }
         }
 
+        public string Subject
+        {
+            get
+            {
+                if (subject != null)
+                {
+                    return subject;
+                }
+                else
+                {
+                    if (children.Count > 0 && children[0].type == Type.Attribute)
+                        return children[0].subject;
+                }
+
+                return null;
+            }
+        }
+
         #endregion
 
         #region InternalProperties
@@ -423,7 +442,7 @@ namespace FractalMachine
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*", "&&", "||", "&", "|", "," } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ",", ":" } });
                 var trgFastOperation = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
@@ -444,6 +463,9 @@ namespace FractalMachine
                 /// Comment
                 var statusInComment = statusSwitcher.Define("inComment");
                 var trgExitComment = statusInComment.Add(new Triggers.Trigger { Delimiter = "*/", ActivateStatus = "default" });
+
+                /// Vars
+                var autocloseBlocks = new string[] { "if", "else", "while" };
 
                 ///
                 /// Delegates
@@ -491,8 +513,17 @@ namespace FractalMachine
 
                     closeBlock();
 
-                    bool isFirstLevelBlock = ast.parent.parent.type == Type.Block;
-                    if (trigger.activatorDelimiter == "}" && isFirstLevelBlock)
+                    var del = trigger.activatorDelimiter;
+
+                    bool correct = true;
+                    if (del == "}") correct = ast.subject == "{";
+                    if (del == ")") correct = ast.subject == "(";
+                    if (del == "]") correct = ast.subject == "[";
+
+                    if (!correct)
+                        throw new Exception("Closing " + ast.subject + " block with " + del + " on line " + Line);
+
+                    if (del == "}" && autocloseBlocks.Contains(ast.Subject))
                     {
                         trgNewInstruction.Trig();
                     }

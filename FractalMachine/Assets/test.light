@@ -1,4 +1,6 @@
-﻿test(3*(2+miao), ciao);
+﻿var test = { ciao: "miao", come: "va" };
+
+test(3*(2+miao), ciao);
 
 var test = "ciao \" amici";
 var miao = 2;
