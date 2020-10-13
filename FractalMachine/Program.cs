@@ -9,10 +9,11 @@ namespace FractalMachine
             Console.WriteLine("Hello fractal!");
 
             Machine machine = new Machine();
+
             var assetsDir = Resources.Solve("Assets");
             Light light;
 
-            var test = "test.light";
+            var test = "machine.light";
             switch (test)
             {
                 case "short":
