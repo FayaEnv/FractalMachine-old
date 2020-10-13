@@ -1,5 +1,11 @@
-﻿var test = "ciao \" amici";
+﻿test(3*(2+miao), ciao);
+
+var test = "ciao \" amici";
 var miao = 2;
+
+miao++;
+
+if(test && miao){}
 
 // test
 

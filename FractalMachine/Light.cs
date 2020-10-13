@@ -276,7 +276,7 @@ namespace FractalMachine
         {
             get
             {
-                return aclass == "operator";
+                return aclass == "operator" || aclass == "fastOperator";
             }
         }
 
@@ -423,7 +423,8 @@ namespace FractalMachine
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*" } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*", "&&", "||", "&", "|", "," } });
+                var trgFastOperation = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
@@ -467,6 +468,13 @@ namespace FractalMachine
                     child.subject = trigger.activatorDelimiter;
                     child.aclass = "operator";
                     clearBuffer();
+                };
+
+                trgFastOperation.OnTriggered = delegate (Triggers.Trigger trigger)
+                {
+                    var instr = curAst.Instruction.LastChild.NewInstruction(Line, Pos);
+                    instr.subject = trigger.activatorDelimiter;
+                    instr.aclass = "fastOperator";
                 };
 
                 trgOpenBlock.OnTriggered = delegate(Triggers.Trigger trigger)

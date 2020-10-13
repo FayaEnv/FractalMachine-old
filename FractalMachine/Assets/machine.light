@@ -1,2 +1,6 @@
 ﻿var test = (2+1)/(5*4);
 test.print(test);
+
+function test(){
+	ciao + = 2;
+}
