@@ -136,6 +136,7 @@ namespace FractalMachine
 
         Linear tolin;
         List<string> tolinParams = new List<string>();
+        int lastTempVar = -1;
 
         public Linear ToLinear(OrderedAst oAst=null)
         {
@@ -163,14 +164,14 @@ namespace FractalMachine
             }
 
             /// OrderedAst preparing
-            /*foreach (var s in oAst.attributes)
-                tolinParams.Add(s);*/
+            foreach (var s in oAst.attributes)
+                tolinParams.Add(s);
 
             /// PreCodes
             foreach (var preCc in oAst.preCodes)
             {
                 ToLinear(preCc);
-                oAst.attributes.Add("#" + preCc.tempVar);
+                tolinParams.Add("#" + preCc.tempVar);
             }
 
             /// OrderedAst analyzing
@@ -182,8 +183,8 @@ namespace FractalMachine
                 {
                     var op = new Linear(tolin);
                     op.Op = ast.subject;
-                    op.Attributes = collectAttributes(oAst);
-                    tolinParams.Clear();
+                    op.Attributes.Add(pullTolinParams());
+                    op.Attributes.Add(pullTolinParams());
                     if(oAst.tempVar >= 0) op.Assign = "#"+oAst.tempVar.ToString();
                 }
             }
@@ -199,28 +200,35 @@ namespace FractalMachine
 
             if (enter)
             {
+                if (lastTempVar >= 0)
+                {
+                    var lin = new Linear(tolin);
+                    lin.Op = "=";
+                    lin.Attributes.Add("#" + oAst.tempVar);
+                    lin.Attributes.Add(pullTolinParams());
+                    lastTempVar = -1;
+                }
+
                 tolin = tolin.parent;
             }
+
+            if (oAst.tempVar >= 0)
+                lastTempVar = oAst.tempVar;
 
 
             return tolin;
         }
 
-        string[] collectAttributes(OrderedAst oast, int levels = 2)
+        string pullTolinParams()
         {
-            var coll = new List<string>();
+            var c = tolinParams.Count - 1;
 
-            for(int i=0; i<levels; i++)
-            {
-                foreach (string a in oast.attributes)
-                    coll.Add(a);
+            if (c < 0)
+                return "tolinParams EMPTY";
 
-                oast = oast.parent;
-                if (oast == null)
-                    break;
-            }
-
-            return coll.ToArray();
+            string s = tolinParams[c];
+            tolinParams.RemoveAt(c);
+            return s;
         }
 
         #endregion
@@ -233,7 +241,7 @@ namespace FractalMachine
 
         public string Op;
         public string Name;
-        public string[] Attributes = new string[0];
+        public List<string> Attributes = new List<string>();
         public string Assign;
 
         public Linear() { }
