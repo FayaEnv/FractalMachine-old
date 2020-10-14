@@ -471,7 +471,7 @@ namespace FractalMachine
             void eatBufferAndClear()
             {
                 //todo: check if strBuffer is text
-                if (strBuffer.Length > 0)
+                if (!String.IsNullOrEmpty(strBuffer))
                 {
                     curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
                     clearBuffer();

@@ -66,6 +66,8 @@ namespace FractalMachine
 
         internal int tempVarCount = 0, tempVar = -1;
 
+        internal bool isFunction = false;
+
         public OrderedAst NewChildFromAst(AST ast)
         {
             var cc = newClassCode();
@@ -82,8 +84,8 @@ namespace FractalMachine
             if(ast.IsBlockParenthesis)
             {
                 if (this.ast.IsInstructionFree)
-                    ast.aclass = "function";
-                
+                    isFunction = true;
+
                 preCalc = true;
             }
 
@@ -151,13 +153,12 @@ namespace FractalMachine
             bool enter = false;
             bool isBlockParenthesis = false;
             bool isDeclaration = false;
-            bool isFunction = false;
+            bool isFunction = oAst.isFunction;
 
             if (oAst.ast != null)
             {
                 var ast = oAst.ast;
                 isBlockParenthesis = ast.IsBlockParenthesis;
-                isFunction = ast.aclass == "function";
             }
 
             enter = isBlockParenthesis;
@@ -217,6 +218,8 @@ namespace FractalMachine
                     if(oAst.tempVar >= 0) op.Assign = "#"+oAst.tempVar.ToString();
                 }
             }
+
+            
 
             /// Codes
             foreach (var code in oAst.codes)
