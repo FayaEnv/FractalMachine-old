@@ -77,13 +77,13 @@ namespace FractalMachine
 
             if(ast.type == AST.Type.Instruction)
             {
-                if (ast.aclass == "operator" && ast.subject != ".")
+                if (ast.IsOperator)
                     preCalc = true;
             }
 
             if(ast.IsBlockParenthesis)
             {
-                if (this.ast.IsInstructionFree)
+                if (this.ast.IsInstructionFree || this.ast.subject == ".")
                     isFunction = true;
 
                 preCalc = true;
@@ -136,6 +136,25 @@ namespace FractalMachine
             return cc;
         }
 
+        internal bool IsFunctionParameter
+        {
+            get
+            {
+                if(ast?.subject == ",")
+                {
+                    var a = this;
+                    while(!a.isFunction && a != null)
+                    {
+                        a = a.parent;
+                    }
+
+                    return a != null;
+                }
+
+                return false;
+            }
+        }
+
         #region ToLinear
 
         Linear tolin;
@@ -150,14 +169,15 @@ namespace FractalMachine
                 tolin = new Linear();
             }
 
+            var ast = oAst.ast;
+
             bool enter = false;
             bool isBlockParenthesis = false;
             bool isDeclaration = false;
             bool isFunction = oAst.isFunction;
 
-            if (oAst.ast != null)
+            if (ast != null)
             {
-                var ast = oAst.ast;
                 isBlockParenthesis = ast.IsBlockParenthesis;
             }
 
@@ -195,7 +215,13 @@ namespace FractalMachine
                 foreach (var s in oAst.attributes)
                     tolinParams.Add(s);
             }
-            
+
+            if (ast?.subject == ".")
+            {
+                var s = pullTolinParams();
+                tolinParams.Add(pullTolinParams() + "." + s);
+            }
+
 
             /// PreCodes
             foreach (var preCc in oAst.preCodes)
@@ -207,20 +233,35 @@ namespace FractalMachine
             /// OrderedAst analyzing
             if (oAst.ast != null)
             {
-                var ast = oAst.ast;
-
                 if (ast.IsOperator)
                 {
-                    var op = new Linear(tolin);
-                    op.Op = ast.subject;
-                    op.Attributes.Add(pullTolinParams());
-                    op.Attributes.Add(pullTolinParams());
-                    if(oAst.tempVar >= 0) op.Assign = "#"+oAst.tempVar.ToString();
+                    if (ast.subject != ".")
+                    {
+                        var op = new Linear(tolin);
+                        op.Op = ast.subject;
+                        op.Attributes.Add(pullTolinParams());
+                        op.Attributes.Add(pullTolinParams());
+                        if (oAst.tempVar >= 0) op.Assign = "#" + oAst.tempVar.ToString();
+                    }
                 }
             }
 
-            
+            if (oAst.IsFunctionParameter)
+            {
+                var op = new Linear(tolin);
+                op.Op = "push";
+                op.Attributes.Add(pullTolinParams());
+            }
 
+            if (oAst.isFunction)
+            {
+                var op = new Linear(tolin);
+                op.Op = "call";               
+                op.Attributes.Add(pullTolinParams());
+                op.Name = pullTolinParams();
+            }
+
+            
             /// Codes
             foreach (var code in oAst.codes)
             {
