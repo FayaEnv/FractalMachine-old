@@ -23,7 +23,6 @@ namespace FractalMachine
         #endregion
 
         public AST AST;
-        private Linear linear;
 
         #region Parse
 
@@ -36,8 +35,6 @@ namespace FractalMachine
 
             amanuensis.Read(Script);
             AST = amanuensis.GetAST;
-
-            linear = new Linear(AST);
         }
 
         #endregion

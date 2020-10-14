@@ -27,7 +27,7 @@ namespace FractalMachine
 
                 case "machine.light":
                     light = Light.OpenScript(assetsDir + "/machine.light");
-                    machine.Execute(light);
+                    machine.CreateClassCode(light);
                     break;
             }
 
