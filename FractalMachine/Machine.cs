@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace FractalMachine
@@ -163,6 +165,8 @@ namespace FractalMachine
 
         public Linear ToLinear(OrderedAst oAst=null)
         {
+            string[] DeclarationTypes = new string[] { "var", "function" };
+
             if (oAst == null)
             {
                 oAst = this;
@@ -175,6 +179,7 @@ namespace FractalMachine
             bool isBlockParenthesis = false;
             bool isDeclaration = false;
             bool isFunction = oAst.isFunction;
+            bool isFunctionDeclaration = false;
 
             if (ast != null)
             {
@@ -193,25 +198,44 @@ namespace FractalMachine
 
             /// OrderedAst preparing
             var nAttrs = oAst.attributes.Count;
+            string declType = "";
             if (nAttrs >= 2)
             {
-                if (oAst.attributes[nAttrs - 2] == "var") //todo: ... o un tipo
+                declType = oAst.attributes[nAttrs - 2];
+                if (DeclarationTypes.Contains(declType)) 
                     isDeclaration = true;
             }
 
             if (isDeclaration)
             {
-                if (!isFunction)
+                /* CONTINUARE
+                 * isFunction ma in realtà vale in generale per i blocchi {}
+                 * Il punto ora è elaborare le parentesi in base al tipo di funzione (function, if ...)
+                 */
+                if (isFunction)
+                {
+                    var op = new Linear(tolin);
+                    op.Op = declType;
+                    op.Name = oAst.attributes[nAttrs - 1];
+                    op.Attributes = oAst.attributes;
+                    tolinParams.Add(op.Name);
+                    isFunctionDeclaration = true;
+
+                    tolin = op;
+                    enter = true;
+                }
+                else
                 {
                     var op = new Linear(tolin);
                     op.Op = "declare";
                     op.Name = oAst.attributes[nAttrs - 1];
                     op.Attributes = oAst.attributes;
-                    tolinParams.Add(oAst.attributes[nAttrs - 1]);
+                    tolinParams.Add(op.Name);
                 }
             }
             else
             {
+                // Put attributes in the queue
                 foreach (var s in oAst.attributes)
                     tolinParams.Add(s);
             }
@@ -253,7 +277,7 @@ namespace FractalMachine
                 op.Attributes.Add(pullTolinParams());
             }
 
-            if (oAst.isFunction)
+            if (oAst.isFunction && !isDeclaration)
             {
                 var op = new Linear(tolin);
                 op.Op = "call";               
