@@ -79,10 +79,12 @@ namespace FractalMachine
                     preCalc = true;
             }
 
-            if(ast.type == AST.Type.Block)
+            if(ast.IsBlockParenthesis)
             {
-                if(ast.subject == "(")
-                    preCalc = true;
+                if (this.ast.IsInstructionFree)
+                    ast.aclass = "function";
+                
+                preCalc = true;
             }
 
             if (preCalc)
@@ -148,11 +150,14 @@ namespace FractalMachine
 
             bool enter = false;
             bool isBlockParenthesis = false;
+            bool isDeclaration = false;
+            bool isFunction = false;
 
             if (oAst.ast != null)
             {
                 var ast = oAst.ast;
                 isBlockParenthesis = ast.IsBlockParenthesis;
+                isFunction = ast.aclass == "function";
             }
 
             enter = isBlockParenthesis;
@@ -163,9 +168,33 @@ namespace FractalMachine
                 tolin.Assign = "#" + oAst.tempVar;
             }
 
+            tolin.origin = oAst;
+
             /// OrderedAst preparing
-            foreach (var s in oAst.attributes)
-                tolinParams.Add(s);
+            var nAttrs = oAst.attributes.Count;
+            if (nAttrs >= 2)
+            {
+                if (oAst.attributes[nAttrs - 2] == "var") //todo: ... o un tipo
+                    isDeclaration = true;
+            }
+
+            if (isDeclaration)
+            {
+                if (!isFunction)
+                {
+                    var op = new Linear(tolin);
+                    op.Op = "declare";
+                    op.Name = oAst.attributes[nAttrs - 1];
+                    op.Attributes = oAst.attributes;
+                    tolinParams.Add(oAst.attributes[nAttrs - 1]);
+                }
+            }
+            else
+            {
+                foreach (var s in oAst.attributes)
+                    tolinParams.Add(s);
+            }
+            
 
             /// PreCodes
             foreach (var preCc in oAst.preCodes)
@@ -238,6 +267,7 @@ namespace FractalMachine
     {
         internal Linear parent;
         internal List<Linear> instructions = new List<Linear>();
+        internal OrderedAst origin;
 
         public string Op;
         public string Name;
@@ -251,54 +281,6 @@ namespace FractalMachine
             parent = Parent;
             parent.instructions.Add(this);
         }
-
-        /*
-        public Linear(ClassCode ClassCode)
-        {
-            fromClassCode(ClassCode);
-        }
-
-        void fromClassCode(ClassCode cc)
-        {
-            this.cc = cc;
-
-            if (this.parent == null || cc.ast.type == AST.Type.Block)
-                instrPointer = this;
-            else
-                instrPointer = this.parent.instrPointer;
-
-            if (cc.ast != null)
-            {
-                Op = cc.ast.aclass;
-                Name = cc.ast.subject;
-            }
-
-            Attributes = cc.properties;
-
-            /// Analyze internal codes
-            foreach(var preCc in cc.preCodes)
-            {
-                var instr = newInstruction();
-                instr.fromClassCode(preCc);
-            }
-
-            foreach (var code in cc.codes)
-            {
-                if (code.linkedCC == null)
-                {
-                    var instr = newInstruction();
-                    instr.fromClassCode(code);
-                }
-            }
-        }
-
-        Linear newInstruction()
-        {
-            var lin = new Linear(this);
-            instrPointer.instructions.Insert(0, lin);
-            return lin;
-        }*/
-
 
     }
 }

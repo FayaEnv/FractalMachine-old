@@ -38,154 +38,6 @@ namespace FractalMachine
         }
 
         #endregion
-
-        #region Classes
-
-        // Work in progress
-        public class Linear
-        {
-            public Dictionary<string, Linear> Blocks = new Dictionary<string, Linear>();
-            public List<Instruction> Instructions = new List<Instruction>();
-
-            public Linear() { }
-
-            public Linear(AST OriginAST)
-            {
-                readAst(OriginAST);
-            }
-
-            public class Instruction
-            {
-                public string Op;
-                public string Name;
-                public ListString Attributes = new ListString();
-            }
-
-            #region FromAST
-
-            int blockRtrn = 0;
-            
-            private void readAst(AST instr, Instruction from = null)
-            {
-                switch (instr.type)
-                {
-                    case AST.Type.Block:
-                        readAstBlock(instr, from);
-                        break;
-
-                    case AST.Type.Instruction:
-                        readAstInstruction(instr, from);
-                        break;
-                }
-            }
-
-
-            private void readAstBlock(AST instr, Instruction from = null)
-            {
-                foreach (var child in instr.children)
-                {
-                    // always excpeted Type.Instruction
-                    readAst(child);
-                }
-
-                if (instr.subject == "(")
-                    readAstParenthesis(instr, from);
-            }
-
-            private void readAstParenthesis(AST instr, Instruction from = null)
-            {
-                if (from != null)
-                {
-                    var ret = "@rtrn" + (blockRtrn++);
-                    var i = new Instruction { Op = "assign" };
-                    i.Attributes.Add(ret);
-                    Instructions.Add(i);
-                    from.Attributes.Add(ret);
-                }
-            }
-
-            private void readAstInstruction(AST instr, Instruction from = null)
-            {
-                var i = new Instruction();
-
-                bool accumulator = false;
-
-                if(instr.IsDeclaration)
-                    Instructions.Add(i);
-
-                if (instr.IsOperator)
-                {
-                    i.Op = instr.subject;
-
-                    if (instr.subject == ".")
-                    {
-                        accumulator = true;
-                        goto readChildren;
-                    }
-                        
-                    if (instr.IsAssign)
-                    {
-                        i.Op = "assign";
-                    }
-
-                    i.Attributes.Add(from.Attributes.Pop());
-                    
-                }
-
-                readChildren:
-
-                AST prevAst = null;
-                foreach (var child in instr.children)
-                {
-                    switch (child.type)
-                    {
-                        case AST.Type.Attribute:
-                            if (!accumulator)
-                                i.Attributes.Add(child.subject);
-                            else
-                                from.Attributes.AddToLast(child.subject);
-
-                            i.Name = child.subject;
-                            break;
-
-                        case AST.Type.Instruction:
-                            readAstInstruction(child, i);
-
-                            break;
-
-                        case AST.Type.Block:
-
-                            if (child.subject == "(" && prevAst?.type == AST.Type.Attribute)
-                                readAstFunctionCall(child, i);
-                            else
-                                readAstBlock(child, i);
-
-                            break;
-                    }
-
-                    prevAst = child;
-                }
-
-                if (instr.IsOperator && instr.subject != ".")
-                {
-                    Instructions.Add(i);
-                }
-
-            }
-            
-            private void readAstFunctionCall(AST instr, Instruction from)
-            {
-                var i = new Instruction();
-                i.Op = "call";
-                i.Name = from.Attributes.Pop();
-
-                Instructions.Add(i);
-            }
-
-            #endregion
-        }
-        
-        #endregion
     }
 
 
@@ -275,6 +127,14 @@ namespace FractalMachine
             get
             {
                 return aclass == "operator" || aclass == "fastOperator";
+            }
+        }
+
+        public bool IsInstructionFree
+        {
+            get
+            {
+                return type == Type.Instruction && String.IsNullOrEmpty(aclass);
             }
         }
 
