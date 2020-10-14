@@ -278,6 +278,14 @@ namespace FractalMachine
             }
         }
 
+        public bool IsBlockParenthesis
+        {
+            get
+            {
+                return type == Type.Block && subject == "(";
+            }
+        }
+
         public bool IsAssign
         {
             get

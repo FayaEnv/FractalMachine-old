@@ -10,80 +10,63 @@ namespace FractalMachine
 
         #region ReadClassCode
 
-        internal ClassCode wClassCode;
+        internal OrderedAst orderedAst;
         internal Linear linear;
 
         public void CreateClassCode(Light Script)
         {
-            wClassCode = new ClassCode();
+            orderedAst = new OrderedAst();
 
             ReadAst(Script.AST);
 
-            linear = new Linear(wClassCode);
+            linear = orderedAst.ToLinear();
         }
 
         void ReadAst(AST ast)
         {
             switch (ast.type)
             {
-                case AST.Type.Block:
-                    readAstBlock(ast);
-                    break;
-
-                case AST.Type.Instruction:
-                    readAstInstruction(ast);
-                    break;
-
                 case AST.Type.Attribute:
                     readAstAttribute(ast);
                     break;
+
+                default:
+                    readAstBlockOrInstruction(ast);
+                    break;
             }
         }
 
-        void readAstBlock(AST ast)
+        void readAstBlockOrInstruction(AST ast)
         {
-            wClassCode = wClassCode.NewChildFromAst(ast);
+            orderedAst = orderedAst.NewChildFromAst(ast);
 
             foreach (var child in ast.children)
             {
                 ReadAst(child);
             }
 
-            wClassCode = wClassCode.parent;
-        }
-
-        void readAstInstruction(AST ast)
-        {
-            wClassCode = wClassCode.NewChildFromAst(ast);
-
-            foreach (var child in ast.children)
-            {
-                ReadAst(child);
-            }
-
-            wClassCode = wClassCode.parent;
+            orderedAst = orderedAst.parent;
         }
 
         void readAstAttribute(AST ast)
         {
-            wClassCode.ReadProperty(ast.subject);
+            orderedAst.ReadProperty(ast.subject);
         }
 
         #endregion
     }
 
-    public class ClassCode
+    public class OrderedAst
     {
         internal AST ast;
-        internal ClassCode parent, linkedCC;
-        internal List<ClassCode> preCodes = new List<ClassCode>();
-        internal List<ClassCode> codes = new List<ClassCode>();
-        internal List<string> properties = new List<string>();
+        internal OrderedAst parent, linkedCC;
+        internal List<OrderedAst> preCodes = new List<OrderedAst>();
+        internal List<OrderedAst> codes = new List<OrderedAst>();
+        internal List<string> attributes = new List<string>();
 
-        internal string subject;
         internal int tempVarCount = 0, tempVar = -1;
 
-        public ClassCode NewChildFromAst(AST ast)
+        public OrderedAst NewChildFromAst(AST ast)
         {
             var cc = newClassCode();
             cc.linkAst(ast);
@@ -98,7 +81,8 @@ namespace FractalMachine
 
             if(ast.type == AST.Type.Block)
             {
-                preCalc = true;
+                if(ast.subject == "(")
+                    preCalc = true;
             }
 
             if (preCalc)
@@ -119,7 +103,6 @@ namespace FractalMachine
         void linkAst(AST ast)
         {
             this.ast = ast;
-            subject = ast.subject;
         }
 
         internal int getTempNum()
@@ -139,42 +122,132 @@ namespace FractalMachine
 
         public void ReadProperty(string Property)
         {
-            properties.Add(Property);
+            attributes.Add(Property);
         }
         
-        internal ClassCode newClassCode()
+        internal OrderedAst newClassCode()
         {
-            var cc = new ClassCode();
+            var cc = new OrderedAst();
             cc.parent = this;
             return cc;
         }
 
-        public enum Type
+        #region ToLinear
+
+        Linear tolin;
+        List<string> tolinParams = new List<string>();
+
+        public Linear ToLinear(OrderedAst oAst=null)
         {
-            Instruction,
-            Block
+            if (oAst == null)
+            {
+                oAst = this;
+                tolin = new Linear();
+            }
+
+            bool enter = false;
+            bool isBlockParenthesis = false;
+
+            if (oAst.ast != null)
+            {
+                var ast = oAst.ast;
+                isBlockParenthesis = ast.IsBlockParenthesis;
+            }
+
+            enter = isBlockParenthesis;
+
+            if (enter)
+            {
+                tolin = new Linear(tolin);
+                tolin.Assign = "#" + oAst.tempVar;
+            }
+
+            /// OrderedAst preparing
+            /*foreach (var s in oAst.attributes)
+                tolinParams.Add(s);*/
+
+            /// PreCodes
+            foreach (var preCc in oAst.preCodes)
+            {
+                ToLinear(preCc);
+                oAst.attributes.Add("#" + preCc.tempVar);
+            }
+
+            /// OrderedAst analyzing
+            if (oAst.ast != null)
+            {
+                var ast = oAst.ast;
+
+                if (ast.IsOperator)
+                {
+                    var op = new Linear(tolin);
+                    op.Op = ast.subject;
+                    op.Attributes = collectAttributes(oAst);
+                    tolinParams.Clear();
+                    if(oAst.tempVar >= 0) op.Assign = "#"+oAst.tempVar.ToString();
+                }
+            }
+
+            /// Codes
+            foreach (var code in oAst.codes)
+            {
+                if (code.linkedCC == null)
+                {
+                    ToLinear(code);
+                }
+            }
+
+            if (enter)
+            {
+                tolin = tolin.parent;
+            }
+
+
+            return tolin;
         }
+
+        string[] collectAttributes(OrderedAst oast, int levels = 2)
+        {
+            var coll = new List<string>();
+
+            for(int i=0; i<levels; i++)
+            {
+                foreach (string a in oast.attributes)
+                    coll.Add(a);
+
+                oast = oast.parent;
+                if (oast == null)
+                    break;
+            }
+
+            return coll.ToArray();
+        }
+
+        #endregion
     }
 
     public class Linear
     {
-        internal Linear instrPointer;
         internal Linear parent;
-        internal ClassCode cc;
         internal List<Linear> instructions = new List<Linear>();
 
         public string Op;
         public string Name;
-        public List<string> Attributes = new List<string>();
+        public string[] Attributes = new string[0];
+        public string Assign;
 
-        public Linear(ClassCode ClassCode)
-        {
-            fromClassCode(ClassCode);
-        }
+        public Linear() { }
 
         public Linear(Linear Parent)
         {
             parent = Parent;
+            parent.instructions.Add(this);
+        }
+
+        /*
+        public Linear(ClassCode ClassCode)
+        {
+            fromClassCode(ClassCode);
         }
 
         void fromClassCode(ClassCode cc)
@@ -216,7 +289,7 @@ namespace FractalMachine
             var lin = new Linear(this);
             instrPointer.instructions.Insert(0, lin);
             return lin;
-        }
+        }*/
 
 
     }
