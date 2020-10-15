@@ -146,6 +146,14 @@ namespace FractalMachine
             }
         }
 
+        public bool IsBlockBrackets
+        {
+            get
+            {
+                return type == Type.Block && subject == "{";
+            }
+        }
+
         public bool IsAssign
         {
             get

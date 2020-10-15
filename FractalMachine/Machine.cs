@@ -20,6 +20,7 @@ namespace FractalMachine
             orderedAst = new OrderedAst();
 
             ReadAst(Script.AST);
+            orderedAst.Revision();
 
             linear = orderedAst.ToLinear();
         }
@@ -68,7 +69,14 @@ namespace FractalMachine
 
         internal int tempVarCount = 0, tempVar = -1;
 
+        internal string declarationType = "";
+        internal int nAttrs;
         internal bool isFunction = false;
+
+        internal bool isBlockParenthesis = false;
+        internal bool isDeclaration = false;
+        internal bool isBlockDeclaration = false;
+        internal bool isComma = false;
 
         public OrderedAst NewChildFromAst(AST ast)
         {
@@ -106,6 +114,37 @@ namespace FractalMachine
             return cc;
         }
 
+        public string[] DeclarationTypes = new string[] { "var", "function" };
+
+        public void Revision()
+        {
+            if(ast != null)
+            {
+                isBlockParenthesis = ast.IsBlockParenthesis;
+            }
+
+            // Check attributes
+            nAttrs = attributes.Count;
+            if (nAttrs >= 2)
+            {
+                declarationType = attributes[nAttrs - 2];
+                if (DeclarationTypes.Contains(declarationType))
+                    isDeclaration = true;
+            }
+
+            // Check subcodes
+            var ncodes = codes.Count;
+            if (ncodes >= 1)
+            {
+                var last = codes[ncodes - 1];
+                bool hasLastBlockBrackets = last.ast?.IsBlockBrackets ?? false;
+                isBlockDeclaration = hasLastBlockBrackets && isDeclaration;
+            }
+
+            foreach (var c in codes)
+                c.Ensure.Revision();
+        }
+
         void linkAst(AST ast)
         {
             this.ast = ast;
@@ -138,72 +177,83 @@ namespace FractalMachine
             return cc;
         }
 
-        internal bool IsFunctionParameter
+        internal bool IsInFunctionParenthesis
         {
             get
             {
-                if(ast?.subject == ",")
+                bool parenthesis = true;
+                var a = this;
+                while(a != null && !a.isFunction)
                 {
-                    var a = this;
-                    while(!a.isFunction && a != null)
-                    {
-                        a = a.parent;
-                    }
-
-                    return a != null;
+                    a = a.parent;
+                    parenthesis = a.ast.IsBlockParenthesis || parenthesis;
                 }
 
-                return false;
+                return a != null && a.isFunction && parenthesis;
+            }
+        }
+
+        internal OrderedAst Ensure
+        {
+            get
+            {
+                return linkedCC ?? this;
             }
         }
 
         #region ToLinear
 
-        Linear tolin;
-        List<string> tolinParams = new List<string>();
-        int lastTempVar = -1;
-
-        public Linear ToLinear(OrderedAst oAst=null)
+        public class ToLinearBag
         {
-            string[] DeclarationTypes = new string[] { "var", "function" };
+            public Linear Lin;
+            public List<string> Params = new List<string>();
+            public int lastTempVar = -1;
 
-            if (oAst == null)
+            internal string pullTolinParams()
             {
-                oAst = this;
-                tolin = new Linear();
-            }
+                var c = Params.Count - 1;
 
-            var ast = oAst.ast;
+                if (c < 0)
+                    return "tolinParams EMPTY";
+
+                string s = Params[c];
+                Params.RemoveAt(c);
+                return s;
+            }
+        }
+
+        public Linear ToLinear(ToLinearBag bag = null)
+        {
+
+            if (bag == null)
+            {
+                bag = new ToLinearBag();
+            }
 
             bool enter = false;
-            bool isBlockParenthesis = false;
-            bool isDeclaration = false;
-            bool isFunction = oAst.isFunction;
-            bool isFunctionDeclaration = false;
 
-            if (ast != null)
-            {
-                isBlockParenthesis = ast.IsBlockParenthesis;
-            }
+            enter = isBlockParenthesis && !IsInFunctionParenthesis;
 
-            enter = isBlockParenthesis;
-
+            /// Enter
             if (enter)
             {
-                tolin = new Linear(tolin);
-                tolin.Assign = "#" + oAst.tempVar;
+                bag.Lin = new Linear(bag.Lin);
+
+                if (tempVar >= 0)
+                    bag.Lin.Assign = "#" + tempVar;
             }
 
-            tolin.origin = oAst;
+            bag.Lin.origin = this;
 
+            ///
             /// OrderedAst preparing
-            var nAttrs = oAst.attributes.Count;
-            string declType = "";
-            if (nAttrs >= 2)
+            ///
+
+            if (isBlockParenthesis && IsInFunctionParenthesis)
             {
-                declType = oAst.attributes[nAttrs - 2];
-                if (DeclarationTypes.Contains(declType)) 
-                    isDeclaration = true;
+                var settings = bag.Lin.NewSetting();
+                settings.Op = "parenthesis";
+                bag.Lin = settings;
             }
 
             if (isDeclaration)
@@ -212,120 +262,135 @@ namespace FractalMachine
                  * isFunction ma in realtà vale in generale per i blocchi {}
                  * Il punto ora è elaborare le parentesi in base al tipo di funzione (function, if ...)
                  */
-                if (isFunction)
+                if (isBlockDeclaration)
                 {
-                    var op = new Linear(tolin);
-                    op.Op = declType;
-                    op.Name = oAst.attributes[nAttrs - 1];
-                    op.Attributes = oAst.attributes;
-                    tolinParams.Add(op.Name);
-                    isFunctionDeclaration = true;
+                    var op = new Linear(bag.Lin);
+                    op.Op = declarationType;
+                    op.Name = attributes[nAttrs - 1];
+                    op.Attributes = attributes;
+                    bag.Params.Add(op.Name);
 
-                    tolin = op;
+                    bag.Lin = op;
                     enter = true;
                 }
                 else
                 {
-                    var op = new Linear(tolin);
+                    var op = new Linear(bag.Lin);
                     op.Op = "declare";
-                    op.Name = oAst.attributes[nAttrs - 1];
-                    op.Attributes = oAst.attributes;
-                    tolinParams.Add(op.Name);
+                    op.Name = attributes[nAttrs - 1];
+                    op.Attributes = attributes;
+                    bag.Params.Add(op.Name);
                 }
             }
             else
             {
                 // Put attributes in the queue
-                foreach (var s in oAst.attributes)
-                    tolinParams.Add(s);
+                foreach (var s in attributes)
+                    bag.Params.Add(s);
             }
 
             if (ast?.subject == ".")
             {
-                var s = pullTolinParams();
-                tolinParams.Add(pullTolinParams() + "." + s);
+                var s = bag.pullTolinParams();
+                bag.Params.Add(bag.pullTolinParams() + "." + s);
             }
 
+            ///
+            /// Execution
+            ///
 
             /// PreCodes
-            foreach (var preCc in oAst.preCodes)
+            foreach (var preCc in preCodes)
             {
-                ToLinear(preCc);
-                tolinParams.Add("#" + preCc.tempVar);
+                preCc.ToLinear();
+                bag.Params.Add("#" + preCc.tempVar);
             }
 
             /// OrderedAst analyzing
-            if (oAst.ast != null)
+            if (ast != null)
             {
                 if (ast.IsOperator)
                 {
                     if (ast.subject != ".")
                     {
-                        var op = new Linear(tolin);
+                        var op = new Linear(bag.Lin);
                         op.Op = ast.subject;
-                        op.Attributes.Add(pullTolinParams());
-                        op.Attributes.Add(pullTolinParams());
-                        if (oAst.tempVar >= 0) op.Assign = "#" + oAst.tempVar.ToString();
+                        op.Attributes.Add(bag.pullTolinParams());
+                        op.Attributes.Add(bag.pullTolinParams());
+                        if (tempVar >= 0) op.Assign = "#" + tempVar.ToString();
                     }
                 }
             }
 
-            if (oAst.IsFunctionParameter)
+            if (IsInFunctionParenthesis)
             {
-                var op = new Linear(tolin);
+                var op = new Linear(bag.Lin);
                 op.Op = "push";
-                op.Attributes.Add(pullTolinParams());
+                op.Attributes.Add(bag.pullTolinParams());
             }
 
-            if (oAst.isFunction && !isDeclaration)
+            if (isFunction && !isDeclaration)
             {
-                var op = new Linear(tolin);
+                var op = new Linear(bag.Lin);
                 op.Op = "call";               
-                op.Attributes.Add(pullTolinParams());
-                op.Name = pullTolinParams();
+                op.Attributes.Add(bag.pullTolinParams());
+                op.Name = bag.pullTolinParams();
             }
 
-            
+            /*if (oAst.isBlockDeclaration)
+            {
+                if (isFunction)
+                {
+                    var parenthesis = oAst.codes[ncodes - 2].Ensure;
+                    functionParenthesisToLinear(tolin, parenthesis);
+                }
+
+                var block = oAst.codes[ncodes - 1];
+                bracketsBlockToLinear(tolin, block);
+            }*/
+
+
             /// Codes
-            foreach (var code in oAst.codes)
+            foreach (var code in codes)
             {
                 if (code.linkedCC == null)
                 {
-                    ToLinear(code);
+                    code.ToLinear(bag);
                 }
             }
 
             if (enter)
             {
-                if (lastTempVar >= 0)
+                if (bag.lastTempVar >= 0)
                 {
-                    var lin = new Linear(tolin);
+                    var lin = new Linear(bag.Lin);
                     lin.Op = "=";
-                    lin.Attributes.Add("#" + oAst.tempVar);
-                    lin.Attributes.Add(pullTolinParams());
-                    lastTempVar = -1;
+                    lin.Attributes.Add("#" + tempVar);
+                    lin.Attributes.Add(bag.pullTolinParams());
+                    bag.lastTempVar = -1;
                 }
 
-                tolin = tolin.parent;
+                bag.Lin = bag.Lin.parent;
             }
 
-            if (oAst.tempVar >= 0)
-                lastTempVar = oAst.tempVar;
+            if (tempVar >= 0)
+                bag.lastTempVar = tempVar;
 
 
-            return tolin;
+            return bag.Lin;
         }
 
-        string pullTolinParams()
+        void functionParenthesisToLinear(Linear to, OrderedAst oAst)
         {
-            var c = tolinParams.Count - 1;
+            var settings = to.NewSetting();
+            settings.Op = "parenthesis";
 
-            if (c < 0)
-                return "tolinParams EMPTY";
+            string read = "here";
+        }
 
-            string s = tolinParams[c];
-            tolinParams.RemoveAt(c);
-            return s;
+        void bracketsBlockToLinear(Linear to, OrderedAst oAst)
+        {
+
         }
 
         #endregion
@@ -334,8 +399,10 @@ namespace FractalMachine
     public class Linear
     {
         internal Linear parent;
-        internal List<Linear> instructions = new List<Linear>();
         internal OrderedAst origin;
+
+        internal List<Linear> Instructions = new List<Linear>();
+        internal List<Linear> Settings = new List<Linear>();
 
         public string Op;
         public string Name;
@@ -347,7 +414,15 @@ namespace FractalMachine
         public Linear(Linear Parent)
         {
             parent = Parent;
-            parent.instructions.Add(this);
+            parent.Instructions.Add(this);
+        }
+
+        public Linear NewSetting()
+        {
+            var lin = new Linear();
+            lin.parent = this;
+            Settings.Add(lin);
+            return lin;
         }
 
     }
