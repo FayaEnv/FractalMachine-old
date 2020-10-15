@@ -181,7 +181,7 @@ namespace FractalMachine
         {
             get
             {
-                bool parenthesis = true;
+                bool parenthesis = false;
                 var a = this;
                 while(a != null && !a.isFunction)
                 {                    
@@ -223,7 +223,7 @@ namespace FractalMachine
             public List<string> Params = new List<string>();
             public int lastTempVar = -1;
 
-            internal string pullTolinParams()
+            internal string pullParams()
             {
                 var c = Params.Count - 1;
 
@@ -246,7 +246,7 @@ namespace FractalMachine
 
             bool enter = false;
 
-            enter = isBlockParenthesis && !IsInFunctionParenthesis;
+            enter = isBlockParenthesis && TopFunction == null;
 
             /// Enter
             if (enter)
@@ -268,6 +268,7 @@ namespace FractalMachine
                 var settings = bag.Lin.NewSetting();
                 settings.Op = "parenthesis";
                 bag.Lin = settings;
+                enter = true;
             }
 
             if (isDeclaration)
@@ -305,8 +306,8 @@ namespace FractalMachine
 
             if (ast?.subject == ".")
             {
-                var s = bag.pullTolinParams();
-                bag.Params.Add(bag.pullTolinParams() + "." + s);
+                var s = bag.pullParams();
+                bag.Params.Add(bag.pullParams() + "." + s);
             }
 
             ///
@@ -316,52 +317,56 @@ namespace FractalMachine
             /// PreCodes
             foreach (var preCc in preCodes)
             {
-                preCc.ToLinear();
+                preCc.ToLinear(bag);
                 bag.Params.Add("#" + preCc.tempVar);
             }
 
             /// OrderedAst analyzing
-            if (ast != null)
-            {
-                if (ast.IsOperator)
-                {
-                    if (ast.subject != ".")
-                    {
-                        var op = new Linear(bag.Lin);
-                        op.Op = ast.subject;
-                        op.Attributes.Add(bag.pullTolinParams());
-                        op.Attributes.Add(bag.pullTolinParams());
-                        if (tempVar >= 0) op.Assign = "#" + tempVar.ToString();
-                    }
-                }
-            }
 
             if (IsInFunctionParenthesis)
             {
-                var op = new Linear(bag.Lin);
-                op.Op = "push";
-                op.Attributes.Add(bag.pullTolinParams());
+                if (TopFunction.isDeclaration)
+                {
+                    if (ast.subject == "," || ast.IsInstructionFree)
+                    {
+                        var op = new Linear(bag.Lin);
+                        op.Op = "argument";
+                        op.Attributes.Add(bag.pullParams());
+                    }
+                }
+                else
+                {
+                    var op = new Linear(bag.Lin);
+                    op.Op = "push";
+                    op.Attributes.Add(bag.pullParams());
+                }
+                
+            }
+            else
+            {
+                if (ast != null)
+                {
+                    if (ast.IsOperator)
+                    {
+                        if (ast.subject != ".")
+                        {
+                            var op = new Linear(bag.Lin);
+                            op.Op = ast.subject;
+                            op.Attributes.Add(bag.pullParams());
+                            op.Attributes.Add(bag.pullParams());
+                            if (tempVar >= 0) op.Assign = "#" + tempVar.ToString();
+                        }
+                    }
+                }
             }
 
             if (isFunction && !isDeclaration)
             {
                 var op = new Linear(bag.Lin);
                 op.Op = "call";               
-                op.Attributes.Add(bag.pullTolinParams());
-                op.Name = bag.pullTolinParams();
+                op.Attributes.Add(bag.pullParams());
+                op.Name = bag.pullParams();
             }
-
-            /*if (oAst.isBlockDeclaration)
-            {
-                if (isFunction)
-                {
-                    var parenthesis = oAst.codes[ncodes - 2].Ensure;
-                    functionParenthesisToLinear(tolin, parenthesis);
-                }
-
-                var block = oAst.codes[ncodes - 1];
-                bracketsBlockToLinear(tolin, block);
-            }*/
 
 
             /// Codes
@@ -375,14 +380,14 @@ namespace FractalMachine
 
             if (enter)
             {
-                if (bag.lastTempVar >= 0)
+                /*if (bag.lastTempVar >= 0)
                 {
                     var lin = new Linear(bag.Lin);
                     lin.Op = "=";
                     lin.Attributes.Add("#" + tempVar);
                     lin.Attributes.Add(bag.pullTolinParams());
                     bag.lastTempVar = -1;
-                }
+                }*/
 
                 bag.Lin = bag.Lin.parent;
             }
@@ -392,19 +397,6 @@ namespace FractalMachine
 
 
             return bag.Lin;
-        }
-
-        void functionParenthesisToLinear(Linear to, OrderedAst oAst)
-        {
-            var settings = to.NewSetting();
-            settings.Op = "parenthesis";
-
-            string read = "here";
-        }
-
-        void bracketsBlockToLinear(Linear to, OrderedAst oAst)
-        {
-
         }
 
         #endregion
