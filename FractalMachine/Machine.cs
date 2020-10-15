@@ -184,12 +184,26 @@ namespace FractalMachine
                 bool parenthesis = true;
                 var a = this;
                 while(a != null && !a.isFunction)
-                {
+                {                    
+                    parenthesis = a.ast?.IsBlockParenthesis ?? false || parenthesis;
                     a = a.parent;
-                    parenthesis = a.ast.IsBlockParenthesis || parenthesis;
                 }
 
                 return a != null && a.isFunction && parenthesis;
+            }
+        }
+
+        internal OrderedAst TopFunction
+        {
+            get
+            {
+                var a = this;
+                while (a != null && !a.isFunction)
+                {
+                    a = a.parent;
+                }
+
+                return a;
             }
         }
 
@@ -205,7 +219,7 @@ namespace FractalMachine
 
         public class ToLinearBag
         {
-            public Linear Lin;
+            public Linear Lin = new Linear();
             public List<string> Params = new List<string>();
             public int lastTempVar = -1;
 
