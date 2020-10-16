@@ -18,11 +18,12 @@ namespace FractalMachine.Classes
 
             if (c > 0)
             {
+                int p = Pos;
                 if(Pos < 0)
-                    Pos = c + Pos;
+                    p = c + Pos;
 
-                var s = obj[Pos];
-                obj.RemoveAt(Pos);
+                var s = obj[p];
+                obj.RemoveAt(p);
                 return s;
             }
 

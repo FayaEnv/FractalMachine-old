@@ -97,8 +97,8 @@ namespace FractalMachine
                     if (oAst.isFunction)
                     {
                         // Read parenthesis arguments
-                        var parenthesis = Extensions.Pull(oAst.codes, 2);
-                        var str = "";
+                        var parenthesis = Extensions.Pull(oAst.codes, 0);
+                        injectDeclareFunctionParameters(lin, parenthesis);
                     }
 
                     OutLin = lin;
@@ -229,6 +229,43 @@ namespace FractalMachine
             {
                 OutLin = OutLin.parent;
             }
+        }
+
+        static void injectDeclareFunctionParameters(Linear lin, OrderedAst oAst)
+        {
+            var sett = lin.NewSetting();
+            sett.Op = "parameters";
+
+            Linear l = new Linear(sett);
+            l.List();
+
+            var oa = oAst.codes[0];
+            while(oa != null)
+            {
+                if (oa.Subject == ",")
+                {
+                    l = new Linear(sett);
+                    l.List();
+                }
+
+                switch (oa.Subject)
+                {
+                    case "=":
+                        // todo: create sub setting
+                        l.Attributes = oa.attributes;
+                        break;
+
+                    default:
+                        l.Name = oa.attributes[0];
+                        break;
+                }
+
+                if (oa.codes.Count == 1) 
+                    oa = oa.codes[0];
+                else
+                    oa = null;
+            }
+
         }
 
         static string pullParams()
