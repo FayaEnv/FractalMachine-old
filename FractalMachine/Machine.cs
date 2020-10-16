@@ -75,7 +75,9 @@ namespace FractalMachine
 
             Linear lin = null;
             OnCallback onEnd = null;
+
             bool enter = false;
+            bool recordAttributes = true;
 
             OnAddAttribute onAddAttribute = delegate (string attr)
             {
@@ -125,7 +127,12 @@ namespace FractalMachine
                                 break;
 
                             case ".":
-                                //Params.Add(pullParams()+".")
+                                if (oAst.parent.Subject != ".")
+                                    oAst.attributes[0] = pullParams() + "." + oAst.attributes[0];
+                                else
+                                    oAst.attributes[0] = oAst.parent.attributes[0] + "." + oAst.attributes[0];
+
+                                recordAttributes = false;
 
                                 break;
 
@@ -159,16 +166,23 @@ namespace FractalMachine
                             onAddAttribute(pullParams());
                         };*/
 
-                        // empty for the moment
+                        if (oAst.IsInFunctionParenthesis)
+                        {
+                            onEnd = delegate ()
+                            {
+                                lin = new Linear(OutLin);
+                                lin.Op = "push";
+                                lin.Attributes.Add(pullParams());
+                            };
+                        }
                     }
                 }
 
                 if (oAst.isFunction)
                 {
-                    var op = new Linear(OutLin);
-                    op.Op = "call";
-                    op.Attributes.Add(pullParams());
-                    op.Name = pullParams();
+                    lin = new Linear(OutLin);
+                    lin.Op = "call";
+                    lin.Name = oAst.attributes[0];
                 }
             }
 
@@ -178,9 +192,12 @@ namespace FractalMachine
             }
 
             // Prepare attributes
-            foreach (var s in oAst.attributes)
+            if (recordAttributes)
             {
-                onAddAttribute(s);
+                foreach (var s in oAst.attributes)
+                {
+                    onAddAttribute(s);
+                }
             }
 
             ///
