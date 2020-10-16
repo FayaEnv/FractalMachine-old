@@ -251,7 +251,7 @@ namespace FractalMachine
                 switch (oa.Subject)
                 {
                     case "=":
-                        // todo: create sub setting
+                        // todo: creare settings al posto che attributes (oppure creare dictionary)
                         l.Attributes = oa.attributes;
                         break;
 
