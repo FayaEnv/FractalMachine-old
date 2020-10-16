@@ -21,8 +21,8 @@ namespace FractalMachine
 
             ReadAst(Script.AST);
             orderedAst.Revision();
-
-            linear = orderedAst.ToLinear();
+            OrderedAstToLinear.ToLinear(orderedAst);
+            linear = OrderedAstToLinear.OutLin;
         }
 
         void ReadAst(AST ast)
@@ -57,13 +57,180 @@ namespace FractalMachine
         }
 
         #endregion
+
+    }
+
+    delegate void OnCallback();
+    delegate void OnAddAttribute(string Attribute);
+
+    public static class OrderedAstToLinear
+    {
+        public static Linear OutLin;
+        static List<string> Params = new List<string>();
+
+        public static void ToLinear(OrderedAst oAst)
+        {
+            if (OutLin == null)
+                OutLin = new Linear();
+
+            Linear lin = null;
+            OnCallback onEnd = null;
+            bool enter = false;
+
+            OnAddAttribute onAddAttribute = delegate (string attr)
+            {
+                Params.Add(attr);
+            };
+
+            if (oAst.isDeclaration)
+            {
+                if (oAst.isFunction)
+                {
+                    lin = new Linear(OutLin);
+                    lin.Op = oAst.declarationType;
+                    lin.Name = oAst.attributes[oAst.nAttrs - 1];
+                    lin.Attributes = oAst.attributes;
+
+                    OutLin = lin;
+                    enter = true;
+                }
+                else
+                {
+                    lin = new Linear(OutLin);
+                    lin.List();
+                    lin.Op = "declare";
+                    lin.Name = oAst.attributes[oAst.nAttrs - 1];
+                    lin.Attributes = oAst.attributes;
+                    Params.Add(lin.Name);
+                }
+            }
+            else
+            {
+                if (oAst.ast != null)
+                {
+                    if (oAst.ast.IsOperator)
+                    {
+                        switch (oAst.Subject)
+                        {
+                            case "=":
+                                lin = new Linear(OutLin);
+                                lin.Op = oAst.Subject;
+                                lin.Attributes.Add(pullParams());
+
+                                onEnd = delegate
+                                {
+                                    lin.Attributes.Add(pullParams());
+                                };
+
+                                break;
+
+                            case ".":
+                                //Params.Add(pullParams()+".")
+
+                                break;
+
+                            default:
+                                lin = new Linear(OutLin);
+                                lin.Op = oAst.Subject;
+                                lin.Attributes.Add(pullParams());
+                                lin.Assign = "$" + oAst.getTempVar();
+                                Params.Add("$" + oAst.getTempVar());
+
+                                onEnd = delegate
+                                {
+                                    lin.Attributes.Add(pullParams());
+                                };
+
+                                break;
+                        }
+
+                    }
+
+                    if (oAst.ast.IsBlockParenthesis)
+                    {
+                        /*lin = new Linear(OutLin);
+                        lin.Op = "dummy";
+                        lin.List();
+
+                        onEnd = delegate ()
+                        {
+                            lin.Remove();
+                            lin = null;
+                            onAddAttribute(pullParams());
+                        };*/
+
+                        // empty for the moment
+                    }
+                }
+
+                if (oAst.isFunction)
+                {
+                    var op = new Linear(OutLin);
+                    op.Op = "call";
+                    op.Attributes.Add(pullParams());
+                    op.Name = pullParams();
+                }
+            }
+
+            if (enter)
+            {
+                OutLin = lin;
+            }
+
+            // Prepare attributes
+            foreach (var s in oAst.attributes)
+            {
+                onAddAttribute(s);
+            }
+
+            ///
+            /// Child analyzing
+            ///
+
+            foreach (var code in oAst.codes)
+            {
+                ToLinear(code);
+            }
+
+
+            ///
+            /// Exit
+            ///
+
+            if (onEnd != null)
+                onEnd();
+
+            if (lin != null)
+                lin.List();
+
+            if (enter)
+            {
+                OutLin = OutLin.parent;
+            }
+        }
+
+        static string pullParams()
+        {
+            var c = Params.Count - 1;
+
+            if (c < 0)
+                return "tolinParams EMPTY";
+
+            string s = Params[c];
+            Params.RemoveAt(c);
+            return s;
+        }
+    }
+
+    public static class Properties
+    {
+        public static string[] DeclarationTypes = new string[] { "var", "function" };
     }
 
     public class OrderedAst
     {
         internal AST ast;
-        internal OrderedAst parent, linkedCC;
-        internal List<OrderedAst> preCodes = new List<OrderedAst>();
+        internal OrderedAst parent;
         internal List<OrderedAst> codes = new List<OrderedAst>();
         internal List<string> attributes = new List<string>();
 
@@ -82,39 +249,16 @@ namespace FractalMachine
         {
             var cc = newClassCode();
             cc.linkAst(ast);
-            bool preCalc = false;
-          
+            codes.Add(cc);
 
-            if(ast.type == AST.Type.Instruction)
-            {
-                if (ast.IsOperator)
-                    preCalc = true;
-            }
-
-            if(ast.IsBlockParenthesis)
+            if (ast.IsBlockParenthesis)
             {
                 if (this.ast.IsInstructionFree || this.ast.subject == ".")
                     isFunction = true;
-
-                preCalc = true;
             }
-
-            if (preCalc)
-            {
-                cc.tempVar = getTempNum();
-                preCodes.Add(cc);
-
-                var ccc = newClassCode();
-                ccc.linkedCC = cc;
-                codes.Add(ccc);
-            }
-            else
-                codes.Add(cc);
 
             return cc;
         }
-
-        public string[] DeclarationTypes = new string[] { "var", "function" };
 
         public void Revision()
         {
@@ -128,7 +272,7 @@ namespace FractalMachine
             if (nAttrs >= 2)
             {
                 declarationType = attributes[nAttrs - 2];
-                if (DeclarationTypes.Contains(declarationType))
+                if (Properties.DeclarationTypes.Contains(declarationType))
                     isDeclaration = true;
             }
 
@@ -142,7 +286,7 @@ namespace FractalMachine
             }
 
             foreach (var c in codes)
-                c.Ensure.Revision();
+                c.Revision();
         }
 
         void linkAst(AST ast)
@@ -163,6 +307,13 @@ namespace FractalMachine
 
             tempVarCount++;
             return num;
+        }
+
+        internal int getTempVar()
+        {
+            if(tempVar == -1)
+                tempVar = getTempNum();
+            return tempVar;
         }
 
         public void ReadProperty(string Property)
@@ -193,6 +344,14 @@ namespace FractalMachine
             }
         }
 
+        internal string Subject
+        {
+            get
+            {
+                return ast.subject;
+            }
+        }
+
         internal OrderedAst TopFunction
         {
             get
@@ -206,200 +365,6 @@ namespace FractalMachine
                 return a;
             }
         }
-
-        internal OrderedAst Ensure
-        {
-            get
-            {
-                return linkedCC ?? this;
-            }
-        }
-
-        #region ToLinear
-
-        public class ToLinearBag
-        {
-            public Linear Lin = new Linear();
-            public List<string> Params = new List<string>();
-            public int lastTempVar = -1;
-
-            internal string pullParams()
-            {
-                var c = Params.Count - 1;
-
-                if (c < 0)
-                    return "tolinParams EMPTY";
-
-                string s = Params[c];
-                Params.RemoveAt(c);
-                return s;
-            }
-        }
-
-        public Linear ToLinear(ToLinearBag bag = null)
-        {
-
-            if (bag == null)
-            {
-                bag = new ToLinearBag();
-            }
-
-            bool enter = false;
-
-            enter = isBlockParenthesis && TopFunction == null;
-
-            /// Enter
-            if (enter)
-            {
-                bag.Lin = new Linear(bag.Lin);
-
-                if (tempVar >= 0)
-                    bag.Lin.Assign = "#" + tempVar;
-            }
-
-            bag.Lin.origin = this;
-
-            ///
-            /// OrderedAst preparing
-            ///
-
-            if (isBlockParenthesis && IsInFunctionParenthesis)
-            {
-                var settings = bag.Lin.NewSetting();
-                settings.Op = "parenthesis";
-                bag.Lin = settings;
-                enter = true;
-            }
-
-            if (isDeclaration)
-            {
-                /* CONTINUARE
-                 * isFunction ma in realtà vale in generale per i blocchi {}
-                 * Il punto ora è elaborare le parentesi in base al tipo di funzione (function, if ...)
-                 */
-                if (isBlockDeclaration)
-                {
-                    var op = new Linear(bag.Lin);
-                    op.Op = declarationType;
-                    op.Name = attributes[nAttrs - 1];
-                    op.Attributes = attributes;
-                    bag.Params.Add(op.Name);
-
-                    bag.Lin = op;
-                    enter = true;
-                }
-                else
-                {
-                    var op = new Linear(bag.Lin);
-                    op.Op = "declare";
-                    op.Name = attributes[nAttrs - 1];
-                    op.Attributes = attributes;
-                    bag.Params.Add(op.Name);
-                }
-            }
-            else
-            {
-                // Put attributes in the queue
-                foreach (var s in attributes)
-                    bag.Params.Add(s);
-            }
-
-            if (ast?.subject == ".")
-            {
-                var s = bag.pullParams();
-                bag.Params.Add(bag.pullParams() + "." + s);
-            }
-
-            ///
-            /// Execution
-            ///
-
-            /// PreCodes
-            foreach (var preCc in preCodes)
-            {
-                preCc.ToLinear(bag);
-                bag.Params.Add("#" + preCc.tempVar);
-            }
-
-            /// OrderedAst analyzing
-
-            if (IsInFunctionParenthesis)
-            {
-                if (TopFunction.isDeclaration)
-                {
-                    if (ast.subject == "," || ast.IsInstructionFree)
-                    {
-                        var op = new Linear(bag.Lin);
-                        op.Op = "argument";
-                        op.Attributes.Add(bag.pullParams());
-                    }
-                }
-                else
-                {
-                    var op = new Linear(bag.Lin);
-                    op.Op = "push";
-                    op.Attributes.Add(bag.pullParams());
-                }
-                
-            }
-            else
-            {
-                if (ast != null)
-                {
-                    if (ast.IsOperator)
-                    {
-                        if (ast.subject != ".")
-                        {
-                            var op = new Linear(bag.Lin);
-                            op.Op = ast.subject;
-                            op.Attributes.Add(bag.pullParams());
-                            op.Attributes.Add(bag.pullParams());
-                            if (tempVar >= 0) op.Assign = "#" + tempVar.ToString();
-                        }
-                    }
-                }
-            }
-
-            if (isFunction && !isDeclaration)
-            {
-                var op = new Linear(bag.Lin);
-                op.Op = "call";               
-                op.Attributes.Add(bag.pullParams());
-                op.Name = bag.pullParams();
-            }
-
-
-            /// Codes
-            foreach (var code in codes)
-            {
-                if (code.linkedCC == null)
-                {
-                    code.ToLinear(bag);
-                }
-            }
-
-            if (enter)
-            {
-                /*if (bag.lastTempVar >= 0)
-                {
-                    var lin = new Linear(bag.Lin);
-                    lin.Op = "=";
-                    lin.Attributes.Add("#" + tempVar);
-                    lin.Attributes.Add(bag.pullTolinParams());
-                    bag.lastTempVar = -1;
-                }*/
-
-                bag.Lin = bag.Lin.parent;
-            }
-
-            if (tempVar >= 0)
-                bag.lastTempVar = tempVar;
-
-
-            return bag.Lin;
-        }
-
-        #endregion
     }
 
     public class Linear
@@ -420,7 +385,7 @@ namespace FractalMachine
         public Linear(Linear Parent)
         {
             parent = Parent;
-            parent.Instructions.Add(this);
+            //parent.Instructions.Add(this);
         }
 
         public Linear NewSetting()
@@ -430,6 +395,37 @@ namespace FractalMachine
             Settings.Add(lin);
             return lin;
         }
+
+        bool listed = false;
+        public void List()
+        {
+            if(!listed)
+                parent.Instructions.Add(this);
+            listed = true;
+        }
+
+        public void Remove()
+        {
+            if (listed)
+            {
+                parent.Instructions.Remove(this);
+                listed = false;
+            }
+        }
+
+        #region ConstructionZone
+        /*internal int requestingAttributes = 0;
+
+        internal Linear lastInstruction
+        {
+            get
+            {
+                if (Instructions.Count == 0) return null;
+                return Instructions[Instructions.Count - 1];
+            }
+        }*/
+
+        #endregion
 
     }
 }

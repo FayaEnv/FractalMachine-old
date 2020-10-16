@@ -1,6 +1,7 @@
 ﻿//var test = (2+1+3)/(5*4);
-//console.print(test+"ciao");
+//var test = 2*(1+3);
+test.console.print(test+"ciao");
 
-function ciao(test, ciao){
+/*function ciao(test, ciao){
 	print("ciao");
-}
+}*/
