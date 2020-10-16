@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using FractalMachine.Classes;
 
 namespace FractalMachine
 {
@@ -86,12 +87,19 @@ namespace FractalMachine
 
             if (oAst.isDeclaration)
             {
-                if (oAst.isFunction)
+                if (oAst.isBlockDeclaration)
                 {
                     lin = new Linear(OutLin);
                     lin.Op = oAst.declarationType;
-                    lin.Name = oAst.attributes[oAst.nAttrs - 1];
+                    lin.Name = Extensions.Pull(oAst.attributes);
                     lin.Attributes = oAst.attributes;
+
+                    if (oAst.isFunction)
+                    {
+                        // Read parenthesis arguments
+                        var parenthesis = Extensions.Pull(oAst.codes, 2);
+                        var str = "";
+                    }
 
                     OutLin = lin;
                     enter = true;
@@ -174,21 +182,12 @@ namespace FractalMachine
                     }
                 }
 
+
                 if (oAst.isFunction)
                 {
-                    if (oAst.isDeclaration)
-                    {
-                        lin = new Linear(OutLin);
-                        lin.Op = "function";
-                        lin.Name = oAst.attributes.Pull();
-                        lin.Attributes = oAst.attributes;
-                    }
-                    else
-                    {
-                        lin = new Linear(OutLin);
-                        lin.Op = "call";
-                        lin.Name = oAst.attributes[0];
-                    }
+                    lin = new Linear(OutLin);
+                    lin.Op = "call";
+                    lin.Name = oAst.attributes[0];                    
                 }
             }
 
