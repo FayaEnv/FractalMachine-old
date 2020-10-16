@@ -155,34 +155,40 @@ namespace FractalMachine
 
                     if (oAst.ast.IsBlockParenthesis)
                     {
-                        /*lin = new Linear(OutLin);
-                        lin.Op = "dummy";
-                        lin.List();
-
-                        onEnd = delegate ()
-                        {
-                            lin.Remove();
-                            lin = null;
-                            onAddAttribute(pullParams());
-                        };*/
-
                         if (oAst.IsInFunctionParenthesis)
                         {
-                            onEnd = delegate ()
+                            if (oAst.TopFunction.isDeclaration)
                             {
-                                lin = new Linear(OutLin);
-                                lin.Op = "push";
-                                lin.Attributes.Add(pullParams());
-                            };
+                                // bisognerebbe poter accedere alla lin della funzione...
+                            }
+                            else
+                            {
+                                onEnd = delegate ()
+                                {
+                                    lin = new Linear(OutLin);
+                                    lin.Op = "push";
+                                    lin.Attributes.Add(pullParams());
+                                };
+                            }
                         }
                     }
                 }
 
                 if (oAst.isFunction)
                 {
-                    lin = new Linear(OutLin);
-                    lin.Op = "call";
-                    lin.Name = oAst.attributes[0];
+                    if (oAst.isDeclaration)
+                    {
+                        lin = new Linear(OutLin);
+                        lin.Op = "function";
+                        lin.Name = oAst.attributes.Pull();
+                        lin.Attributes = oAst.attributes;
+                    }
+                    else
+                    {
+                        lin = new Linear(OutLin);
+                        lin.Op = "call";
+                        lin.Name = oAst.attributes[0];
+                    }
                 }
             }
 
@@ -256,6 +262,8 @@ namespace FractalMachine
         internal string declarationType = "";
         internal int nAttrs;
         internal bool isFunction = false;
+
+        internal Linear lin;
 
         internal bool isBlockParenthesis = false;
         internal bool isDeclaration = false;
@@ -429,20 +437,5 @@ namespace FractalMachine
                 listed = false;
             }
         }
-
-        #region ConstructionZone
-        /*internal int requestingAttributes = 0;
-
-        internal Linear lastInstruction
-        {
-            get
-            {
-                if (Instructions.Count == 0) return null;
-                return Instructions[Instructions.Count - 1];
-            }
-        }*/
-
-        #endregion
-
     }
 }
