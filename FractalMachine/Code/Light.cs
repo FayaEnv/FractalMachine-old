@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace FractalMachine
+namespace FractalMachine.Code
 {
     public class Light
     {
