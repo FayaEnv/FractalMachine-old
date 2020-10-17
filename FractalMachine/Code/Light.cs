@@ -573,9 +573,10 @@ namespace FractalMachine.Code
                         else
                             Pos++;
 
+                        // Thanks this part there is no confusion between trigger with same starting chars
                         CharTree ct = statusSwitcher.CurrentStatus.delimetersTree;
                         CharTree val = null;
-
+                       
                         for (int cc = c; cc < str.Length; cc++)
                         {
                             var ch = str[cc];
