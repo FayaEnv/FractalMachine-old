@@ -695,7 +695,6 @@ namespace FractalMachine.Code
                 internal CharTree delimetersTree = new CharTree();
                 List<Trigger> triggers = new List<Trigger>();
 
-                private StringQueue stringQueue = new StringQueue();
 
                 public Triggers(StatusSwitcher Parent)
                 {
@@ -739,33 +738,6 @@ namespace FractalMachine.Code
                     {
                         OnSpecificCycle.Add(Parent.Parent.Cycle + 1, value);
                     }
-                }
-
-                public bool PushChar(char ch)
-                {
-                    stringQueue.Push(ch);
-
-                    // Check for dynamic delimiters
-                    foreach (Trigger t in triggers)
-                    {
-                        bool enabled = t.IsEnabled == null || t.IsEnabled.Invoke();
-
-                        if (enabled)
-                        {
-                            foreach (string del in t.Delimiters)
-                            {
-                                if (stringQueue.Check(del))
-                                {
-                                    // should be putted in new environment
-                                    t.activatorDelimiter = del;
-                                    Parent.Triggered(t);
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-
-                    return false;
                 }
 
                 public class Trigger
