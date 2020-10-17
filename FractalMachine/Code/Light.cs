@@ -180,7 +180,7 @@ namespace FractalMachine.Code
             get
             {
                 var numAttr = 0;
-                foreach(var child in children)
+                foreach (var child in children)
                 {
                     if (child.type == Type.Attribute)
                         numAttr++;
@@ -188,7 +188,7 @@ namespace FractalMachine.Code
                         break;
                 }
 
-                return numAttr>1;
+                return numAttr > 1;
             }
         }
 
@@ -199,8 +199,8 @@ namespace FractalMachine.Code
                 if (parent == null)
                     return null;
                 var pos = parent.children.IndexOf(this);
-                
-                if (pos == 0) 
+
+                if (pos == 0)
                     return null;
 
                 return parent.children[pos - 1];
@@ -235,7 +235,7 @@ namespace FractalMachine.Code
             {
                 var child = LastChild;
 
-                while(child?.LastChild != null && child.LastChild.type == Type.Instruction)
+                while (child?.LastChild != null && child.LastChild.type == Type.Instruction)
                 {
                     child = child.LastChild;
                 }
@@ -288,6 +288,52 @@ namespace FractalMachine.Code
             var child = ast.NewChild(Line, Pos, Type.Attribute);
             child.subject = Content;
         }
+
+        #endregion
+
+        #region ToOrderedAst
+
+        static OrderedAst orderedAst;
+
+        public static OrderedAst ToOrderedAst(Light light)
+        {
+            orderedAst = new OrderedAst(light.AST);
+            readAst(light.AST);
+            orderedAst.Revision();
+            return orderedAst;
+        }
+
+        static void readAst(AST ast)
+        {
+            switch (ast.type)
+            {
+                case AST.Type.Attribute:
+                    readAstAttribute(ast);
+                    break;
+
+                default:
+                    readAstBlockOrInstruction(ast);
+                    break;
+            }
+        }
+
+        static void readAstBlockOrInstruction(AST ast)
+        {
+            orderedAst = orderedAst.NewChildFromAst(ast);
+
+            foreach (var child in ast.children)
+            {
+                readAst(child);
+            }
+
+            orderedAst = orderedAst.parent;
+        }
+
+        static void readAstAttribute(AST ast)
+        {
+            orderedAst.ReadProperty(ast.subject);
+        }
+
 
         #endregion
 
@@ -376,7 +422,7 @@ namespace FractalMachine.Code
                     instr.aclass = "fastOperator";
                 };
 
-                trgOpenBlock.OnTriggered = delegate(Triggers.Trigger trigger)
+                trgOpenBlock.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
                     var child = curAst.Instruction.NewChild(Line, Pos, Type.Block);
                     child.subject = trigger.activatorDelimiter;
@@ -385,7 +431,7 @@ namespace FractalMachine.Code
                 };
 
                 trgCloseBlock.OnTriggered = delegate (Triggers.Trigger trigger)
-                {                    
+                {
                     var ast = curAst;
 
                     closeBlock();
@@ -464,7 +510,7 @@ namespace FractalMachine.Code
                     isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
                 };
 
-                statusDefault.OnTriggered = delegate 
+                statusDefault.OnTriggered = delegate
                 {
                     isSymbol.Toggle();
                 };
@@ -508,11 +554,11 @@ namespace FractalMachine.Code
                 {
                     return mainAst;
                 }
-            }    
+            }
 
             public void Read(string str)
             {
-                for(int c=0; c<str.Length; c++)
+                for (int c = 0; c < str.Length; c++)
                 {
                     var Char = str[c];
 
@@ -543,7 +589,7 @@ namespace FractalMachine.Code
                                 // check first if enabled
                                 var t = (Triggers.Trigger)ct.value;
 
-                                if(t.IsEnabled == null || t.IsEnabled.Invoke())
+                                if (t.IsEnabled == null || t.IsEnabled.Invoke())
                                     val = ct;
                             }
                         }
@@ -559,7 +605,7 @@ namespace FractalMachine.Code
                             Pos += add;
                         }
                         else
-                        { 
+                        {
                             statusSwitcher.Cycle(Char);
                             strBuffer += Char;
                         }
@@ -726,7 +772,7 @@ namespace FractalMachine.Code
                     //public delegate void OnTriggeredDelegate();
                     public delegate bool IsEnabledDelegate();
 
-                    public Triggers Parent;                  
+                    public Triggers Parent;
                     public StatusSwitcher.OnTriggeredDelegate OnTriggered;
                     public IsEnabledDelegate IsEnabled;
                     public string Delimiter;
@@ -734,7 +780,7 @@ namespace FractalMachine.Code
                     public string ActivateStatus;
 
                     public string activatorDelimiter;
-                 
+
                     public void Trig()
                     {
                         OnTriggered?.Invoke(this);

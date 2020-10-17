@@ -7,6 +7,5 @@
 
   <ItemGroup>
     <Folder Include="Code\" />
-    <Folder Include="Code\Conversion\" />
   </ItemGroup>
 </Project>
