@@ -20,42 +20,12 @@ namespace FractalMachine.Code
         {
             orderedAst = new OrderedAst();
 
-            ReadAst(Script.AST);
-            orderedAst.Revision();
-            OrderedAstToLinear.ToLinear(orderedAst);
-            linear = OrderedAstToLinear.OutLin;
+            orderedAst = AstToOrderedAst.ToOrderedAst(Script);           
+            linear = OrderedAstToLinear.ToLinear(orderedAst);
+
         }
 
-        void ReadAst(AST ast)
-        {
-            switch (ast.type)
-            {
-                case AST.Type.Attribute:
-                    readAstAttribute(ast);
-                    break;
-
-                default:
-                    readAstBlockOrInstruction(ast);
-                    break;
-            }
-        }
-
-        void readAstBlockOrInstruction(AST ast)
-        {
-            orderedAst = orderedAst.NewChildFromAst(ast);
-
-            foreach (var child in ast.children)
-            {
-                ReadAst(child);
-            }
-
-            orderedAst = orderedAst.parent;
-        }
-
-        void readAstAttribute(AST ast)
-        {
-            orderedAst.ReadProperty(ast.subject);
-        }
+        
 
         #endregion
 
