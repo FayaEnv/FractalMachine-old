@@ -26,6 +26,10 @@ namespace FractalMachine.Code
 
     }
 
+    /// <summary>
+    /// An OrderedAst is an AST ready to a direct analysis and conversion to Linear.
+    /// OrderedAst is used for extending AST without overload code and members in a unique class.
+    /// </summary>
     public class OrderedAst
     {
         internal AST ast;

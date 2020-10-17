@@ -1,4 +1,7 @@
 ﻿17/10/20
 - Lo sviluppo del parser sta andando bene. Ora devo raccogliere le idee sul come continuare.
 - OrderedAst o non OrderedAst? Fare tutto in Ast avvantaggia sul peso e la concentrazione del codice, ma con OrderedAst
-è tutto più distribuito. Uffa, non so decidere, ma la pigrizia la darà vinta ad OrderedAst. 
+è tutto più distribuito. Uffa, non so decidere, ma la pigrizia la darà vinta ad OrderedAst. Penso che, comunque,
+quest'ultima sia la scelta migliore perchè permette di estendere AST usando variabili che comunque andrebbero ad aggiungersi
+senza appesantire troppo di più il codice. Certo, fra creazione e Revision() c'è un passaggio in più evitabile con un diretto
+utilizzo con AST, ma a lungo termine il gioco potrebbe non valerne la candela, portando ad un'eccessiva complicazione del tutto. 
