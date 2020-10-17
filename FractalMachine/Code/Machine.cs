@@ -22,10 +22,7 @@ namespace FractalMachine.Code
 
             orderedAst = AstConversion.ToOrderedAst(Script);           
             linear = OrderedAstConversion.ToLinear(orderedAst);
-
         }
-
-        
 
         #endregion
 

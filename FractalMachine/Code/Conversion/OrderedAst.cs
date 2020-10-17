@@ -21,7 +21,7 @@ namespace FractalMachine.Code.Conversion
         static void orderedAstToLinear(OrderedAst oAst)
         {
             if (outLin == null)
-                outLin = new Linear();
+                outLin = new Linear(oAst);
 
             Linear lin = null;
             OnCallback onEnd = null;
@@ -38,7 +38,7 @@ namespace FractalMachine.Code.Conversion
             {
                 if (oAst.isBlockDeclaration)
                 {
-                    lin = new Linear(outLin);
+                    lin = new Linear(outLin, oAst);
                     lin.Op = oAst.declarationType;
                     lin.Name = Extensions.Pull(oAst.attributes);
                     lin.Attributes = oAst.attributes;
@@ -55,7 +55,7 @@ namespace FractalMachine.Code.Conversion
                 }
                 else
                 {
-                    lin = new Linear(outLin);
+                    lin = new Linear(outLin, oAst);
                     lin.List();
                     lin.Op = "declare";
                     lin.Name = oAst.attributes[oAst.nAttrs - 1];
@@ -72,7 +72,7 @@ namespace FractalMachine.Code.Conversion
                         switch (oAst.Subject)
                         {
                             case "=":
-                                lin = new Linear(outLin);
+                                lin = new Linear(outLin, oAst);
                                 lin.Op = oAst.Subject;
                                 lin.Attributes.Add(pullParams());
 
@@ -94,7 +94,7 @@ namespace FractalMachine.Code.Conversion
                                 break;
 
                             default:
-                                lin = new Linear(outLin);
+                                lin = new Linear(outLin, oAst);
                                 lin.Op = oAst.Subject;
                                 lin.Attributes.Add(pullParams());
                                 lin.Assign = "$" + oAst.getTempVar();
@@ -122,7 +122,7 @@ namespace FractalMachine.Code.Conversion
                             {
                                 onEnd = delegate ()
                                 {
-                                    lin = new Linear(outLin);
+                                    lin = new Linear(outLin, oAst);
                                     lin.Op = "push";
                                     lin.Attributes.Add(pullParams());
                                 };
@@ -134,7 +134,7 @@ namespace FractalMachine.Code.Conversion
 
                 if (oAst.isFunction)
                 {
-                    lin = new Linear(outLin);
+                    lin = new Linear(outLin, oAst);
                     lin.Op = "call";
                     lin.Name = oAst.attributes[0];
                 }
@@ -182,18 +182,18 @@ namespace FractalMachine.Code.Conversion
 
         static void injectDeclareFunctionParameters(Linear lin, OrderedAst oAst)
         {
-            var sett = lin.NewSetting();
+            var sett = lin.NewSetting(oAst);
             sett.Op = "parameters";
 
-            Linear l = new Linear(sett);
-            l.List();
-
             var oa = oAst.codes[0];
+            Linear l = new Linear(sett, oa);
+            l.List();
+            
             while (oa != null)
             {
                 if (oa.Subject == ",")
                 {
-                    l = new Linear(sett);
+                    l = new Linear(sett, oa);
                     l.List();
                 }
 

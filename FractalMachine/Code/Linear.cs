@@ -16,17 +16,20 @@ namespace FractalMachine.Code
         public List<string> Attributes = new List<string>();
         public string Assign;
 
-        public Linear() { }
+        public Linear(OrderedAst orderedAst)
+        {
+            origin = orderedAst;
+        }
 
-        public Linear(Linear Parent)
+        public Linear(Linear Parent, OrderedAst orderedAst) : this(orderedAst)
         {
             parent = Parent;
             //parent.Instructions.Add(this);
         }
 
-        public Linear NewSetting()
+        public Linear NewSetting(OrderedAst orderedAst)
         {
-            var lin = new Linear();
+            var lin = new Linear(orderedAst);
             lin.parent = this;
             Settings.Add(lin);
             return lin;
