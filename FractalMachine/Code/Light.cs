@@ -203,7 +203,7 @@ namespace FractalMachine.Code
             }
         }
 
-        public string Subject
+        public string MainSubject
         {
             get
             {
@@ -396,7 +396,7 @@ namespace FractalMachine.Code
                     if (!correct)
                         throw new Exception("Closing " + ast.subject + " block with " + del + " on line " + Line);
 
-                    if (del == "}" && autocloseBlocks.Contains(ast.Subject))
+                    if (del == "}" && autocloseBlocks.Contains(ast.MainSubject))
                     {
                         trgNewInstruction.Trig();
                     }
