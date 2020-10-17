@@ -1,7 +1,7 @@
 ﻿using System;
 namespace FractalMachine.Code.Conversion
 {
-    public static class AstToOrderedAst
+    public static class AstConversion
     {
         static OrderedAst orderedAst;
 

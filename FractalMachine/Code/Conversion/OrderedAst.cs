@@ -4,7 +4,7 @@ using FractalMachine.Classes;
 
 namespace FractalMachine.Code.Conversion
 {
-    public static class OrderedAstToLinear
+    public static class OrderedAstConversion
     {
         delegate void OnCallback();
         delegate void OnAddAttribute(string Attribute);
