@@ -1,0 +1,2 @@
+﻿17/10/20
+- Lo sviluppo del parser sta andando bene. Ora devo raccogliere le idee sul come continuare.
