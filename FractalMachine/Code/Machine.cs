@@ -20,8 +20,8 @@ namespace FractalMachine.Code
         {
             orderedAst = new OrderedAst();
 
-            orderedAst = AstToOrderedAst.ToOrderedAst(Script);           
-            linear = OrderedAstToLinear.ToLinear(orderedAst);
+            orderedAst = AstConversion.ToOrderedAst(Script);           
+            linear = OrderedAstConversion.ToLinear(orderedAst);
 
         }
 
