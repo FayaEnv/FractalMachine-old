@@ -7,7 +7,7 @@ namespace FractalMachine.Code.Conversion
 
         public static OrderedAst ToOrderedAst(Light light)
         {
-            orderedAst = new OrderedAst();
+            orderedAst = new OrderedAst(light.AST);
             readAst(light.AST);
             orderedAst.Revision();
             return orderedAst;

@@ -107,6 +107,10 @@ namespace FractalMachine.Code
                 NewChild(Line, Pos, Type.Instruction);
         }
 
+        public AST()
+        {
+        }
+
         #endregion
 
         #region Properties

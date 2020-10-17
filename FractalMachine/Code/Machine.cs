@@ -18,8 +18,6 @@ namespace FractalMachine.Code
 
         public void CreateClassCode(Light Script)
         {
-            orderedAst = new OrderedAst();
-
             orderedAst = AstConversion.ToOrderedAst(Script);           
             linear = OrderedAstConversion.ToLinear(orderedAst);
         }
@@ -48,10 +46,14 @@ namespace FractalMachine.Code
         internal bool isBlockDeclaration = false;
         internal bool isComma = false;
 
+        public OrderedAst(AST ast)
+        {
+            linkAst(ast);
+        }
+
         public OrderedAst NewChildFromAst(AST ast)
         {
-            var cc = newClassCode();
-            cc.linkAst(ast);
+            var cc = newClassCode(ast);
             codes.Add(cc);
 
             if (ast.IsBlockParenthesis)
@@ -124,9 +126,9 @@ namespace FractalMachine.Code
             attributes.Add(Property);
         }
         
-        internal OrderedAst newClassCode()
+        internal OrderedAst newClassCode(AST ast)
         {
-            var cc = new OrderedAst();
+            var cc = new OrderedAst(ast);
             cc.parent = this;
             return cc;
         }

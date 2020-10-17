@@ -1,2 +1,4 @@
 ﻿17/10/20
 - Lo sviluppo del parser sta andando bene. Ora devo raccogliere le idee sul come continuare.
+- OrderedAst o non OrderedAst? Fare tutto in Ast avvantaggia sul peso e la concentrazione del codice, ma con OrderedAst
+è tutto più distribuito. Uffa, non so decidere, ma la pigrizia la darà vinta ad OrderedAst. 

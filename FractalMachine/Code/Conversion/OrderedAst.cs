@@ -65,72 +65,68 @@ namespace FractalMachine.Code.Conversion
             }
             else
             {
-                if (oAst.ast != null)
+                if (oAst.ast.IsOperator)
                 {
-                    if (oAst.ast.IsOperator)
+                    switch (oAst.Subject)
                     {
-                        switch (oAst.Subject)
-                        {
-                            case "=":
-                                lin = new Linear(outLin, oAst);
-                                lin.Op = oAst.Subject;
+                        case "=":
+                            lin = new Linear(outLin, oAst);
+                            lin.Op = oAst.Subject;
+                            lin.Attributes.Add(pullParams());
+
+                            onEnd = delegate
+                            {
                                 lin.Attributes.Add(pullParams());
+                            };
 
-                                onEnd = delegate
-                                {
-                                    lin.Attributes.Add(pullParams());
-                                };
+                            break;
 
-                                break;
+                        case ".":
+                            if (oAst.parent.Subject != ".")
+                                oAst.attributes[0] = pullParams() + "." + oAst.attributes[0];
+                            else
+                                oAst.attributes[0] = oAst.parent.attributes[0] + "." + oAst.attributes[0];
 
-                            case ".":
-                                if (oAst.parent.Subject != ".")
-                                    oAst.attributes[0] = pullParams() + "." + oAst.attributes[0];
-                                else
-                                    oAst.attributes[0] = oAst.parent.attributes[0] + "." + oAst.attributes[0];
+                            recordAttributes = false;
 
-                                recordAttributes = false;
+                            break;
 
-                                break;
+                        default:
+                            lin = new Linear(outLin, oAst);
+                            lin.Op = oAst.Subject;
+                            lin.Attributes.Add(pullParams());
+                            lin.Assign = "$" + oAst.getTempVar();
+                            Params.Add("$" + oAst.getTempVar());
 
-                            default:
-                                lin = new Linear(outLin, oAst);
-                                lin.Op = oAst.Subject;
+                            onEnd = delegate
+                            {
                                 lin.Attributes.Add(pullParams());
-                                lin.Assign = "$" + oAst.getTempVar();
-                                Params.Add("$" + oAst.getTempVar());
+                            };
 
-                                onEnd = delegate
-                                {
-                                    lin.Attributes.Add(pullParams());
-                                };
-
-                                break;
-                        }
-
+                            break;
                     }
 
-                    if (oAst.ast.IsBlockParenthesis)
+                }
+
+                if (oAst.ast.IsBlockParenthesis)
+                {
+                    if (oAst.IsInFunctionParenthesis)
                     {
-                        if (oAst.IsInFunctionParenthesis)
+                        if (oAst.TopFunction.isDeclaration)
                         {
-                            if (oAst.TopFunction.isDeclaration)
+                            // bisognerebbe poter accedere alla lin della funzione...
+                        }
+                        else
+                        {
+                            onEnd = delegate ()
                             {
-                                // bisognerebbe poter accedere alla lin della funzione...
-                            }
-                            else
-                            {
-                                onEnd = delegate ()
-                                {
-                                    lin = new Linear(outLin, oAst);
-                                    lin.Op = "push";
-                                    lin.Attributes.Add(pullParams());
-                                };
-                            }
+                                lin = new Linear(outLin, oAst);
+                                lin.Op = "push";
+                                lin.Attributes.Add(pullParams());
+                            };
                         }
                     }
                 }
-
 
                 if (oAst.isFunction)
                 {
