@@ -65,8 +65,6 @@ namespace FractalMachine.Code.Langs
 
             private Switch isSymbol = new Switch();
 
-            internal int Cycle = 0;
-
             int Line = 0, Pos = 0;
 
             public Amanuensis()
@@ -350,8 +348,6 @@ namespace FractalMachine.Code.Langs
             internal string declarationType = "";
             internal int nAttrs;
             internal bool isFunction = false;
-
-            internal Linear lin;
 
             internal bool isBlockParenthesis = false;
             internal bool isDeclaration = false;
