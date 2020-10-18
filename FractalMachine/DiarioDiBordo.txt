@@ -1,4 +1,7 @@
-﻿17/10/20
+﻿18/10/20
+- Siamo arrivato alla seconda fase, quella in cui del codice deve essere scritto in C++ e compilato. Auguratemi buona fortuna
+
+17/10/20
 - Lo sviluppo del parser sta andando bene. Ora devo raccogliere le idee sul come continuare.
 - OrderedAst o non OrderedAst? Fare tutto in Ast avvantaggia sul peso e la concentrazione del codice, ma con OrderedAst
 è tutto più distribuito. Uffa, non so decidere, ma la pigrizia la darà vinta ad OrderedAst. Penso che, comunque,

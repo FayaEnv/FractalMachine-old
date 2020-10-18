@@ -50,7 +50,7 @@ namespace FractalMachine.Code.Langs
 
         public override Linear GetLinear()
         {
-            return OrderedAst.ToLinear((OrderedAst)GetOrderedAst());
+            return Linear = OrderedAst.ToLinear((OrderedAst)GetOrderedAst());
         }
 
         #endregion
@@ -604,9 +604,20 @@ namespace FractalMachine.Code.Langs
 
                             case ".":
                                 if (oAst.parent.Subject != ".")
+                                {
                                     oAst.attributes[0] = pullParams() + "." + oAst.attributes[0];
+                                }
                                 else
+                                {
                                     oAst.attributes[0] = oAst.parent.attributes[0] + "." + oAst.attributes[0];
+                                    oAst.parent.attributes[0] = "";
+                                }
+
+                                onEnd = delegate
+                                {
+                                    if (!String.IsNullOrEmpty(oAst.attributes[0]))
+                                        onAddAttribute(oAst.attributes[0]);
+                                };
 
                                 recordAttributes = false;
 
@@ -628,8 +639,7 @@ namespace FractalMachine.Code.Langs
                         }
 
                     }
-
-                    if (oAst.ast.IsBlockParenthesis)
+                    else if (oAst.ast.IsBlockParenthesis)
                     {
                         if (oAst.IsInFunctionParenthesis)
                         {
@@ -648,13 +658,30 @@ namespace FractalMachine.Code.Langs
                             }
                         }
                     }
-
-                    if (oAst.isFunction)
+                    else if (oAst.isFunction)
                     {
                         lin = new Linear(outLin, oAst);
                         lin.Op = "call";
                         lin.Name = oAst.attributes[0];
                     }
+                    else
+                    {
+                        var first = Extensions.Pull(oAst.attributes, 0);
+
+                        switch (first)
+                        {
+                            case "import":
+                                lin = new Linear(outLin, oAst);
+                                lin.Op = "import";
+
+                                onEnd = delegate
+                                {
+                                    lin.Attributes.Add(pullParams());
+                                };
+                                break;
+                        }
+                    }
+
                 }
 
                 if (enter)
@@ -722,7 +749,9 @@ namespace FractalMachine.Code.Langs
                             break;
 
                         default:
-                            l.Name = oa.attributes[0];
+                            // check for better modes
+                            if(oa.attributes.Count > 0)
+                                l.Name = oa.attributes[0];
                             break;
                     }
 

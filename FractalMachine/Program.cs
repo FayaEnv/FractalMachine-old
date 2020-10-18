@@ -13,7 +13,7 @@ namespace FractalMachine
             Machine machine = new Machine();
 
             var assetsDir = Resources.Solve("Assets");
-            Light light;
+            Light light = null;
 
             var test = "machine.light";
             switch (test)
@@ -24,14 +24,15 @@ namespace FractalMachine
                     break;
 
                 case "test.light":               
-                    light = Light.OpenScript(assetsDir + "/test.light");
+                    machine.EntryPoint = assetsDir + "/test.light";
                     break;
 
                 case "machine.light":
-                    light = Light.OpenScript(assetsDir + "/machine.light");
-                    
+                    machine.EntryPoint = assetsDir + "/machine.light";
                     break;
             }
+
+            machine.Compile();
 
             Debug.Print("leggi qui");
         }

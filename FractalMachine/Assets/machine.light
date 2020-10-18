@@ -1,9 +1,10 @@
 ﻿//var test = (2+1+3)/(5*4);
 //var test = 2*(1+3);
 //test.console.print(test+"ciao");
+//ciao++;
 
-ciao++;
+import System.IO;
 
-/*function ciao(test, ciao=2){
-	print("ciao");
-}*/
+function main(){
+	Print("ciao");
+}
