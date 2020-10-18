@@ -16,7 +16,17 @@ namespace FractalMachine.Code
 
         public void ReadLinear(Linear lin)
         {
+            foreach(var instr in lin.Instructions)
+            {
+                switch (instr.Op)
+                {
+                    case "import":
+                        machine.Import(instr.Attributes[0]);
+                        break;
+                }
 
+            }
+           
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Code;
+using System;
 using System.Collections.Generic;
 
 namespace FractalMachine.Classes
@@ -30,5 +31,26 @@ namespace FractalMachine.Classes
             return default(T);
         }
 
+        #region Marks
+
+        public static bool HasStringMark(this string obj)
+        {
+            return obj.StartsWith(Properties.StringMark);
+        }
+
+        public static bool HasAngularBracketMark(this string obj)
+        {
+            return obj.StartsWith(Properties.AngularBracketsMark);
+        }
+
+        public static string NoMark(this string obj)
+        {
+            if (obj.Length >= Properties.StringMark.Length && obj.Substring(2, Properties.Mark.Length) == Properties.Mark)
+                return obj.Substring(Properties.StringMark.Length);
+            else
+                return obj;
+        }
+
+        #endregion
     }
 }

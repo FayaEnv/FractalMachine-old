@@ -250,11 +250,12 @@ namespace FractalMachine.Code
             return NewChild(Line, Pos, Type.Instruction);
         }
 
-        internal void InsertAttribute(int Line, int Pos, string Content)
+        internal AST InsertAttribute(int Line, int Pos, string Content)
         {
             var ast = Instruction;
             var child = ast.NewChild(Line, Pos, Type.Attribute);
             child.subject = Content;
+            return child;
         }
 
         #endregion

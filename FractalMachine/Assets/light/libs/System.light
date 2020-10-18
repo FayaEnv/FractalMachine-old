@@ -1,7 +1,0 @@
-﻿import <cpp/iostream.h>
-
-namespace IO {
-	function Print(content){
-		iostream.Print(content);
-	}
-}

@@ -11,6 +11,7 @@ namespace FractalMachine.Code
 
         internal List<Linear> Instructions = new List<Linear>();
         internal List<Linear> Settings = new List<Linear>();
+        internal Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
         public string Op;
         public string Name;

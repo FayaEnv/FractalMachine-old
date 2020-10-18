@@ -215,7 +215,8 @@ namespace FractalMachine.Code.Langs
 
                 trgExitString.OnTriggered = delegate
                 {
-                    eatBufferAndClear();
+                    var ret = eatBufferAndClear();
+                    if(ret != null) ret.aclass = "string";
                 };
 
                 ///
@@ -244,14 +245,17 @@ namespace FractalMachine.Code.Langs
 
             #region BufferAndAst
 
-            void eatBufferAndClear()
+            AST eatBufferAndClear()
             {
                 //todo: check if strBuffer is text
                 if (!String.IsNullOrEmpty(strBuffer))
                 {
-                    curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
+                    var ret = curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
                     clearBuffer();
+                    return ret;
                 }
+
+                return null;
             }
 
             void clearBuffer()
@@ -429,9 +433,9 @@ namespace FractalMachine.Code.Langs
                 return tempVar;
             }
 
-            public void ReadProperty(string Property)
-            {
-                attributes.Add(Property);
+            public void ReadAttribute(AST ast)
+            {                
+                attributes.Add((ast.aclass == "string" ? Properties.StringMark : "") + ast.subject);
             }
 
             internal OrderedAst newClassCode(AST ast)
@@ -440,6 +444,8 @@ namespace FractalMachine.Code.Langs
                 cc.parent = this;
                 return cc;
             }
+
+            #region Properties
 
             internal bool IsInFunctionParenthesis
             {
@@ -478,6 +484,23 @@ namespace FractalMachine.Code.Langs
                     return a;
                 }
             }
+
+            internal OrderedAst TopOfSeries
+            {
+                get
+                {
+                    var subj = Subject;
+                    var oa = parent;
+                    while(oa.Subject == subj)
+                    {
+                        oa = oa.parent;
+                    }
+
+                    return oa;
+                }
+            }
+
+            #endregion
 
             #region FromAST
 
@@ -519,7 +542,7 @@ namespace FractalMachine.Code.Langs
 
             static void readAstAttribute(AST ast)
             {
-                orderedAst.ReadProperty(ast.subject);
+                orderedAst.ReadAttribute(ast);
             }
 
 
@@ -616,7 +639,17 @@ namespace FractalMachine.Code.Langs
                                 onEnd = delegate
                                 {
                                     if (!String.IsNullOrEmpty(oAst.attributes[0]))
-                                        onAddAttribute(oAst.attributes[0]);
+                                    {
+                                        onAddAttribute(Extensions.Pull(oAst.attributes, 0));
+                                        if(oAst.attributes.Count > 0)
+                                        {
+                                            var top = oAst.TopOfSeries;
+                                            while(oAst.attributes.Count > 0)
+                                            {
+                                                top.attributes.Add(Extensions.Pull(oAst.attributes, 0));
+                                            }
+                                        }
+                                    }
                                 };
 
                                 recordAttributes = false;
@@ -674,10 +707,19 @@ namespace FractalMachine.Code.Langs
                                 lin = new Linear(outLin, oAst);
                                 lin.Op = "import";
 
-                                onEnd = delegate
+                                if (oAst.codes.Count > 0)
                                 {
-                                    lin.Attributes.Add(pullParams());
-                                };
+                                    onEnd = delegate
+                                    {
+                                        lin.Attributes.Add(pullParams());
+                                    };
+                                }
+                                else
+                                {
+                                    lin.Attributes.Add(Extensions.Pull(oAst.attributes, 0));
+                                    recordAttributes = false;
+                                }
+
                                 break;
                         }
                     }
@@ -690,11 +732,13 @@ namespace FractalMachine.Code.Langs
                 }
 
                 // Prepare attributes
-                if (recordAttributes)
+                if (recordAttributes) //todo: think about && oAst.codes.Count > 0
                 {
-                    foreach (var s in oAst.attributes)
+                    for(int a=0; a < oAst.attributes.Count; a++)
                     {
+                        var s = oAst.attributes[a];
                         onAddAttribute(s);
+                        oAst.attributes.RemoveAt(a);
                     }
                 }
 
@@ -704,13 +748,37 @@ namespace FractalMachine.Code.Langs
 
                 foreach (var code in oAst.codes)
                 {
+                    // todo: try catch for error checking(?)
                     orderedAstToLinear(code);
                 }
-
 
                 ///
                 /// Exit
                 ///
+
+                // Check for additional attributes
+                if (lin != null)
+                {
+                    if (oAst.attributes.Count > 0)
+                    {
+                        string prev = "";
+                        for (int i = 0; i < oAst.attributes.Count; i++)
+                        {
+                            var cur = oAst.attributes[i];
+
+                            if (i % 2 == 1)
+                            {
+                                lin.Parameters.Add(prev, cur);
+                                prev = "";
+                            }
+                            else
+                                prev = cur;
+                        }
+
+                        if (!String.IsNullOrEmpty(prev))
+                            lin.Attributes.Add(prev);
+                    }
+                }
 
                 if (onEnd != null)
                     onEnd();

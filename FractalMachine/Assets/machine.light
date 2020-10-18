@@ -3,7 +3,7 @@
 //test.console.print(test+"ciao");
 //ciao++;
 
-import System.IO;
+import System.IO; // as IO;
 
 function main(){
 	Print("ciao");

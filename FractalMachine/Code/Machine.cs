@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,7 +13,6 @@ namespace FractalMachine.Code
     /// </summary>
     public class Machine
     {
-        string entryPoint;
         Component main;
         Langs.Light light;
         Linear linear;
@@ -22,26 +22,41 @@ namespace FractalMachine.Code
          
         }
 
-        public string EntryPoint
-        {
-            get
-            {
-                return entryPoint;
-            }
-
-            set
-            {
-                entryPoint = value;
-            }
-        }
+        public string EntryPoint;
 
         public void Compile()
         {
-            light = Langs.Light.OpenScript(entryPoint);
+            main = Compile(EntryPoint);
+        }
+
+        internal Component Compile(string FileName)
+        {
+            light = Langs.Light.OpenScript(FileName);
             linear = light.GetLinear();
 
-            main = new Component(this);
-            main.ReadLinear(linear);
+            var comp = new Component(this);
+            comp.ReadLinear(linear);
+            return comp;
+        }
+
+        public void Import(string ToImport)
+        {
+            bool angularBrackets = false;
+            if (ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark()))
+            {
+                // Is file
+            }
+            else
+            {
+                // Is namespace
+            }
+
+        }
+
+        string findNamespaceDirectory(string ns)
+        {
+
+            return "";
         }
 
     }
