@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using static FractalMachine.Code.AST;
 
 namespace FractalMachine.Code
 {

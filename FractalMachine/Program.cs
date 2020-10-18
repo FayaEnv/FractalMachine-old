@@ -1,5 +1,6 @@
 ﻿using System;
 using FractalMachine.Code;
+using FractalMachine.Code.Langs;
 
 namespace FractalMachine
 {
@@ -28,7 +29,7 @@ namespace FractalMachine
 
                 case "machine.light":
                     light = Light.OpenScript(assetsDir + "/machine.light");
-                    machine.CreateClassCode(light);
+                    
                     break;
             }
 
