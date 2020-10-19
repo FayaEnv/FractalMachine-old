@@ -1,1 +1,2 @@
-﻿- Implement angular brackets string-like <>
+﻿- Controlla cosa succede ad OrderedAst se manca il punto e virgola ;
+- Crea la gestione degli erorri

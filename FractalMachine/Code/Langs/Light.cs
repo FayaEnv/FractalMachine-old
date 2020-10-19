@@ -80,6 +80,7 @@ namespace FractalMachine.Code.Langs
                 var statusDefault = statusSwitcher.Define("default");
 
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "inString" });
+                var trgAngularBrackets = statusDefault.Add(new Triggers.Trigger { Delimiter = "<", ActivateStatus = "inAngularBrackets" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
@@ -96,6 +97,10 @@ namespace FractalMachine.Code.Langs
                 var statusInString = statusSwitcher.Define("inString");
                 var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
                 var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "default" });
+
+                // InAngularBrackets
+                var statusInAngularBrackets = statusSwitcher.Define("inAngularBrackets");
+                var trgExitAngularBrackets = statusInAngularBrackets.Add(new Triggers.Trigger { Delimiter = ">", ActivateStatus = "default" });
 
                 /// InlineComment
                 var statusInInlineComment = statusSwitcher.Define("inInlineComment");
@@ -550,6 +555,15 @@ namespace FractalMachine.Code.Langs
 
             #region ToLinear
 
+            /*
+              _______    _      _                       
+             |__   __|  | |    (_)                      
+                | | ___ | |     _ _ __   ___  __ _ _ __ 
+                | |/ _ \| |    | | '_ \ / _ \/ _` | '__|
+                | | (_) | |____| | | | |  __/ (_| | |   
+                |_|\___/|______|_|_| |_|\___|\__,_|_| 
+            */
+
             delegate void OnCallback();
             delegate void OnAddAttribute(string Attribute);
 
@@ -558,6 +572,7 @@ namespace FractalMachine.Code.Langs
 
             public static Linear ToLinear(OrderedAst oAst)
             {
+                outLin = new Linear(oAst);
                 orderedAstToLinear(oAst);
                 return outLin;
             }

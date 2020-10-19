@@ -14,11 +14,11 @@ namespace FractalMachine.Code
     public class Machine
     {
         Component main;
-        Langs.Light light;
-        Linear linear;
+        Langs.Light lastLight;
+        Linear lastLinear;
 
-        string assetsDir;
-        string libsDir;
+        internal string assetsDir;
+        internal string libsDir;
 
         public Machine()
         {
@@ -35,64 +35,13 @@ namespace FractalMachine.Code
 
         internal Component Compile(string FileName)
         {
-            light = Langs.Light.OpenScript(FileName);
-            linear = light.GetLinear();
+            lastLight = Langs.Light.OpenScript(FileName);
+            //var oast = lastLight.GetOrderedAst();
+            lastLinear = lastLight.GetLinear();
 
-            var comp = new Component(this);
-            comp.ReadLinear(linear);
+            var comp = new Component(this, lastLinear);
+            comp.ReadLinear();
             return comp;
         }
-
-        public void Import(string ToImport)
-        {
-            if (ToImport.HasMark())
-            {
-                // Is file
-                // ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
-            }
-            else
-            {
-                // Is namespace
-                var dir = findNamespaceDirectory(ToImport);
-                var r = "ead";
-            }
-
-        }
-
-        string findNamespaceDirectory(string ns)
-        {
-            var dir = "";
-            var split = ns.Split('.');
-
-            bool dirExists = false;
-
-            int s = 0;
-            for (; s<split.Length; s++)
-            {
-                var ss = split[s];
-                dir += "/" + ss;
-
-                if (!(dirExists=Directory.Exists(libsDir+dir)))
-                {
-                    break;
-                }
-            }
-
-            if (dirExists)
-            {
-                return dir;
-            }
-            else
-            {
-                while (!File.Exists(libsDir + dir + ".light") && s >= 0)
-                {
-                    dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
-                    s--;
-                }
-            }
-
-            return dir;
-        }
-
     }
 }

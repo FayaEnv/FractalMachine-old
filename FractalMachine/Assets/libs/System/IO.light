@@ -1,4 +1,4 @@
-﻿import <cpp/iostream.h>
+﻿import <cpp/iostream.h>;
 
 function Print(content){
 	iostream.Print(content);
