@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using static FractalMachine.Code.AST;
 using FractalMachine.Classes;
+using System.Net.NetworkInformation;
 
 namespace FractalMachine.Code.Langs
 {
@@ -22,7 +23,7 @@ namespace FractalMachine.Code.Langs
         #endregion
 
         public AST AST;
-        public OrderedAst orderedAst = null;
+        public OrderedAST orderedAst = null;
         public Linear Linear;
 
         #region Parse
@@ -42,15 +43,15 @@ namespace FractalMachine.Code.Langs
 
         #region Implementation
 
-        public override AST.OrderedAst GetOrderedAst()
+        public OrderedAST GetOrderedAst()
         {
             if (orderedAst != null) return orderedAst;
-            return orderedAst = OrderedAst.FromAST(AST);
+            return orderedAst = new OrderedAST(AST);
         }
 
         public override Linear GetLinear()
         {
-            return Linear = OrderedAst.ToLinear((OrderedAst)GetOrderedAst());
+            return Linear = GetOrderedAst().ToLinear();
         }
 
         #endregion
@@ -127,6 +128,8 @@ namespace FractalMachine.Code.Langs
 
                 trgNewInstruction.OnTriggered = delegate
                 {
+                    /*var end = curAst.Instruction.NewChild(Line, Pos, AST.Type.Instruction);
+                    end.aclass = "end";*/
                     curAst.NewInstruction(Line, Pos);
                 };
 
@@ -345,75 +348,41 @@ namespace FractalMachine.Code.Langs
             }
         }
 
-        public class OrderedAst : AST.OrderedAst
+        public class OrderedAST : AST.OrderedAST
         {
             internal AST ast;
-            internal OrderedAst parent;
-            internal List<OrderedAst> codes = new List<OrderedAst>();
-            internal List<string> attributes = new List<string>();
+            internal OrderedAST parent;
+            internal List<OrderedAST> codes = new List<OrderedAST>();
+            //internal List<string> attributes = new List<string>();
 
             internal int tempVarCount = 0, tempVar = -1;
 
-            internal string declarationType = "";
-            internal int nAttrs;
-            internal bool isFunction = false;
-
-            internal bool isBlockParenthesis = false;
-            internal bool isDeclaration = false;
-            internal bool isBlockDeclaration = false;
-            internal bool isComma = false;
-
-            public OrderedAst(AST ast)
+            public OrderedAST(AST ast)
             {
                 linkAst(ast);
             }
 
-            public OrderedAst NewChildFromAst(AST ast)
+            public OrderedAST(AST ast, OrderedAST parent)
             {
-                var cc = newClassCode(ast);
-                codes.Add(cc);
-
-                if (ast.IsBlockParenthesis)
-                {
-                    if (this.ast.IsInstructionFree || this.ast.subject == ".")
-                        isFunction = true;
-                }
-
-                return cc;
+                this.parent = parent;
+                linkAst(ast);
             }
 
             public void Revision()
             {
-                if (ast != null)
-                {
-                    isBlockParenthesis = ast.IsBlockParenthesis;
-                }
-
-                // Check attributes
-                nAttrs = attributes.Count;
-                if (nAttrs >= 2)
-                {
-                    declarationType = attributes[nAttrs - 2];
-                    if (Properties.DeclarationTypes.Contains(declarationType))
-                        isDeclaration = true;
-                }
-
-                // Check subcodes
-                var ncodes = codes.Count;
-                if (ncodes >= 1)
-                {
-                    var last = codes[ncodes - 1];
-                    bool hasLastBlockBrackets = last.ast?.IsBlockBrackets ?? false;
-                    isBlockDeclaration = hasLastBlockBrackets && isDeclaration;
-                }
-
-                foreach (var c in codes)
-                    c.Revision();
+                // cosa farci?
             }
 
             void linkAst(AST ast)
             {
                 this.ast = ast;
+
+                foreach(var child in ast.children)
+                {
+                    codes.Add(new OrderedAST(child, this));
+                }
+
+                Revision();
             }
 
             internal int getTempNum()
@@ -438,14 +407,9 @@ namespace FractalMachine.Code.Langs
                 return tempVar;
             }
 
-            public void ReadAttribute(AST ast)
-            {                
-                attributes.Add((ast.aclass == "string" ? Properties.StringMark : "") + ast.subject);
-            }
-
-            internal OrderedAst newClassCode(AST ast)
+            internal OrderedAST newClassCode(AST ast)
             {
-                var cc = new OrderedAst(ast);
+                var cc = new OrderedAST(ast);
                 cc.parent = this;
                 return cc;
             }
@@ -458,15 +422,125 @@ namespace FractalMachine.Code.Langs
                 {
                     bool parenthesis = false;
                     var a = this;
-                    while (a != null && !a.isFunction)
+                    while (a != null && !a.HasFunction)
                     {
-                        parenthesis = a.ast?.IsBlockParenthesis ?? false || parenthesis;
+                        parenthesis = a.IsBlockParenthesis || parenthesis;
                         a = a.parent;
                     }
 
-                    return a != null && a.isFunction && parenthesis;
+                    return a != null && a.HasFunction && parenthesis;
                 }
             }
+
+            public bool HasFunction
+            {
+                get
+                {
+                    foreach(var code in codes)
+                    {
+                        if (code.IsBlockParenthesis)
+                            return true;
+                    }
+
+                    return false;
+                }
+            }
+
+            public bool HasFinalBracketsBlock
+            {
+                get
+                {
+                    var last = LastCode;
+                    if(last != null)
+                        return last.IsBlockBrackets;
+
+                    return false;
+                }
+            }
+
+            public bool IsDeclaration
+            {
+                get
+                {
+                    return !IsOperator && CountAttributes >= 2 && !Properties.Statements.Contains(codes[0].Subject);
+                }
+            }
+
+            public int CountAttributes
+            {
+                get
+                {
+                    int i = 0;
+
+                    foreach(var code in codes)
+                    {
+                        if (code.ast.type == AST.Type.Attribute)
+                            i++;
+                    }
+
+                    return i;
+                }
+            }
+
+            public OrderedAST LastCode
+            {
+                get
+                {
+                    var cnt = codes.Count;
+                    if (cnt > 0)
+                        return codes[cnt - 1];
+
+                    return null;
+                }
+            }
+
+            public bool IsInstructionsContainer
+            {
+                get
+                {
+                    return parent == null || IsBlockBrackets;
+                }
+            }
+
+            public bool IsOperator
+            {
+                get
+                {
+                    return ast.aclass == "operator" || ast.aclass == "fastOperator";
+                }
+            }
+
+            public bool IsInstructionFree
+            {
+                get
+                {
+                    return ast.type == AST.Type.Instruction && String.IsNullOrEmpty(ast.aclass);
+                }
+            }
+
+            public bool IsBlockParenthesis
+            {
+                get
+                {
+                    return ast.type == AST.Type.Block && ast.subject == "(";
+                }
+            }
+
+            public bool IsBlockBrackets
+            {
+                get
+                {
+                    return ast.type == AST.Type.Block && Subject == "{";
+                }
+            }
+
+            public bool IsAssign
+            {
+                get
+                {
+                    return IsOperator && Subject == "=";
+                }
+            }        
 
             internal string Subject
             {
@@ -476,12 +550,12 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            internal OrderedAst TopFunction
+            internal OrderedAST TopFunction
             {
                 get
                 {
                     var a = this;
-                    while (a != null && !a.isFunction)
+                    while (a != null && !a.HasFunction)
                     {
                         a = a.parent;
                     }
@@ -490,7 +564,7 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            internal OrderedAst TopOfSeries
+            internal OrderedAST TopOfSeries
             {
                 get
                 {
@@ -507,52 +581,6 @@ namespace FractalMachine.Code.Langs
 
             #endregion
 
-            #region FromAST
-
-            static OrderedAst orderedAst;
-
-            public static OrderedAst FromAST(AST ast)
-            {
-                orderedAst = new OrderedAst(ast);
-                readAst(ast);
-                orderedAst.Revision();
-                return orderedAst;
-            }
-
-            static void readAst(AST ast)
-            {
-                switch (ast.type)
-                {
-                    case AST.Type.Attribute:
-                        readAstAttribute(ast);
-                        break;
-
-                    default:
-                        readAstBlockOrInstruction(ast);
-                        break;
-                }
-            }
-
-            static void readAstBlockOrInstruction(AST ast)
-            {
-                orderedAst = orderedAst.NewChildFromAst(ast);
-
-                foreach (var child in ast.children)
-                {
-                    readAst(child);
-                }
-
-                orderedAst = orderedAst.parent;
-            }
-
-            static void readAstAttribute(AST ast)
-            {
-                orderedAst.ReadAttribute(ast);
-            }
-
-
-            #endregion
-
             #region ToLinear
 
             /*
@@ -565,235 +593,297 @@ namespace FractalMachine.Code.Langs
             */
 
             delegate void OnCallback();
-            delegate void OnAddAttribute(string Attribute);
+            delegate void OnOperation(Bag bag, OrderedAST ast);
 
-            static Linear outLin;
-            static List<string> Params = new List<string>();
-
-            public static Linear ToLinear(OrderedAst oAst)
+            class Bag
             {
-                outLin = new Linear(oAst);
-                orderedAstToLinear(oAst);
-                return outLin;
+                public Status status;
+                public Linear Linear;
+                public Bag Parent;
+                public List<string> Params = new List<string>();
+                public Dictionary<string, string> Dict = new Dictionary<string, string>();
+
+                public OnCallback  OnNextParamOnce;
+                public OnOperation Operation, OnNextParam;
+
+                public enum Status
+                {
+                    Ground,
+                    DeclarationParenthesis
+
+                }
+
+                public void addParam(string p)
+                {
+                    Params.Add(p);
+                }
+
+                public string pullParams(bool withoutRemove = false)
+                {
+                    var c = Params.Count - 1;
+
+                    if (c < 0)
+                        return null;
+
+                    string s = Params[c];
+                    if(!withoutRemove) Params.RemoveAt(c);
+                    return s;
+                }
+
+                public Bag subBag(Status status = Status.Ground)
+                {
+                    var b = new Bag();
+                    b.Parent = this;
+                    b.status = status;
+                    b.Linear = Linear;
+                    return b;
+                }
             }
 
-            static void orderedAstToLinear(OrderedAst oAst)
+            public Linear ToLinear()
             {
-                if (outLin == null)
-                    outLin = new Linear(oAst);
+                var bag = new Bag();
+                bag.Linear = new Linear(ast);
+                orderedAstToLinear(bag);
+                return bag.Linear;
+            }
+            
+            void orderedAstToLinear(Bag bag)
+            {
+                //if (outLin == null) outLin = new Linear(oAst.ast);
 
                 Linear lin = null;
                 OnCallback onEnd = null;
 
                 bool enter = false;
-                bool recordAttributes = true;
 
-                OnAddAttribute onAddAttribute = delegate (string attr)
+                ///
+                /// Callbacks
+                ///
+                OnCallback setTempReturn = delegate
                 {
-                    Params.Add(attr);
+                    lin.Return = "$" + getTempVar();
+                    bag.addParam("$" + getTempVar());
                 };
 
-                if (oAst.isDeclaration)
+                ///
+                /// Analyze AST
+                ///
+                if(ast.type == AST.Type.Attribute)
                 {
-                    if (oAst.isBlockDeclaration)
-                    {
-                        lin = new Linear(outLin, oAst);
-                        lin.Op = oAst.declarationType;
-                        lin.Name = Extensions.Pull(oAst.attributes);
-                        lin.Attributes = oAst.attributes;
+                    bag.addParam(Subject);
 
-                        if (oAst.isFunction)
+                    bag.OnNextParamOnce?.Invoke();
+                    bag.OnNextParamOnce = null;
+
+                    bag.OnNextParam?.Invoke(bag, this);
+
+                    return;
+                }
+
+                if (bag.status == Bag.Status.Ground)
+                {
+
+                    if (ast.type == AST.Type.Block)
+                    {
+                        if (Subject == "[")
                         {
-                            // Read parenthesis arguments
-                            var parenthesis = Extensions.Pull(oAst.codes, 0);
-                            injectDeclareFunctionParameters(lin, parenthesis);
+                            if (parent.IsDeclaration)
+                            {
+                                //todo: Pensare ad un metodo migliore...
+                                bag.addParam(bag.pullParams() + "[]");
+                            }
                         }
 
-                        outLin = lin;
-                        enter = true;
-                    }
-                    else
-                    {
-                        lin = new Linear(outLin, oAst);
-                        lin.List();
-                        lin.Op = "declare";
-                        lin.Name = oAst.attributes[oAst.nAttrs - 1];
-                        lin.Attributes = oAst.attributes;
-                        Params.Add(lin.Name);
-                    }
-                }
-                else
-                {
-                    if (oAst.ast.IsOperator)
-                    {
-                        switch (oAst.Subject)
+                        if (Subject == "(")
                         {
-                            case "=":
-                                lin = new Linear(outLin, oAst);
-                                lin.Op = oAst.Subject;
-                                lin.Attributes.Add(pullParams());
+                            if (!parent.IsDeclaration)
+                            {
+                                lin = new Linear(bag.Linear, ast);
+                                lin.Op = "call";
+                                lin.Name = bag.pullParams();
 
-                                onEnd = delegate
+                                bag.Operation = delegate
                                 {
-                                    lin.Attributes.Add(pullParams());
-                                };
-
-                                break;
-
-                            case ".":
-                                if (oAst.parent.Subject != ".")
-                                {
-                                    oAst.attributes[0] = pullParams() + "." + oAst.attributes[0];
-                                }
-                                else
-                                {
-                                    oAst.attributes[0] = oAst.parent.attributes[0] + "." + oAst.attributes[0];
-                                    oAst.parent.attributes[0] = "";
-                                }
-
-                                onEnd = delegate
-                                {
-                                    if (!String.IsNullOrEmpty(oAst.attributes[0]))
+                                    var p = bag.pullParams();
+                                    if (p != null)
                                     {
-                                        onAddAttribute(Extensions.Pull(oAst.attributes, 0));
-                                        if(oAst.attributes.Count > 0)
-                                        {
-                                            var top = oAst.TopOfSeries;
-                                            while(oAst.attributes.Count > 0)
-                                            {
-                                                top.attributes.Add(Extensions.Pull(oAst.attributes, 0));
-                                            }
-                                        }
+                                        Linear lin = new Linear(bag.Linear, ast);
+                                        lin.Op = "push";
+                                        lin.Attributes.Add(bag.pullParams());
+                                        lin.List();
                                     }
                                 };
 
-                                recordAttributes = false;
-
-                                break;
-
-                            default:
-                                lin = new Linear(outLin, oAst);
-                                lin.Op = oAst.Subject;
-                                lin.Attributes.Add(pullParams());
-                                lin.Assign = "$" + oAst.getTempVar();
-                                Params.Add("$" + oAst.getTempVar());
-
                                 onEnd = delegate
                                 {
-                                    lin.Attributes.Add(pullParams());
+                                    bag.Operation(bag, this);
+                                    setTempReturn();
                                 };
-
-                                break;
-                        }
-
-                    }
-                    else if (oAst.ast.IsBlockParenthesis)
-                    {
-                        if (oAst.IsInFunctionParenthesis)
-                        {
-                            if (oAst.TopFunction.isDeclaration)
-                            {
-                                // bisognerebbe poter accedere alla lin della funzione...
                             }
                             else
                             {
-                                onEnd = delegate ()
+                                bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                                var l = bag.Linear = bag.Linear.NewSetting(ast);
+                                l.Op = "parameters";
+
+                                bag.Operation = delegate (Bag bag, OrderedAST oAst)
                                 {
-                                    lin = new Linear(outLin, oAst);
-                                    lin.Op = "push";
-                                    lin.Attributes.Add(pullParams());
+                                    var p = bag.pullParams();
+                                    if (p != null)
+                                    {
+                                        var lin = new Linear(l, oAst.ast);
+                                        lin.Op = "parameter";
+                                        lin.Name = p;
+                                        lin.List();
+                                    }
+                                };
+
+                                onEnd = delegate
+                                {
+                                    bag.Operation(bag, this);
                                 };
                             }
                         }
-                    }
-                    else if (oAst.isFunction)
-                    {
-                        lin = new Linear(outLin, oAst);
-                        lin.Op = "call";
-                        lin.Name = oAst.attributes[0];
+
+                        if (Subject == "{")
+                        {
+                            bag = bag.subBag();
+                        }
                     }
                     else
                     {
-                        var first = Extensions.Pull(oAst.attributes, 0);
+                        if (Subject == null && codes.Count == 0)
+                            return; // Is a dummy instruction
 
-                        switch (first)
+                        if (IsDeclaration)
                         {
-                            case "import":
-                                lin = new Linear(outLin, oAst);
-                                lin.Op = "import";
+                            lin = new Linear(bag.Linear, ast);
+                            lin.Op = "declare";
+                            enter = true;
 
-                                if (oAst.codes.Count > 0)
-                                {
+                            onEnd = delegate
+                            {
+                                lin.Name = bag.pullParams();
+                                lin.Attributes = bag.Params;
+                                bag.Params = new List<string>();
+                            };
+                        }
+                        else if (IsOperator)
+                        {
+                            switch (Subject)
+                            {
+                                case "=":
+                                    lin = new Linear(bag.Linear, ast);
+                                    lin.Op = Subject;
+                                    lin.Name = bag.pullParams(true);
+
                                     onEnd = delegate
                                     {
-                                        lin.Attributes.Add(pullParams());
+                                        lin.Attributes.Add(bag.pullParams());
                                     };
-                                }
-                                else
+
+                                    break;
+
+                                case ".":
+
+                                    bag.OnNextParamOnce = delegate
+                                    {
+                                        var p = bag.pullParams();
+                                        bag.addParam(bag.pullParams() + "." + p);
+                                    };
+
+                                    break;
+
+                                case ",":
+                                    // Repeat previous operation
+                                    bag.Operation?.Invoke(bag, this);
+
+                                    break;
+
+                                default:
+                                    lin = new Linear(bag.Linear, ast);
+                                    lin.Op = Subject;
+                                    lin.Attributes.Add(bag.pullParams());
+                                    setTempReturn();
+
+                                    onEnd = delegate
+                                    {
+                                        lin.Attributes.Add(bag.pullParams());
+                                    };
+
+                                    break;
+                            }
+
+                        }
+                        else
+                        {
+                            onEnd = delegate
+                            {
+                                var pars = bag.Params;
+
+                                lin = new Linear(bag.Linear, ast);
+                                lin.Op = Extensions.Pull(pars, 0);
+                                lin.Attributes.Add(Extensions.Pull(pars, 0));
+
+                                string prev = "";
+                                int i = 0;
+                                while (pars.Count > 0)
                                 {
-                                    lin.Attributes.Add(Extensions.Pull(oAst.attributes, 0));
-                                    recordAttributes = false;
+                                    if (i % 2 == 1)
+                                        lin.Parameters.Add(prev, Extensions.Pull(pars, 0));
+                                    else
+                                        prev = Extensions.Pull(pars, 0);
+
+                                    i++;
                                 }
+
+                            };
+                        }
+                    }
+                }
+                else if (bag.status == Bag.Status.DeclarationParenthesis)
+                {
+                    if (IsOperator)
+                    {
+
+                        switch (Subject)
+                        {
+                            case ",":
+                                bag.Operation?.Invoke(bag, this);
+                                break;
+
+                            case "=":
+
+                                onEnd = delegate
+                                {
+                                    bag.Linear.LastInstruction.Return = bag.pullParams();
+                                };
 
                                 break;
                         }
                     }
-
                 }
-
+               
                 if (enter)
                 {
-                    outLin = lin;
+                    bag.Linear = lin;
                 }
 
-                // Prepare attributes
-                if (recordAttributes) //todo: think about && oAst.codes.Count > 0
-                {
-                    for(int a=0; a < oAst.attributes.Count; a++)
-                    {
-                        var s = oAst.attributes[a];
-                        onAddAttribute(s);
-                        oAst.attributes.RemoveAt(a);
-                    }
-                }
 
                 ///
                 /// Child analyzing
                 ///
 
-                foreach (var code in oAst.codes)
+                foreach (var code in codes)
                 {
                     // todo: try catch for error checking(?)
-                    orderedAstToLinear(code);
+                    code.orderedAstToLinear(bag);
                 }
 
                 ///
                 /// Exit
                 ///
-
-                // Check for additional attributes
-                if (lin != null)
-                {
-                    if (oAst.attributes.Count > 0)
-                    {
-                        string prev = "";
-                        for (int i = 0; i < oAst.attributes.Count; i++)
-                        {
-                            var cur = oAst.attributes[i];
-
-                            if (i % 2 == 1)
-                            {
-                                lin.Parameters.Add(prev, cur);
-                                prev = "";
-                            }
-                            else
-                                prev = cur;
-                        }
-
-                        if (!String.IsNullOrEmpty(prev))
-                            lin.Attributes.Add(prev);
-                    }
-                }
 
                 if (onEnd != null)
                     onEnd();
@@ -802,25 +892,27 @@ namespace FractalMachine.Code.Langs
                     lin.List();
 
                 if (enter)
-                {
-                    outLin = outLin.parent;
-                }
+                    bag.Linear = bag.Linear.parent;
+
             }
 
-            static void injectDeclareFunctionParameters(Linear lin, OrderedAst oAst)
+            /*void injectDeclareFunctionParameters(Bag bag)
             {
-                var sett = lin.NewSetting(oAst);
+                var sett = lin.NewSetting(ast);
                 sett.Op = "parameters";
 
-                var oa = oAst.codes[0];
-                Linear l = new Linear(sett, oa);
+                var oa = codes[0];
+                Linear l = new Linear(sett, oa.ast);
                 l.List();
 
                 while (oa != null)
                 {
+                    var sBag = bag.subBag();
+                    orderedAstToLinear(sBag);
+
                     if (oa.Subject == ",")
                     {
-                        l = new Linear(sett, oa);
+                        l = new Linear(sett, oa.ast);
                         l.List();
                     }
 
@@ -844,19 +936,7 @@ namespace FractalMachine.Code.Langs
                         oa = null;
                 }
 
-            }
-
-            static string pullParams()
-            {
-                var c = Params.Count - 1;
-
-                if (c < 0)
-                    return "tolinParams EMPTY";
-
-                string s = Params[c];
-                Params.RemoveAt(c);
-                return s;
-            }
+            }*/
 
             #endregion
         }

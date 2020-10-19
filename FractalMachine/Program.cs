@@ -15,7 +15,7 @@ namespace FractalMachine
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
-            var test = "machine.light";
+            var test = "test.light";
             switch (test)
             {
                 case "short":

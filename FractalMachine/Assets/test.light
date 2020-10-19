@@ -1,4 +1,4 @@
-﻿var test = { ciao: "miao", come: "va" };
+﻿/*var test = { ciao: "miao", come: "va" };
 
 test(3*(2+miao), ciao);
 
@@ -17,5 +17,11 @@ if(miao == 2){
 	print("eccomi");
 }
 
-var ciao = { "test" };
+var ciao = { "test" };*/
+
+import System.IO;
+
+int[] main (wow, ciao = 2){
+	long.test.print();
+}
 

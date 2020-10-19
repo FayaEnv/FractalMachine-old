@@ -9,7 +9,6 @@ namespace FractalMachine.Code.Langs
     /// </summary>
     public abstract class Lang
     {
-        public abstract AST.OrderedAst GetOrderedAst();
         public abstract Linear GetLinear();
     }
 }

@@ -93,73 +93,7 @@ namespace FractalMachine.Code
                 return children[children.Count - 1];
             }
         }
-
-        public bool IsOperator
-        {
-            get
-            {
-                return aclass == "operator" || aclass == "fastOperator";
-            }
-        }
-
-        public bool IsInstructionFree
-        {
-            get
-            {
-                return type == Type.Instruction && String.IsNullOrEmpty(aclass);
-            }
-        }
-
-        public bool IsBlockParenthesis
-        {
-            get
-            {
-                return type == Type.Block && subject == "(";
-            }
-        }
-
-        public bool IsBlockBrackets
-        {
-            get
-            {
-                return type == Type.Block && subject == "{";
-            }
-        }
-
-        public bool IsAssign
-        {
-            get
-            {
-                return IsOperator && subject == "=";
-            }
-        }
-
-        public bool IsBlockDeclaration
-        {
-            get
-            {
-                //todo: has up to 2 attributes, 1 block ( and 1 block {
-                return false;
-            }
-        }
-
-        public bool IsDeclaration
-        {
-            get
-            {
-                var numAttr = 0;
-                foreach (var child in children)
-                {
-                    if (child.type == Type.Attribute)
-                        numAttr++;
-                    else
-                        break;
-                }
-
-                return numAttr > 1;
-            }
-        }
-
+    
         public AST BeforeMe
         {
             get
@@ -265,13 +199,8 @@ namespace FractalMachine.Code
             internal int Cycle = 0;
         }
 
-        /// <summary>
-        /// An OrderedAst is an AST ready to a direct analysis and conversion to Linear.
-        /// OrderedAst is used for extending AST without overload code and members in a unique class.
-        /// </summary>
-        public abstract class OrderedAst
+        public abstract class OrderedAST
         {
-
         }
 
         public class StatusSwitcher

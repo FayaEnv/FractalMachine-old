@@ -7,7 +7,7 @@ namespace FractalMachine.Code
     public class Linear
     {
         internal Linear parent;
-        internal OrderedAst origin;
+        internal AST ast;
 
         internal List<Linear> Instructions = new List<Linear>();
         internal List<Linear> Settings = new List<Linear>();
@@ -16,22 +16,22 @@ namespace FractalMachine.Code
         public string Op;
         public string Name;
         public List<string> Attributes = new List<string>();
-        public string Assign;
+        public string Return;
 
-        public Linear(OrderedAst orderedAst)
+        public Linear(AST ast)
         {
-            origin = orderedAst;
+            this.ast = ast;
         }
 
-        public Linear(Linear Parent, OrderedAst orderedAst) : this(orderedAst)
+        public Linear(Linear Parent, AST orderedAst) : this(orderedAst)
         {
             parent = Parent;
             //parent.Instructions.Add(this);
         }
 
-        public Linear NewSetting(OrderedAst orderedAst)
+        public Linear NewSetting(AST ast)
         {
-            var lin = new Linear(orderedAst);
+            var lin = new Linear(ast);
             lin.parent = this;
             Settings.Add(lin);
             return lin;
@@ -51,6 +51,17 @@ namespace FractalMachine.Code
             {
                 parent.Instructions.Remove(this);
                 listed = false;
+            }
+        }
+
+        public Linear LastInstruction
+        {
+            get
+            {
+                var c = Instructions.Count;
+                if (c > 0)
+                    return Instructions[c - 1];
+                return null;
             }
         }
     }
