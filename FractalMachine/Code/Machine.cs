@@ -16,10 +16,14 @@ namespace FractalMachine.Code
         Component main;
         Langs.Light light;
         Linear linear;
-        
+
+        string assetsDir;
+        string libsDir;
+
         public Machine()
         {
-         
+            assetsDir = Resources.Solve("Assets");
+            libsDir = assetsDir + "/libs";
         }
 
         public string EntryPoint;
@@ -41,22 +45,47 @@ namespace FractalMachine.Code
 
         public void Import(string ToImport)
         {
-            bool angularBrackets = false;
-            if (ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark()))
+            if (ToImport.HasMark())
             {
                 // Is file
+                // ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
             }
             else
             {
                 // Is namespace
+                var dir = findNamespaceDirectory(ToImport);
+                var r = "ead";
             }
 
         }
 
         string findNamespaceDirectory(string ns)
         {
+            var dir = "";
+            var split = ns.Split('.');
 
-            return "";
+            int s = 0;
+            for (; s<split.Length; s++)
+            {
+                var ss = split[s];
+                dir += "/" + ss;
+
+                if (!Directory.Exists(libsDir+dir))
+                {
+                    break;
+                }             
+            }
+
+            while(!File.Exists(libsDir + dir + ".light") && s >= 0)
+            {
+                dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
+                s--;
+            }
+
+            if (s >= 0)
+                dir += ".light";
+
+            return dir;
         }
 
     }

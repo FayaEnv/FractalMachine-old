@@ -33,6 +33,11 @@ namespace FractalMachine.Classes
 
         #region Marks
 
+        public static bool HasMark(this string obj)
+        {
+            return obj.Length >= Properties.StringMark.Length && obj.Substring(2, Properties.Mark.Length) == Properties.Mark;
+        }
+
         public static bool HasStringMark(this string obj)
         {
             return obj.StartsWith(Properties.StringMark);
@@ -45,7 +50,7 @@ namespace FractalMachine.Classes
 
         public static string NoMark(this string obj)
         {
-            if (obj.Length >= Properties.StringMark.Length && obj.Substring(2, Properties.Mark.Length) == Properties.Mark)
+            if (obj.HasMark())
                 return obj.Substring(Properties.StringMark.Length);
             else
                 return obj;
