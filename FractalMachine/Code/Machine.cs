@@ -64,28 +64,42 @@ namespace FractalMachine.Code
             var dir = "";
             var split = ns.Split('.');
 
+            bool dirExists = false;
+
             int s = 0;
             for (; s<split.Length; s++)
             {
                 var ss = split[s];
                 dir += "/" + ss;
 
-                if (!Directory.Exists(libsDir+dir))
+                if (!(dirExists=Directory.Exists(libsDir+dir)))
                 {
                     break;
-                }             
+                }
             }
 
-            while(!File.Exists(libsDir + dir + ".light") && s >= 0)
+            if(File.Exists(libsDir + dir + ".light")) 
             {
-                dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
-                s--;
+                return dir + ".light";
             }
 
-            if (s >= 0)
-                dir += ".light";
+            if (dirExists)
+            {
+                return dir;
+            }
+            else
+            {
+                while (!File.Exists(libsDir + dir + ".light") && s >= 0)
+                {
+                    dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
+                    s--;
+                }
 
-            return dir;
+                if(s >= 0)
+                    return dir + ".light";
+            }
+
+            return "";
         }
 
     }
