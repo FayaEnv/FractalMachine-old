@@ -78,11 +78,6 @@ namespace FractalMachine.Code
                 }
             }
 
-            if(File.Exists(libsDir + dir + ".light")) 
-            {
-                return dir + ".light";
-            }
-
             if (dirExists)
             {
                 return dir;
@@ -94,12 +89,9 @@ namespace FractalMachine.Code
                     dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
                     s--;
                 }
-
-                if(s >= 0)
-                    return dir + ".light";
             }
 
-            return "";
+            return dir;
         }
 
     }
