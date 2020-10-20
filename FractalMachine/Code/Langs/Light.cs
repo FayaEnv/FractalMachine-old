@@ -731,7 +731,6 @@ namespace FractalMachine.Code.Langs
 
                 Linear lin = null;
                 OnCallback onEnd = null;
-
                 bool enter = false;
 
                 ///
@@ -760,7 +759,6 @@ namespace FractalMachine.Code.Langs
 
                 if (bag.status == Bag.Status.Ground)
                 {
-
                     if (ast.type == AST.Type.Block)
                     {
                         bag = bag.subBag();
@@ -770,7 +768,7 @@ namespace FractalMachine.Code.Langs
                             if (parent.IsDeclaration)
                             {
                                 //todo: Pensare ad un metodo migliore...
-                                bag.addParam(bag.pullParams() + "[]");
+                                bag.Parent.addParam(bag.pullParams() + "[]");
                             }
                         }
 
@@ -790,7 +788,7 @@ namespace FractalMachine.Code.Langs
                                     {
                                         Linear lin = new Linear(bag.Linear, ast);
                                         lin.Op = "push";
-                                        lin.Attributes.Add(Extensions.Pull(bag.Params,0));
+                                        lin.Name = Extensions.Pull(bag.Params, 0);
                                         lin.List();
                                     }
 
@@ -841,6 +839,7 @@ namespace FractalMachine.Code.Langs
                             onEnd = delegate
                             {
                                 lin.Name = bag.pullParams();
+                                lin.Return = bag.pullParams();
                                 lin.Attributes = bag.Params;
                                 bag.Params = new List<string>();
                             };
