@@ -13,7 +13,7 @@ namespace FractalMachine.Classes
         /// <param name="obj"></param>
         /// <param name="Pos">If negative starts from the end</param>
         /// <returns></returns>
-        public static T Pull<T>(List<T> obj, int Pos = -1)
+        public static T pull<T>(List<T> obj, int Pos = -1)
         {
             var c = obj.Count;
 
@@ -29,6 +29,11 @@ namespace FractalMachine.Classes
             }
 
             return default(T);
+        }
+
+        public static T Pull<T>(this List<T> obj, int Pos = -1)
+        {
+            return pull(obj, Pos);
         }
 
         #region Marks

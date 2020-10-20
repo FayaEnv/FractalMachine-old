@@ -805,7 +805,7 @@ namespace FractalMachine.Code.Langs
                                     {
                                         Linear lin = new Linear(bag.Linear, ast);
                                         lin.Op = "push";
-                                        lin.Name = Extensions.Pull(bag.Params, 0);
+                                        lin.Name = bag.Params.Pull(0);
                                         lin.List();
                                     }
 
@@ -928,17 +928,17 @@ namespace FractalMachine.Code.Langs
                                 if (!bag.disableStatementDecoder && pars.Count > 0)
                                 {
                                     lin = new Linear(bag.Linear, ast);
-                                    lin.Op = Extensions.Pull(pars, 0);
-                                    lin.Attributes.Add(Extensions.Pull(pars, 0));
+                                    lin.Op = pars.Pull(0);
+                                    lin.Attributes.Add(pars.Pull(0));
 
                                     string prev = "";
                                     int i = 0;
                                     while (pars.Count > 0)
                                     {
                                         if (i % 2 == 1)
-                                            lin.Parameters.Add(prev, Extensions.Pull(pars, 0));
+                                            lin.Parameters.Add(prev, pars.Pull(0));
                                         else
-                                            prev = Extensions.Pull(pars, 0);
+                                            prev = pars.Pull(0);
 
                                         i++;
                                     }

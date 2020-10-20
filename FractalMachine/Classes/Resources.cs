@@ -68,6 +68,11 @@ public static class Resources
         return null;
     }
 
+    public static void CreateDirIfNotExists(string dir)
+    {
+
+    }
+
     public static bool InBinPath(string Path)
     {
         return Path.StartsWith(exDir);
