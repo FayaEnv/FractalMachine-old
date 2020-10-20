@@ -169,6 +169,10 @@ namespace FractalMachine.Code
             {
                 switch (lin.Op)
                 {
+                    case "import":
+                        // todo
+                        break;
+
                     case "function":
                         var comp = components[lin.Name];
 
