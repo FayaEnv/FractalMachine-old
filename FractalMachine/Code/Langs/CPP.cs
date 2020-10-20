@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace FractalMachine.Code.Langs
@@ -48,7 +49,33 @@ namespace FractalMachine.Code.Langs
             {
                 var ret = new Writer(this);
 
+                foreach (var attr in Attributes)
+                {
+                    ret.Write(attr + " ");
+                }
+
+                ret.Write(Type + " ");
+                ret.Write(Name + " ");
+
+                for (int p = 0; p < Parameters.Length; p++)
+                {
+                    ret.Write(Parameters[p]);
+                    if (p < Parameters.Length - 1) ret.Write(", ");
+                }
+
+                ret.Write("{");
+
                 return ret;
+            }
+
+            public void Write(string toWrite)
+            {
+                content += toWrite;
+            }
+
+            public void NewLine(string toWrite)
+            {
+                content += "\r\n";
             }
         }
     }

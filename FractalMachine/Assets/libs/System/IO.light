@@ -1,5 +1,5 @@
-﻿import <cpp/iostream.h>;
+﻿//import <cpp/iostream.h>;
 
-function Print(content){
+function Print(string content){
 	iostream.Print(content);
 }

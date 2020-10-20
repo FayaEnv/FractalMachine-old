@@ -441,6 +441,19 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            internal OrderedAST Left
+            {
+                get
+                {
+                    var pos = parent.codes.IndexOf(this);
+                    if (pos > 0)
+                        return parent.codes[pos - 1];
+                    else
+                        return null;
+                    
+                }
+            }
+
             public bool HasFunction
             {
                 get
@@ -751,6 +764,18 @@ namespace FractalMachine.Code.Langs
                     bag.addParam("$" + getTempVar());
                 };
 
+                OnCallback onSquareBrackets = delegate
+                {
+                    if (Subject == "[")
+                    {
+                        if (Left.ast.type == AST.Type.Attribute)
+                        {
+                            //todo: Pensare ad un metodo migliore...
+                            bag.addParam(bag.pullParams() + "[]");
+                        }
+                    }
+                };
+
                 ///
                 /// Analyze AST
                 ///
@@ -774,15 +799,8 @@ namespace FractalMachine.Code.Langs
                 if (bag.status == Bag.Status.Ground)
                 {
                     if (ast.type == AST.Type.Block)
-                    {                
-                        if (Subject == "[")
-                        {
-                            if (parent.IsDeclaration)
-                            {
-                                //todo: Pensare ad un metodo migliore...
-                                bag.addParam(bag.pullParams() + "[]");
-                            }
-                        }
+                    {
+                        onSquareBrackets();
 
                         if (Subject == "(")
                         {
@@ -830,6 +848,9 @@ namespace FractalMachine.Code.Langs
                                         lin.Op = "parameter";
                                         lin.Name = p;
                                         lin.List();
+
+                                        if (bag.Params.Count > 0)
+                                            lin.Parameters.Add("type", bag.pullParams());
                                     }
                                 };
 
@@ -918,6 +939,8 @@ namespace FractalMachine.Code.Langs
                         }
                         else
                         {
+                            onSquareBrackets();
+
                             ///
                             /// Statement decoder could cause a statement confusion
                             ///
@@ -950,6 +973,8 @@ namespace FractalMachine.Code.Langs
                 }
                 else if (bag.status == Bag.Status.DeclarationParenthesis)
                 {
+                    onSquareBrackets();
+
                     if (IsOperator)
                     {
                         switch (Subject)
