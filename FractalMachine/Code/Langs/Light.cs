@@ -594,25 +594,99 @@ namespace FractalMachine.Code.Langs
 
             delegate void OnCallback();
             delegate void OnOperation(Bag bag, OrderedAST ast);
+            delegate void OnOperationInt(int val);
 
             class Bag
             {
                 public Status status;
-                public Linear Linear;
+                public Linear Linear, _lin;
                 public Bag Parent;
                 public List<string> Params = new List<string>();
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
 
                 public OnCallback  OnNextParamOnce;
                 public OnOperation Operation, OnNextParam;
+                public OnOperationInt setTempReturn;
+
+                int linsStackPos = 0;
+                List<Linear> linsStack = new List<Linear>();
+
+                public Bag()
+                {
+                    ///
+                    /// Callbacks
+                    ///
+                    setTempReturn = delegate(int val)
+                    {
+                        lin.Return = "$" + val;
+                        addParam("$" + val);
+                    };
+
+                }
 
                 public enum Status
                 {
                     Ground,
                     DeclarationParenthesis
-
                 }
 
+                #region Lin
+
+                public Linear lin
+                {
+                    get
+                    {
+                        return _lin;
+                    }
+
+                    set
+                    {
+                        linsStack.Add(value);
+                        _lin = value;
+                    }
+                }
+
+                public void catchLin(Linear lin = null)
+                {
+                    if (lin == null)
+                        lin = _lin;
+
+                    for (int l = linsStack.Count-1; l >= linsStackPos; l--)
+                    {
+                        var ll = linsStack[l];
+
+                        if (ll == lin)
+                            break;
+
+                        if (ll.Op != null)
+                            lin.Add(linsStack[l]);
+
+                        linsStack.RemoveAt(l);
+                    }
+                }
+
+                public void addLin(AST ast)
+                {
+                    lin = new Linear(ast);
+                    linsStackPos++;
+                }
+
+                public void backLin()
+                {
+                    linsStackPos--;
+
+                    if (linsStack[linsStackPos].Op == null)
+                        linsStack.RemoveAt(linsStackPos);
+
+                    if (linsStackPos > 0)
+                        _lin = linsStack[linsStackPos - 1];
+                    else
+                        _lin = null;
+                }
+
+                #endregion
+
+                #region Param
                 public void addParam(string p)
                 {
                     Params.Add(p);
@@ -629,6 +703,7 @@ namespace FractalMachine.Code.Langs
                     if(!withoutRemove) Params.RemoveAt(c);
                     return s;
                 }
+                #endregion
 
                 public Bag subBag(Status status = Status.Ground)
                 {
@@ -644,11 +719,11 @@ namespace FractalMachine.Code.Langs
             {
                 var bag = new Bag();
                 bag.Linear = new Linear(ast);
-                orderedAstToLinear(bag);
+                toLinear(bag);
                 return bag.Linear;
             }
             
-            void orderedAstToLinear(Bag bag)
+            void toLinear(Bag bag)
             {
                 //if (outLin == null) outLin = new Linear(oAst.ast);
 
@@ -669,7 +744,7 @@ namespace FractalMachine.Code.Langs
                 ///
                 /// Analyze AST
                 ///
-                if(ast.type == AST.Type.Attribute)
+                if (ast.type == AST.Type.Attribute)
                 {
                     bag.addParam(Subject);
 
@@ -864,7 +939,7 @@ namespace FractalMachine.Code.Langs
                         }
                     }
                 }
-               
+
                 if (enter)
                 {
                     bag.Linear = lin;
@@ -878,7 +953,7 @@ namespace FractalMachine.Code.Langs
                 foreach (var code in codes)
                 {
                     // todo: try catch for error checking(?)
-                    code.orderedAstToLinear(bag);
+                    code.toLinear(bag);
                 }
 
                 ///
@@ -896,50 +971,52 @@ namespace FractalMachine.Code.Langs
 
             }
 
-            /*void injectDeclareFunctionParameters(Bag bag)
-            {
-                var sett = lin.NewSetting(ast);
-                sett.Op = "parameters";
+           
 
-                var oa = codes[0];
-                Linear l = new Linear(sett, oa.ast);
-                l.List();
-
-                while (oa != null)
+                /*void injectDeclareFunctionParameters(Bag bag)
                 {
-                    var sBag = bag.subBag();
-                    orderedAstToLinear(sBag);
+                    var sett = lin.NewSetting(ast);
+                    sett.Op = "parameters";
 
-                    if (oa.Subject == ",")
+                    var oa = codes[0];
+                    Linear l = new Linear(sett, oa.ast);
+                    l.List();
+
+                    while (oa != null)
                     {
-                        l = new Linear(sett, oa.ast);
-                        l.List();
+                        var sBag = bag.subBag();
+                        orderedAstToLinear(sBag);
+
+                        if (oa.Subject == ",")
+                        {
+                            l = new Linear(sett, oa.ast);
+                            l.List();
+                        }
+
+                        switch (oa.Subject)
+                        {
+                            case "=":
+                                // todo: creare settings al posto che attributes (oppure creare dictionary)
+                                l.Attributes = oa.attributes;
+                                break;
+
+                            default:
+                                // check for better modes
+                                if(oa.attributes.Count > 0)
+                                    l.Name = oa.attributes[0];
+                                break;
+                        }
+
+                        if (oa.codes.Count == 1)
+                            oa = oa.codes[0];
+                        else
+                            oa = null;
                     }
 
-                    switch (oa.Subject)
-                    {
-                        case "=":
-                            // todo: creare settings al posto che attributes (oppure creare dictionary)
-                            l.Attributes = oa.attributes;
-                            break;
+                }*/
 
-                        default:
-                            // check for better modes
-                            if(oa.attributes.Count > 0)
-                                l.Name = oa.attributes[0];
-                            break;
-                    }
-
-                    if (oa.codes.Count == 1)
-                        oa = oa.codes[0];
-                    else
-                        oa = null;
-                }
-
-            }*/
-
-            #endregion
-        }
+                #endregion
+            }
 
         #endregion
     }

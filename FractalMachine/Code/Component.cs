@@ -14,7 +14,7 @@ namespace FractalMachine.Code
 
         public Component(Machine machine, Linear linear)
         {
-            machine = machine;
+            this.machine = machine;
             this.linear = linear;
         }
 

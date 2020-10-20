@@ -19,9 +19,10 @@ if(miao == 2){
 
 var ciao = { "test" };*/
 
-import System.IO;
+//import System.IO;
 
 int[] main (wow, ciao = 2){
-	long.test.print();
+	var ciao = 2 + 3 + 4;
+	test.print(ciao);
 }
 

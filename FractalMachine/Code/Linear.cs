@@ -37,6 +37,8 @@ namespace FractalMachine.Code
             return lin;
         }
 
+        #region Parent
+
         bool listed = false;
         public void List()
         {
@@ -53,6 +55,19 @@ namespace FractalMachine.Code
                 listed = false;
             }
         }
+
+        public void SetParent(Linear Parent)
+        {
+            parent = Parent;
+        }
+
+        public void Add(Linear lin)
+        {
+            Instructions.Add(lin);
+            lin.parent = this;
+        }
+
+        #endregion
 
         public Linear LastInstruction
         {
