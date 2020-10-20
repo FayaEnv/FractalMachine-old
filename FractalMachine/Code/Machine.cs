@@ -36,6 +36,7 @@ namespace FractalMachine.Code
 
         internal Component Compile(string FileName)
         {
+            //todo: as
             var ext = Path.GetExtension(FileName);
 
             switch (ext)
@@ -53,7 +54,6 @@ namespace FractalMachine.Code
             }
 
             var comp = new Component(this, lastLinear);
-            comp.ReadLinear();
             return comp;
         }
     }

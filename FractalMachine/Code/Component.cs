@@ -9,7 +9,8 @@ namespace FractalMachine.Code
 {
     public class Component
     {
-        Linear linear;
+        internal Component parent;
+        internal Linear linear;
         Machine machine;
         public Dictionary<string, Component> components = new Dictionary<string, Component>();
 
@@ -17,12 +18,15 @@ namespace FractalMachine.Code
         {
             this.machine = machine;
             this.linear = linear;
+            ReadLinear();
         }
 
         public void ReadLinear()
         {
             foreach(var instr in linear.Instructions)
             {
+                instr.component = this;
+
                 switch (instr.Op)
                 {
                     case "import":
@@ -30,12 +34,18 @@ namespace FractalMachine.Code
                         break;
 
                     case "function":
-                        components.Add(instr.Name, new Component(machine, instr));
+                        addComponent(instr);
                         break;
-                }
-
+                }                
             }
            
+        }
+
+        internal void addComponent(Linear instr)
+        {
+            var comp = new Component(machine, instr);
+            comp.parent = this;
+            components.Add(instr.Name, comp);
         }
 
         #region Import
@@ -115,12 +125,74 @@ namespace FractalMachine.Code
 
         #endregion
 
+        #region Components
+
+        public Component Solve(string Name)
+        {
+            var parts = Name.Split('.');
+            Component comp = this, bcomp = this;
+            var tot = "";
+
+            while (!comp.components.TryGetValue(parts[0], out comp))
+            {
+                comp = bcomp.parent;
+                if(comp == null)
+                    throw new Exception("Error, " + parts[0] + " not found");
+                bcomp = comp;
+            }
+
+            comp = bcomp;
+
+            foreach(var p in parts)
+            {
+                if (!comp.components.TryGetValue(p, out comp))
+                    throw new Exception("Error, " + tot + p + " not found");
+
+                tot += p + ".";
+            }
+
+            return comp;
+        }
+
+        #endregion
+
         #region Writer
 
-        public void WriteToCpp()
-        {
-            var writer = new CPP.Writer();
+        internal List<string> push = new List<string>();
 
+        public CPP.Writer WriteToCpp(CPP.Writer writer = null)
+        {
+            if(writer == null)
+                writer = new CPP.Writer();
+        
+            foreach(var lin in linear.Instructions)
+            {
+                switch (lin.Op)
+                {
+                    case "function":
+                        var comp = components[lin.Name];
+
+                        // Calculate parameters                       
+                        var o = writer.Add(new CPP.Writer.Function(lin));
+                        comp.WriteToCpp(o);
+
+                        break;
+
+                    case "push":
+                        push.Add(lin.Name);
+                        break;
+
+                    case "call":
+                        writer.Add(new CPP.Writer.Call(lin));
+                        push.Clear();
+
+                        push.Clear();
+
+                        break;
+                }
+            }
+
+            return writer;
         }
 
         #endregion

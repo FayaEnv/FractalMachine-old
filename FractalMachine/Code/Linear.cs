@@ -6,6 +6,7 @@ namespace FractalMachine.Code
 {
     public class Linear
     {
+        internal Component component;
         internal Linear parent;
         internal AST ast;
 

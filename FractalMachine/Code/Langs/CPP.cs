@@ -38,6 +38,8 @@ namespace FractalMachine.Code.Langs
         {
             Writer parent;
             string content = "";
+            List<Writer> writers = new List<Writer>();
+            string haveToClose = "";
 
             public Writer() { }
             public Writer(Writer Parent)
@@ -45,29 +47,14 @@ namespace FractalMachine.Code.Langs
                 parent = Parent;
             }
 
-            public Writer CreateFunction(string[] Attributes, string Type, string Name, string[] Parameters)
+            public Writer Add(Writer writer)
             {
-                var ret = new Writer(this);
-
-                foreach (var attr in Attributes)
-                {
-                    ret.Write(attr + " ");
-                }
-
-                ret.Write(Type + " ");
-                ret.Write(Name + " ");
-
-                for (int p = 0; p < Parameters.Length; p++)
-                {
-                    ret.Write(Parameters[p]);
-                    if (p < Parameters.Length - 1) ret.Write(", ");
-                }
-
-                ret.Write("{");
-
-                return ret;
+                writer.parent = this;
+                writers.Add(writer);
+                return writer;
             }
 
+            #region Write
             public void Write(string toWrite)
             {
                 content += toWrite;
@@ -75,8 +62,112 @@ namespace FractalMachine.Code.Langs
 
             public void NewLine(string toWrite)
             {
-                content += "\r\n";
+                Write("\r\n");
             }
+
+            void End()
+            {
+                Write("}");
+            }
+
+            #endregion
+
+            public virtual string Output()
+            {
+                var o = content;
+
+                foreach(var writer in writers)
+                {
+                    o += writer.Output();
+                }
+
+                o += haveToClose;
+
+                return o;
+            }
+
+            #region Subclasses
+
+            public class Function : Writer
+            {
+                string[] attributes, parameters;
+                string type, name;
+
+                public Function(Linear Linear)
+                {
+                    // Calculate parameters
+                    var linParams = Linear.Settings[0];
+                    var instrs = linParams.Instructions;
+                    var param = new string[instrs.Count];
+                    for (int p = 0; p < param.Length; p++)
+                    {
+                        param[p] = instrs[p].Name;
+                    }
+
+                    parameters = param;
+
+                    // The rest
+                    attributes = Linear.Attributes.ToArray();
+                    type = Linear.Return;
+                    name = Linear.Name;
+                }
+
+                public override string Output()
+                {
+                    content = "";
+
+                    foreach (var attr in attributes)
+                    {
+                        Write(attr + " ");
+                    }
+
+                    Write(type + " ");
+                    Write(name + " ");
+
+                    for (int p = 0; p < parameters.Length; p++)
+                    {
+                        Write(parameters[p]);
+                        if (p < parameters.Length - 1) Write(", ");
+                    }
+
+                    Write("{");
+
+                    foreach (var w in writers)
+                        content += w.Output();
+
+                    Write("}");
+
+                    return content;
+                }
+            }
+
+            public class Call : Writer
+            {
+                string name;
+                string[] parameters;
+
+                public Call(Linear Linear)
+                {
+                    name = Linear.Name;
+                    var args = Linear.component.push;
+
+                    Component funComp = null;
+                    try
+                    {
+                        funComp = Linear.component.Solve(name);
+                    }
+                    catch (Exception ex)
+                    {
+                        // todo
+                        throw ex;
+                    }
+
+                    var funLin = funComp.linear;
+                    var param = funLin.Settings[0];
+                }
+            }
+
+            #endregion
         }
     }
 }

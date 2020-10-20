@@ -813,10 +813,9 @@ namespace FractalMachine.Code.Langs
                                 lin.Op = "call";
                                 lin.Name = bag.pullParams();
 
-                                bag.disableStatementDecoder = true;
-
                                 bag = bag.subBag();
-
+                                bag.disableStatementDecoder = true;
+                              
                                 onEnd = delegate
                                 {
                                     for (int l = bag.Params.Count - 1; l >= 0; l--)
