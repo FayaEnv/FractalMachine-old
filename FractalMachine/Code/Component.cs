@@ -160,7 +160,7 @@ namespace FractalMachine.Code
 
         internal List<string> push = new List<string>();
 
-        public CPP.Writer WriteToCpp(CPP.Writer writer = null)
+        public string WriteToCpp(CPP.Writer writer = null)
         {
             if(writer == null)
                 writer = new CPP.Writer();
@@ -192,7 +192,7 @@ namespace FractalMachine.Code
                 }
             }
 
-            return writer;
+            return writer.Output();
         }
 
         #endregion

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Classes;
+using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
@@ -39,7 +40,6 @@ namespace FractalMachine.Code.Langs
             Writer parent;
             string content = "";
             List<Writer> writers = new List<Writer>();
-            string haveToClose = "";
 
             public Writer() { }
             public Writer(Writer Parent)
@@ -60,30 +60,29 @@ namespace FractalMachine.Code.Langs
                 content += toWrite;
             }
 
-            public void NewLine(string toWrite)
+            public void NewLine()
             {
                 Write("\r\n");
             }
 
-            void End()
+            void Reset()
             {
-                Write("}");
+                content = "";
             }
 
             #endregion
 
             public virtual string Output()
             {
-                var o = content;
+                Reset();
 
                 foreach(var writer in writers)
                 {
-                    o += writer.Output();
+                    Write(writer.Output());
+                    NewLine();
                 }
 
-                o += haveToClose;
-
-                return o;
+                return content;
             }
 
             #region Subclasses
@@ -110,11 +109,15 @@ namespace FractalMachine.Code.Langs
                     attributes = Linear.Attributes.ToArray();
                     type = Linear.Return;
                     name = Linear.Name;
+
+                    // Type
+                    if (type == "function")
+                        type = "void"; //todo: var
                 }
 
                 public override string Output()
                 {
-                    content = "";
+                    Reset();
 
                     foreach (var attr in attributes)
                     {
@@ -124,16 +127,22 @@ namespace FractalMachine.Code.Langs
                     Write(type + " ");
                     Write(name + " ");
 
+                    Write("(");
                     for (int p = 0; p < parameters.Length; p++)
                     {
                         Write(parameters[p]);
                         if (p < parameters.Length - 1) Write(", ");
                     }
+                    Write(")");
 
                     Write("{");
+                    NewLine();
 
                     foreach (var w in writers)
+                    {
                         content += w.Output();
+                        NewLine();
+                    }
 
                     Write("}");
 
@@ -163,7 +172,42 @@ namespace FractalMachine.Code.Langs
                     }
 
                     var funLin = funComp.linear;
-                    var param = funLin.Settings[0];
+                    var Params = funLin.Settings[0];
+                    parameters = new string[args.Count];
+
+                    var p = 0;
+                    foreach (var par in Params.Instructions)
+                    {
+                        var arg = args[p];
+
+                        string type = "var";
+                        par.Parameters.TryGetValue("type", out type);
+
+                        if (arg.HasStringMark())
+                            parameters[p] = '"' + arg.NoMark() + '"';
+                        else
+                            parameters[p] = arg;
+
+                        p++;
+                    }
+                }
+
+                public override string Output()
+                {
+                    Reset();
+                    Write(name);
+                    Write("(");
+
+                    for (int p=0; p<parameters.Length; p++)
+                    {
+                        Write(parameters[p]);
+                        if (p < parameters.Length - 1)
+                            Write(",");
+                    }
+
+                    Write(");");
+
+                    return content;
                 }
             }
 

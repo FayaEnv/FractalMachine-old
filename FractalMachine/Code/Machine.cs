@@ -31,7 +31,8 @@ namespace FractalMachine.Code
         public void Compile()
         {
             main = Compile(EntryPoint);
-            main.WriteToCpp();
+            string output = main.WriteToCpp();
+            var re = "ead";
         }
 
         internal Component Compile(string FileName)
