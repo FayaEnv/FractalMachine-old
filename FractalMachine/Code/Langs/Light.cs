@@ -608,6 +608,8 @@ namespace FractalMachine.Code.Langs
                 public OnOperation Operation, OnNextParam;
                 public OnOperationInt setTempReturn;
 
+                internal bool disableStatementDecoder = false;
+
                 int linsStackPos = 0;
                 List<Linear> linsStack = new List<Linear>();
 
@@ -761,6 +763,8 @@ namespace FractalMachine.Code.Langs
 
                     if (ast.type == AST.Type.Block)
                     {
+                        bag = bag.subBag();
+
                         if (Subject == "[")
                         {
                             if (parent.IsDeclaration)
@@ -776,23 +780,20 @@ namespace FractalMachine.Code.Langs
                             {
                                 lin = new Linear(bag.Linear, ast);
                                 lin.Op = "call";
-                                lin.Name = bag.pullParams();
+                                lin.Name = bag.Parent.pullParams();
 
-                                bag.Operation = delegate
-                                {
-                                    var p = bag.pullParams();
-                                    if (p != null)
-                                    {
-                                        Linear lin = new Linear(bag.Linear, ast);
-                                        lin.Op = "push";
-                                        lin.Attributes.Add(bag.pullParams());
-                                        lin.List();
-                                    }
-                                };
+                                bag.disableStatementDecoder = true;
 
                                 onEnd = delegate
                                 {
-                                    bag.Operation(bag, this);
+                                    for(int l= bag.Params.Count-1; l>=0; l--)
+                                    {
+                                        Linear lin = new Linear(bag.Linear, ast);
+                                        lin.Op = "push";
+                                        lin.Attributes.Add(Extensions.Pull(bag.Params,0));
+                                        lin.List();
+                                    }
+
                                     setTempReturn();
                                 };
                             }
@@ -897,20 +898,23 @@ namespace FractalMachine.Code.Langs
                             {
                                 var pars = bag.Params;
 
-                                lin = new Linear(bag.Linear, ast);
-                                lin.Op = Extensions.Pull(pars, 0);
-                                lin.Attributes.Add(Extensions.Pull(pars, 0));
+                                if (!bag.disableStatementDecoder && pars.Count > 2)
+                                {          
+                                    lin = new Linear(bag.Linear, ast);
+                                    lin.Op = Extensions.Pull(pars, 0);
+                                    lin.Attributes.Add(Extensions.Pull(pars, 0));
 
-                                string prev = "";
-                                int i = 0;
-                                while (pars.Count > 0)
-                                {
-                                    if (i % 2 == 1)
-                                        lin.Parameters.Add(prev, Extensions.Pull(pars, 0));
-                                    else
-                                        prev = Extensions.Pull(pars, 0);
+                                    string prev = "";
+                                    int i = 0;
+                                    while (pars.Count > 0)
+                                    {
+                                        if (i % 2 == 1)
+                                            lin.Parameters.Add(prev, Extensions.Pull(pars, 0));
+                                        else
+                                            prev = Extensions.Pull(pars, 0);
 
-                                    i++;
+                                        i++;
+                                    }
                                 }
 
                             };

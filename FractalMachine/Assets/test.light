@@ -23,6 +23,6 @@ var ciao = { "test" };*/
 
 int[] main (wow, ciao = 2){
 	var ciao = 2 + 3 + 4;
-	test.print(ciao);
+	test.print(ciao, miao);
 }
 
