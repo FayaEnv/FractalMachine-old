@@ -224,7 +224,7 @@ namespace FractalMachine.Code.Langs
                 trgExitString.OnTriggered = delegate
                 {
                     var ret = eatBufferAndClear();
-                    if(ret != null) ret.aclass = "string";
+                    if (ret != null) ret.aclass = "string";
                 };
 
                 ///
@@ -377,7 +377,7 @@ namespace FractalMachine.Code.Langs
             {
                 this.ast = ast;
 
-                foreach(var child in ast.children)
+                foreach (var child in ast.children)
                 {
                     codes.Add(new OrderedAST(child, this));
                 }
@@ -436,7 +436,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    foreach(var code in codes)
+                    foreach (var code in codes)
                     {
                         if (code.IsBlockParenthesis)
                             return true;
@@ -451,7 +451,7 @@ namespace FractalMachine.Code.Langs
                 get
                 {
                     var last = LastCode;
-                    if(last != null)
+                    if (last != null)
                         return last.IsBlockBrackets;
 
                     return false;
@@ -472,7 +472,7 @@ namespace FractalMachine.Code.Langs
                 {
                     int i = 0;
 
-                    foreach(var code in codes)
+                    foreach (var code in codes)
                     {
                         if (code.ast.type == AST.Type.Attribute)
                             i++;
@@ -540,7 +540,7 @@ namespace FractalMachine.Code.Langs
                 {
                     return IsOperator && Subject == "=";
                 }
-            }        
+            }
 
             internal string Subject
             {
@@ -570,7 +570,7 @@ namespace FractalMachine.Code.Langs
                 {
                     var subj = Subject;
                     var oa = parent;
-                    while(oa.Subject == subj)
+                    while (oa.Subject == subj)
                     {
                         oa = oa.parent;
                     }
@@ -604,7 +604,7 @@ namespace FractalMachine.Code.Langs
                 public List<string> Params = new List<string>();
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
 
-                public OnCallback  OnNextParamOnce;
+                public OnCallback OnNextParamOnce;
                 public OnOperation Operation, OnNextParam;
                 public OnOperationInt setTempReturn;
 
@@ -618,7 +618,7 @@ namespace FractalMachine.Code.Langs
                     ///
                     /// Callbacks
                     ///
-                    setTempReturn = delegate(int val)
+                    setTempReturn = delegate (int val)
                     {
                         lin.Return = "$" + val;
                         addParam("$" + val);
@@ -653,7 +653,7 @@ namespace FractalMachine.Code.Langs
                     if (lin == null)
                         lin = _lin;
 
-                    for (int l = linsStack.Count-1; l >= linsStackPos; l--)
+                    for (int l = linsStack.Count - 1; l >= linsStackPos; l--)
                     {
                         var ll = linsStack[l];
 
@@ -702,7 +702,7 @@ namespace FractalMachine.Code.Langs
                         return null;
 
                     string s = Params[c];
-                    if(!withoutRemove) Params.RemoveAt(c);
+                    if (!withoutRemove) Params.RemoveAt(c);
                     return s;
                 }
                 #endregion
@@ -724,7 +724,7 @@ namespace FractalMachine.Code.Langs
                 toLinear(bag);
                 return bag.Linear;
             }
-            
+
             void toLinear(Bag bag)
             {
                 //if (outLin == null) outLin = new Linear(oAst.ast);
@@ -760,15 +760,13 @@ namespace FractalMachine.Code.Langs
                 if (bag.status == Bag.Status.Ground)
                 {
                     if (ast.type == AST.Type.Block)
-                    {
-                        bag = bag.subBag();
-
+                    {                
                         if (Subject == "[")
                         {
                             if (parent.IsDeclaration)
                             {
                                 //todo: Pensare ad un metodo migliore...
-                                bag.Parent.addParam(bag.pullParams() + "[]");
+                                bag.addParam(bag.pullParams() + "[]");
                             }
                         }
 
@@ -776,15 +774,20 @@ namespace FractalMachine.Code.Langs
                         {
                             if (!parent.IsDeclaration)
                             {
+                                ///
+                                /// Here parameters are simply collected from bag.Paramas
+                                ///
                                 lin = new Linear(bag.Linear, ast);
                                 lin.Op = "call";
-                                lin.Name = bag.Parent.pullParams();
+                                lin.Name = bag.pullParams();
 
                                 bag.disableStatementDecoder = true;
 
+                                bag = bag.subBag();
+
                                 onEnd = delegate
                                 {
-                                    for(int l= bag.Params.Count-1; l>=0; l--)
+                                    for (int l = bag.Params.Count - 1; l >= 0; l--)
                                     {
                                         Linear lin = new Linear(bag.Linear, ast);
                                         lin.Op = "push";
@@ -797,6 +800,9 @@ namespace FractalMachine.Code.Langs
                             }
                             else
                             {
+                                ///
+                                /// This is a good example of different status management
+                                ///
                                 bag = bag.subBag(Bag.Status.DeclarationParenthesis);
                                 var l = bag.Linear = bag.Linear.NewSetting(ast);
                                 l.Op = "parameters";
@@ -820,10 +826,8 @@ namespace FractalMachine.Code.Langs
                             }
                         }
 
-                        if (Subject == "{")
-                        {
+                        if(Subject == "{")
                             bag = bag.subBag();
-                        }
                     }
                     else
                     {
@@ -846,6 +850,10 @@ namespace FractalMachine.Code.Langs
                         }
                         else if (IsOperator)
                         {
+                            ///
+                            /// Operators
+                            ///
+
                             switch (Subject)
                             {
                                 case "=":
@@ -893,12 +901,15 @@ namespace FractalMachine.Code.Langs
                         }
                         else
                         {
+                            ///
+                            /// Statement decoder could cause a statement confusion
+                            ///
                             onEnd = delegate
                             {
                                 var pars = bag.Params;
 
                                 if (!bag.disableStatementDecoder && pars.Count > 2)
-                                {          
+                                {
                                     lin = new Linear(bag.Linear, ast);
                                     lin.Op = Extensions.Pull(pars, 0);
                                     lin.Attributes.Add(Extensions.Pull(pars, 0));
@@ -924,7 +935,6 @@ namespace FractalMachine.Code.Langs
                 {
                     if (IsOperator)
                     {
-
                         switch (Subject)
                         {
                             case ",":
@@ -974,52 +984,9 @@ namespace FractalMachine.Code.Langs
 
             }
 
-           
 
-                /*void injectDeclareFunctionParameters(Bag bag)
-                {
-                    var sett = lin.NewSetting(ast);
-                    sett.Op = "parameters";
-
-                    var oa = codes[0];
-                    Linear l = new Linear(sett, oa.ast);
-                    l.List();
-
-                    while (oa != null)
-                    {
-                        var sBag = bag.subBag();
-                        orderedAstToLinear(sBag);
-
-                        if (oa.Subject == ",")
-                        {
-                            l = new Linear(sett, oa.ast);
-                            l.List();
-                        }
-
-                        switch (oa.Subject)
-                        {
-                            case "=":
-                                // todo: creare settings al posto che attributes (oppure creare dictionary)
-                                l.Attributes = oa.attributes;
-                                break;
-
-                            default:
-                                // check for better modes
-                                if(oa.attributes.Count > 0)
-                                    l.Name = oa.attributes[0];
-                                break;
-                        }
-
-                        if (oa.codes.Count == 1)
-                            oa = oa.codes[0];
-                        else
-                            oa = null;
-                    }
-
-                }*/
-
-                #endregion
-            }
+            #endregion
+        }
 
         #endregion
     }
