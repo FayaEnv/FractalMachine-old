@@ -12,7 +12,7 @@ namespace FractalMachine.Code.Langs
     {
         #region Static
 
-        public static Light OpenScript(string FileName)
+        public static Light OpenFile(string FileName)
         {
             var text = System.IO.File.ReadAllText(FileName);
             var light = new Light();
@@ -198,7 +198,9 @@ namespace FractalMachine.Code.Langs
                     }
                 };
 
+                ///
                 /// Strings
+                ///
 
                 bool onEscapeString = false;
 
@@ -225,6 +227,13 @@ namespace FractalMachine.Code.Langs
                 {
                     var ret = eatBufferAndClear();
                     if (ret != null) ret.aclass = "string";
+                };
+
+                /// Angular bracket
+                trgExitAngularBrackets.OnTriggered = delegate
+                {
+                    var ret = eatBufferAndClear();
+                    if (ret != null) ret.aclass = "angularBracket";
                 };
 
                 ///
@@ -747,6 +756,11 @@ namespace FractalMachine.Code.Langs
                 ///
                 if (ast.type == AST.Type.Attribute)
                 {
+                    if (ast.aclass == "string")
+                        ast.subject = Properties.StringMark + Subject;
+                    if (ast.aclass == "angularBracket")
+                        ast.subject = Properties.AngularBracketsMark + Subject;
+
                     bag.addParam(Subject);
 
                     bag.OnNextParamOnce?.Invoke();
@@ -837,7 +851,10 @@ namespace FractalMachine.Code.Langs
                         if (IsDeclaration)
                         {
                             lin = new Linear(bag.Linear, ast);
-                            lin.Op = "declare";
+                            if (HasFinalBracketsBlock)
+                                lin.Op = "function";
+                            else
+                                lin.Op = "declare";
                             enter = true;
 
                             onEnd = delegate
@@ -908,7 +925,7 @@ namespace FractalMachine.Code.Langs
                             {
                                 var pars = bag.Params;
 
-                                if (!bag.disableStatementDecoder && pars.Count > 2)
+                                if (!bag.disableStatementDecoder && pars.Count > 0)
                                 {
                                     lin = new Linear(bag.Linear, ast);
                                     lin.Op = Extensions.Pull(pars, 0);

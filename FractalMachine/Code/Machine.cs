@@ -14,7 +14,7 @@ namespace FractalMachine.Code
     public class Machine
     {
         Component main;
-        Langs.Light lastLight;
+        Langs.Lang lastScript;
         Linear lastLinear;
 
         internal string assetsDir;
@@ -35,9 +35,21 @@ namespace FractalMachine.Code
 
         internal Component Compile(string FileName)
         {
-            lastLight = Langs.Light.OpenScript(FileName);
-            //var oast = lastLight.GetOrderedAst();
-            lastLinear = lastLight.GetLinear();
+            var ext = Path.GetExtension(FileName);
+
+            switch (ext)
+            {
+                case ".light":
+                    lastScript = Langs.Light.OpenFile(FileName);
+                    lastLinear = lastScript.GetLinear();
+                    break;
+
+                case ".h":
+                    lastScript = Langs.CPP.OpenFile(FileName);
+                    lastLinear = lastScript.GetLinear();
+                    break;
+
+            }
 
             var comp = new Component(this, lastLinear);
             comp.ReadLinear();

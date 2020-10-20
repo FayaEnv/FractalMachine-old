@@ -29,7 +29,6 @@ namespace FractalMachine.Code
                         break;
 
                     case "function":
-
                         components.Add(instr.Name, new Component(machine, instr));
                         break;
                 }
@@ -46,12 +45,13 @@ namespace FractalMachine.Code
             {
                 // Is file
                 // ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
+                var dir = machine.libsDir+"/"+ToImport.NoMark();
+                importFileIntoComponent(dir);
             }
             else
             {
                 // Is namespace
                 var dir = findNamespaceDirectory(ToImport);
-
                 dir = machine.libsDir + dir;
 
                 if (Directory.Exists(dir)) importDirectoryIntoComponent(dir);
@@ -70,8 +70,6 @@ namespace FractalMachine.Code
                 //todo: file name yet exists
                 this.components.Add(c.Key, c.Value);
             }
-
-            var r = "read";
         }
 
         internal void importDirectoryIntoComponent(string dir)

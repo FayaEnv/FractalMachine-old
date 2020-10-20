@@ -15,7 +15,7 @@ namespace FractalMachine
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
-            var test = "test.light";
+            var test = "machine";
             switch (test)
             {
                 case "short":
@@ -23,11 +23,11 @@ namespace FractalMachine
                     light.Parse("IO.test(\"ciao\")");
                     break;
 
-                case "test.light":               
+                case "test":               
                     machine.EntryPoint = assetsDir + "/test.light";
                     break;
 
-                case "machine.light":
+                case "machine":
                     machine.EntryPoint = assetsDir + "/machine.light";
                     break;
             }
