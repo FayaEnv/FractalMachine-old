@@ -31,6 +31,7 @@ namespace FractalMachine.Code
         public void Compile()
         {
             main = Compile(EntryPoint);
+            main.WriteToCpp();
         }
 
         internal Component Compile(string FileName)

@@ -1,4 +1,5 @@
 ﻿using FractalMachine.Classes;
+using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -110,6 +111,16 @@ namespace FractalMachine.Code
             }
 
             return dir;
+        }
+
+        #endregion
+
+        #region Writer
+
+        public void WriteToCpp()
+        {
+            var writer = new CPP.Writer();
+
         }
 
         #endregion

@@ -33,5 +33,23 @@ namespace FractalMachine.Code.Langs
             return Linear = oAst.ToLinear();
         }
 
+        public class Writer
+        {
+            Writer parent;
+            string content = "";
+
+            public Writer() { }
+            public Writer(Writer Parent)
+            {
+                parent = Parent;
+            }
+
+            public Writer CreateFunction(string[] Attributes, string Type, string Name, string[] Parameters)
+            {
+                var ret = new Writer(this);
+
+                return ret;
+            }
+        }
     }
 }
