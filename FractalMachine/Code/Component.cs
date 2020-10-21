@@ -57,6 +57,11 @@ namespace FractalMachine.Code
                     case "function":
                         addComponent(instr);
                         break;
+
+                    case "namespace":
+                        string read = "";
+
+                        break;
                 }                
             }
 
@@ -80,6 +85,7 @@ namespace FractalMachine.Code
                             break;
                     }
 
+                    //todo: add namespace here
                     string read = "";
                 }
             }

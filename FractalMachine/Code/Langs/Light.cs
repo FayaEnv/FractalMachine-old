@@ -138,10 +138,19 @@ namespace FractalMachine.Code.Langs
 
                 trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
-                    var child = curAst.Instruction.NewChild(Line, Pos, AST.Type.Instruction);
-                    child.subject = trigger.activatorDelimiter;
-                    child.aclass = "operator";
-                    clearBuffer();
+                    if (trigger.activatorDelimiter == ":" && curAst.Instruction.MainSubject == "namespace")
+                    {
+                        var attr = curAst.Instruction.NewChild(Line, Pos, AST.Type.Attribute);
+                        attr.subject = ":";
+                        newInstructionAtNewLine = true;
+                    }
+                    else
+                    {
+                        var child = curAst.Instruction.NewChild(Line, Pos, AST.Type.Instruction);
+                        child.subject = trigger.activatorDelimiter;
+                        child.aclass = "operator";
+                        clearBuffer();
+                    }
                 };
 
                 trgFastOperation.OnTriggered = delegate (Triggers.Trigger trigger)
@@ -189,7 +198,10 @@ namespace FractalMachine.Code.Langs
                 trgNewLine.OnTriggered = delegate
                 {
                     if (newInstructionAtNewLine)
+                    {
                         trgNewInstruction.Trig();
+                        newInstructionAtNewLine = false;
+                    }
                 };
 
                 /// Symbols
@@ -972,6 +984,7 @@ namespace FractalMachine.Code.Langs
                                     lin.Op = pars.Pull(0);
                                     lin.Attributes.Add(pars.Pull(0));
 
+                                    //todo: handle types
                                     string prev = "";
                                     int i = 0;
                                     while (pars.Count > 0)

@@ -5,6 +5,8 @@
 
 import System.IO; // as IO;
 
+namespace Test:
+
 function main(){
 	Print("ciao");
 }
