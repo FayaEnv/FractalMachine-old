@@ -31,13 +31,19 @@ namespace FractalMachine.Code
             this.linear = linear;
         }
 
-        public Component(Machine machine, Linear linear, Lang script) : this(machine, linear)
+        public Component(Machine machine, Linear linear, Lang script) : this (machine, linear)
         {
             this.script = script;
         }
 
+        bool linearRead = false;
         public void ReadLinear()
         {
+            if (linearRead)
+                return;
+
+            AnalyzeParameters();
+
             foreach(var instr in linear.Instructions)
             {
                 instr.component = this;
@@ -53,7 +59,30 @@ namespace FractalMachine.Code
                         break;
                 }                
             }
-           
+
+            linearRead = true;
+        }
+
+        internal void AnalyzeParameters()
+        {
+            string par;
+
+            if (parameters.TryGetValue("as", out par))
+            {
+                // Depends if CPP or Light
+                if (Top.script.Language == "CPP")
+                {
+                    //Check for last import
+                    int l = 0;
+                    for (; l < linear.Instructions.Count; l++)
+                    {
+                        if (linear.Instructions[l].Op != "#include") 
+                            break;
+                    }
+
+                    string read = "";
+                }
+            }
         }
 
         internal void addComponent(Linear instr)
@@ -71,15 +100,18 @@ namespace FractalMachine.Code
             {
                 // Is file
                 //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
-                var dir = machine.libsDir+"/"+ToImport.NoMark();
-                importFileIntoComponent(dir, Parameters);
+                var fname = ToImport.NoMark();
+                var dir = machine.libsDir+"/"+ fname;
+                var c = importFileIntoComponent(dir, Parameters);
+                importLink.Add(ToImport, fname);
+                importedComponents.Add(fname, c);
                 //todo: importLink.Add(ResultingNamespace, dir);
             }
             else
             {
                 // Is namespace
-                var dir = findNamespaceDirectory(ToImport);
-                dir = machine.libsDir + dir;
+                var fname = findNamespaceDirectory(ToImport);
+                var dir = machine.libsDir + fname;
 
                 if (Directory.Exists(dir))
                     importDirectoryIntoComponent(dir);
@@ -87,13 +119,14 @@ namespace FractalMachine.Code
                 dir += ".light";
                 if (File.Exists(dir))
                 {
-                    importLink.Add(ToImport, dir);
-                    importFileIntoComponent(dir, Parameters);
+                    var c = importFileIntoComponent(dir, Parameters);
+                    importLink.Add(ToImport, fname);
+                    importedComponents.Add(fname, c);
                 }
             }
         }
 
-        internal void importFileIntoComponent(string file, Dictionary<string, string> parameters)
+        internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
         {
             var comp = machine.Compile(file);
 
@@ -103,9 +136,11 @@ namespace FractalMachine.Code
                 this.components.Add(c.Key, c.Value);
             }
 
-            importedComponents.Add(file, comp);
             comp.parameters = parameters;
+
             comp.ReadLinear();
+
+            return comp;
         }
 
         internal void importDirectoryIntoComponent(string dir)
@@ -198,7 +233,7 @@ namespace FractalMachine.Code
         internal List<string> push = new List<string>();
 
         public string WriteToCpp(CPP.Writer writer = null)
-        {
+        {        
             if(writer == null)
                 writer = new CPP.Writer.Main();
         
@@ -244,7 +279,7 @@ namespace FractalMachine.Code
             if (outFileName == null)
             {
                 var output = WriteToCpp();
-                outFileName = machine.tempDir + FileName.Replace("/", "-");
+                outFileName = machine.tempDir + Path.GetFileName(FileName).Replace("/", "-");
                 File.WriteAllText(outFileName, output);
             }
 

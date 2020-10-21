@@ -10,5 +10,6 @@ namespace FractalMachine.Code.Langs
     public abstract class Lang
     {
         public abstract Linear GetLinear();
+        public abstract string Language { get; }
     }
 }

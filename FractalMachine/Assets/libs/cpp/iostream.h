@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <string>
 
-void Print(string content){
+void iostream_Print(string content){
 	std::cout << content;
 }

@@ -1,5 +1,5 @@
 ﻿import <cpp/iostream.h> as iostream; 
 
 function Print(string content){
-	iostream.Print(content);
+	iostream_Print(content);
 }

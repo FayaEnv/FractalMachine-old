@@ -36,6 +36,11 @@ namespace FractalMachine.Code.Langs
             return Linear = oAst.ToLinear();
         }
 
+        public override string Language
+        {
+            get { return "CPP"; }
+        }
+
         public abstract class Writer
         {
             Writer parent;
@@ -225,7 +230,7 @@ namespace FractalMachine.Code.Langs
 
                 public Import(Linear lin, Component comp)
                 {
-                    string path = lin.Attributes[0];
+                    string path = lin.Attributes[0].NoMark();
 
                     // Check for linking
                     string link;

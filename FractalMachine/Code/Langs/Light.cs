@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using static FractalMachine.Code.AST;
 using FractalMachine.Classes;
-using System.Net.NetworkInformation;
 
 namespace FractalMachine.Code.Langs
 {
@@ -52,6 +50,11 @@ namespace FractalMachine.Code.Langs
         public override Linear GetLinear()
         {
             return Linear = GetOrderedAst().ToLinear();
+        }
+
+        public override string Language
+        {
+            get { return "Light"; }
         }
 
         #endregion
@@ -183,6 +186,12 @@ namespace FractalMachine.Code.Langs
                     eatBufferAndClear();
                 };
 
+                trgNewLine.OnTriggered = delegate
+                {
+                    if (newInstructionAtNewLine)
+                        trgNewInstruction.Trig();
+                };
+
                 /// Symbols
 
                 isSymbol.EnableInvoke = delegate
@@ -240,10 +249,12 @@ namespace FractalMachine.Code.Langs
                 /// Statuses
                 ///
 
+                char[] ExcludeSymbols = new char[] { '_' };
+
                 statusDefault.OnCharCycle = delegate (char ch)
                 {
                     var charType = new CharType(ch);
-                    isSymbol.Value = charType.CharacterType == CharType.CharTypeEnum.Symbol;
+                    isSymbol.Value = ExcludeSymbols.Contains(ch) ? false : charType.CharacterType == CharType.CharTypeEnum.Symbol;
                 };
 
                 statusDefault.OnTriggered = delegate
@@ -262,11 +273,17 @@ namespace FractalMachine.Code.Langs
 
             #region BufferAndAst
 
+            bool newInstructionAtNewLine = false;
+
             AST eatBufferAndClear()
             {
                 //todo: check if strBuffer is text
                 if (!String.IsNullOrEmpty(strBuffer))
                 {
+                    //todo: Handle difference between Light and CPP (or create class apart)
+                    if(strBuffer == "#include") // For CPP
+                        newInstructionAtNewLine = true;
+
                     var ret = curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
                     clearBuffer();
                     return ret;
@@ -879,6 +896,8 @@ namespace FractalMachine.Code.Langs
 
                             onEnd = delegate
                             {
+                                
+
                                 lin.Name = bag.pullParams();
                                 lin.Return = bag.pullParams();
                                 lin.Attributes = bag.Params;
