@@ -17,13 +17,15 @@ namespace FractalMachine.Code
         Langs.Lang lastScript;
         Linear lastLinear;
 
-        internal string assetsDir;
-        internal string libsDir;
+        internal string assetsDir, libsDir, tempDir;
 
         public Machine()
         {
             assetsDir = Resources.Solve("Assets");
             libsDir = assetsDir + "/libs";
+
+            tempDir = "temp/";
+            Resources.CreateDirIfNotExists(tempDir);
         }
 
         public string EntryPoint;
@@ -55,6 +57,7 @@ namespace FractalMachine.Code
             }
 
             var comp = new Component(this, lastLinear);
+            comp.FileName = FileName;
             return comp;
         }
     }

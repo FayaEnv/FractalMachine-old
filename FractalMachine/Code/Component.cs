@@ -3,16 +3,24 @@ using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace FractalMachine.Code
 {
     public class Component
     {
+        Machine machine;
+
+        public Dictionary<string, Component> components = new Dictionary<string, Component>();
+
+        internal string FileName, outFileName;
         internal Component parent;
         internal Linear linear;
-        Machine machine;
-        public Dictionary<string, Component> components = new Dictionary<string, Component>();
+        internal bool called = false;
+
+        internal Dictionary<string, Component> importedComponents = new Dictionary<string, Component>();
+        internal Dictionary<string, string> importLink = new Dictionary<string, string>();
 
         public Component(Machine machine, Linear linear)
         {
@@ -55,9 +63,10 @@ namespace FractalMachine.Code
             if (ToImport.HasMark())
             {
                 // Is file
-                // ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
+                //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
                 var dir = machine.libsDir+"/"+ToImport.NoMark();
                 importFileIntoComponent(dir);
+                //todo: importLink.Add(ResultingNamespace, dir);
             }
             else
             {
@@ -65,10 +74,15 @@ namespace FractalMachine.Code
                 var dir = findNamespaceDirectory(ToImport);
                 dir = machine.libsDir + dir;
 
-                if (Directory.Exists(dir)) importDirectoryIntoComponent(dir);
+                if (Directory.Exists(dir))
+                    importDirectoryIntoComponent(dir);
 
                 dir += ".light";
-                if (File.Exists(dir)) importFileIntoComponent(dir);
+                if (File.Exists(dir))
+                {
+                    importLink.Add(ToImport, dir);
+                    importFileIntoComponent(dir);
+                }
             }
         }
 
@@ -81,6 +95,8 @@ namespace FractalMachine.Code
                 //todo: file name yet exists
                 this.components.Add(c.Key, c.Value);
             }
+
+            importedComponents.Add(file, comp);
         }
 
         internal void importDirectoryIntoComponent(string dir)
@@ -156,6 +172,18 @@ namespace FractalMachine.Code
 
         #endregion
 
+        #region Properties
+
+        public Component Top
+        {
+            get
+            {
+                return (parent!=null) ? parent.Top : this;
+            }
+        }
+
+        #endregion
+
         #region Writer
 
         internal List<string> push = new List<string>();
@@ -163,21 +191,24 @@ namespace FractalMachine.Code
         public string WriteToCpp(CPP.Writer writer = null)
         {
             if(writer == null)
-                writer = new CPP.Writer();
+                writer = new CPP.Writer.Main();
         
             foreach(var lin in linear.Instructions)
             {
+                CPP.Writer o;
+
                 switch (lin.Op)
                 {
                     case "import":
-                        // todo
+                        o = writer.Add(new CPP.Writer.Import(lin, this));
+
                         break;
 
                     case "function":
                         var comp = components[lin.Name];
 
                         // Calculate parameters                       
-                        var o = writer.Add(new CPP.Writer.Function(lin));
+                        o = writer.Add(new CPP.Writer.Function(lin));
                         comp.WriteToCpp(o);
 
                         break;
@@ -196,7 +227,19 @@ namespace FractalMachine.Code
                 }
             }
 
-            return writer.Output();
+            return writer.Compose();
+        }
+
+        public string WriteLibrary()
+        {
+            if (outFileName == null)
+            {
+                var output = WriteToCpp();
+                outFileName = machine.tempDir + FileName.Replace("/", "-");
+                File.WriteAllText(outFileName, output);
+            }
+
+            return outFileName;
         }
 
         #endregion

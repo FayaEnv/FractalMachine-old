@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 
 namespace FractalMachine.Code.Langs
 {
@@ -35,24 +36,11 @@ namespace FractalMachine.Code.Langs
             return Linear = oAst.ToLinear();
         }
 
-        public class Writer
+        public abstract class Writer
         {
             Writer parent;
             string content = "";
             List<Writer> writers = new List<Writer>();
-
-            public Writer() { }
-            public Writer(Writer Parent)
-            {
-                parent = Parent;
-            }
-
-            public Writer Add(Writer writer)
-            {
-                writer.parent = this;
-                writers.Add(writer);
-                return writer;
-            }
 
             #region Write
             public void Write(string toWrite)
@@ -72,20 +60,42 @@ namespace FractalMachine.Code.Langs
 
             #endregion
 
-            public virtual string Output()
+            public string Compose()
             {
-                Reset();
-
-                foreach(var writer in writers)
-                {
-                    Write(writer.Output());
-                    NewLine();
-                }
-
+                Output();
                 return content;
             }
 
+            internal abstract void Output();
+
+            public Writer Add(Writer writer)
+            {
+                writer.parent = this;
+                writers.Add(writer);
+                return writer;
+            }
+
             #region Subclasses
+
+            public class Main : Writer
+            {
+                public Main() { }
+                public Main(Main Parent)
+                {
+                    parent = Parent;
+                }
+
+                internal override void Output()
+                {
+                    Reset();
+
+                    foreach (var writer in writers)
+                    {
+                        Write(writer.Compose());
+                        NewLine();
+                    }
+                }
+            }
 
             public class Function : Writer
             {
@@ -115,7 +125,7 @@ namespace FractalMachine.Code.Langs
                         type = "void"; //todo: var
                 }
 
-                public override string Output()
+                internal override void Output()
                 {
                     Reset();
 
@@ -140,13 +150,11 @@ namespace FractalMachine.Code.Langs
 
                     foreach (var w in writers)
                     {
-                        content += w.Output();
+                        content += w.Compose();
                         NewLine();
                     }
 
                     Write("}");
-
-                    return content;
                 }
             }
 
@@ -171,6 +179,8 @@ namespace FractalMachine.Code.Langs
                         throw ex;
                     }
 
+                    funComp.Top.called = true;
+
                     var funLin = funComp.linear;
                     var Params = funLin.Settings[0];
                     parameters = new string[args.Count];
@@ -192,7 +202,7 @@ namespace FractalMachine.Code.Langs
                     }
                 }
 
-                public override string Output()
+                internal override void Output()
                 {
                     Reset();
                     Write(name);
@@ -206,8 +216,36 @@ namespace FractalMachine.Code.Langs
                     }
 
                     Write(");");
+                }
+            }
 
-                    return content;
+            public class Import : Writer
+            {
+                Component impComp;
+
+                public Import(Linear lin, Component comp)
+                {
+                    string path = lin.Attributes[0];
+
+                    // Check for linking
+                    string link;
+                    if (comp.importLink.TryGetValue(path, out link))
+                        path = link;
+
+                    // Check for compiled resource
+                    comp.importedComponents.TryGetValue(path, out impComp);
+                }
+
+                internal override void Output()
+                {
+                    Reset();
+
+                    if(impComp.called)
+                    {
+                        Write("#include \"");
+                        Write(impComp.WriteLibrary());
+                        Write("\"");
+                    }                 
                 }
             }
 
