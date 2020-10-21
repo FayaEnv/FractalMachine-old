@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -11,13 +12,13 @@ namespace FractalMachine.Code
 {
     public class Component
     {
+        Linear _linear;
         Machine machine;
 
         public Dictionary<string, Component> components = new Dictionary<string, Component>();
 
         internal string FileName, outFileName;
         internal Component parent;
-        internal Linear linear;
         internal Lang script;
         internal bool called = false;
 
@@ -34,7 +35,7 @@ namespace FractalMachine.Code
         public Component(Machine machine, Linear linear)
         {
             this.machine = machine;
-            this.linear = linear;
+            this.Linear = linear;
         }
 
         public Component(Machine machine, Linear linear, Lang script) : this (machine, linear)
@@ -50,7 +51,7 @@ namespace FractalMachine.Code
 
             AnalyzeParameters();
 
-            foreach(var instr in linear.Instructions)
+            foreach(var instr in _linear.Instructions)
             {
                 instr.component = this;
 
@@ -66,7 +67,7 @@ namespace FractalMachine.Code
 
                     case "namespace":
                         var comp = addComponent(instr.Name);
-                        comp.linear = instr;
+                        comp.Linear = instr;
                         comp.ReadLinear();
 
                         break;
@@ -87,9 +88,9 @@ namespace FractalMachine.Code
                 {
                     //Check for last import
                     int l = 0;
-                    for (; l < linear.Instructions.Count; l++)
+                    for (; l < _linear.Instructions.Count; l++)
                     {
-                        if (linear.Instructions[l].Op != "#include") 
+                        if (_linear.Instructions[l].Op != "#include") 
                             break;
                     }
 
@@ -130,6 +131,20 @@ namespace FractalMachine.Code
 
             return comp;
         }
+
+        #region Properties
+
+        internal Linear Linear
+        {
+            get { return _linear; }
+            set
+            {
+                _linear = value;
+                _linear.component = this;
+            }
+        }
+
+        #endregion
 
         #region Import
 
@@ -273,8 +288,10 @@ namespace FractalMachine.Code
         {        
             if(writer == null)
                 writer = new CPP.Writer.Main();
-        
-            foreach(var lin in linear.Instructions)
+
+            Component comp;
+
+            foreach(var lin in _linear.Instructions)
             {
                 CPP.Writer o;
 
@@ -286,8 +303,9 @@ namespace FractalMachine.Code
                         break;
 
                     case "function":
-                        var comp = components[lin.Name];
+                        comp = components[lin.Name];
 
+                        //todo: move writetocpp inside writer
                         // Calculate parameters                       
                         o = writer.Add(new CPP.Writer.Function(lin));
                         comp.WriteToCpp(o);
@@ -305,7 +323,9 @@ namespace FractalMachine.Code
                         break;
 
                     case "namespace":
-                        string read = "";
+                       
+                        o = writer.Add(new CPP.Writer.Namespace(lin));
+                        lin.component.WriteToCpp(o);
 
                         break;
                 }

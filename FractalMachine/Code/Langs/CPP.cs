@@ -155,7 +155,7 @@ namespace FractalMachine.Code.Langs
 
                     foreach (var w in writers)
                     {
-                        content += w.Compose();
+                        Write(w.Compose());
                         NewLine();
                     }
 
@@ -186,7 +186,7 @@ namespace FractalMachine.Code.Langs
 
                     funComp.Top.called = true;
 
-                    var funLin = funComp.linear;
+                    var funLin = funComp.Linear;
                     var Params = funLin.Settings[0];
                     parameters = new string[args.Count];
 
@@ -251,6 +251,32 @@ namespace FractalMachine.Code.Langs
                         Write(impComp.WriteLibrary());
                         Write("\"");
                     }                 
+                }
+            }
+
+            public class Namespace : Writer
+            {
+                string name;
+                public Namespace(Linear lin)
+                {
+                    name = lin.Name;
+                }
+
+                internal override void Output()
+                {
+                    Reset();
+
+                    Write("namespace ");
+                    Write(name);
+                    Write("{");
+
+                    foreach (var w in writers)
+                    {
+                        Write(w.Compose());
+                        NewLine();
+                    }
+
+                    Write("}");
                 }
             }
 

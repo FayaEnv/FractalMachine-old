@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using FractalMachine.Classes;
+using FractalMachine.Code.Langs;
 
 namespace FractalMachine.Code
 {
@@ -14,7 +15,7 @@ namespace FractalMachine.Code
     public class Machine
     {
         Component main;
-        Langs.Lang lastScript;
+        Lang lastScript;
         Linear lastLinear;
 
         internal string assetsDir, libsDir, tempDir;
@@ -40,28 +41,36 @@ namespace FractalMachine.Code
         internal Component Compile(string FileName)
         {
             //todo: as
+            Lang script = null;
+            Linear linear = null;
+            
             var ext = Path.GetExtension(FileName);
 
             switch (ext)
             {
                 case ".light":
-                    lastScript = Langs.Light.OpenFile(FileName);
-                    lastLinear = lastScript.GetLinear();
+                    lastScript = script = Langs.Light.OpenFile(FileName);
+                    lastLinear = linear = lastScript.GetLinear();
                     break;
 
                 case ".h":
-                    lastScript = Langs.CPP.OpenFile(FileName);
-                    lastLinear = lastScript.GetLinear();
+                    lastScript = script = Langs.CPP.OpenFile(FileName);
+                    lastLinear = linear = lastScript.GetLinear();
                     break;
 
             }
 
-            var comp = new Component(this, lastLinear, lastScript);
-            comp.FileName = FileName;
+            if (linear != null)
+            {
+                var comp = new Component(this, linear, script);
+                comp.FileName = FileName;
 
-            comp.ReadLinear();
+                comp.ReadLinear();
 
-            return comp;
+                return comp;
+            }
+
+            return null;
         }
     }
 }
