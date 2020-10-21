@@ -25,6 +25,12 @@ namespace FractalMachine.Code
         internal Dictionary<string, Component> importedComponents = new Dictionary<string, Component>();
         internal Dictionary<string, string> importLink = new Dictionary<string, string>();
 
+        public Component(Component parent)
+        {
+            this.machine = parent.machine;
+            this.parent = parent;
+        }
+
         public Component(Machine machine, Linear linear)
         {
             this.machine = machine;
@@ -59,7 +65,10 @@ namespace FractalMachine.Code
                         break;
 
                     case "namespace":
-                        string read = "";
+                        var comp = addComponent(instr.Name);
+                        comp.linear = instr;
+                        comp.ReadLinear();
+
                         break;
                 }                
             }
@@ -93,8 +102,30 @@ namespace FractalMachine.Code
         internal void addComponent(Linear instr)
         {
             var comp = new Component(machine, instr);
-            comp.parent = this;
+            comp.parent = parent;
             components.Add(instr.Name, comp);
+            comp.ReadLinear();
+        }
+
+        internal Component addComponent(string Name)
+        {           
+            var names = Name.Split('.');
+            var parent = this;
+            for (int i=0; i<names.Length-1; i++)
+            {
+                parent = parent.enterComponentOrCreate(names[i]);
+            }
+
+            return parent;
+        }
+
+        internal Component enterComponentOrCreate(string Name)
+        {
+            Component comp;
+            if(!components.TryGetValue(Name, out comp))
+                comp = new Component(this);
+
+            return comp;
         }
 
         #region Import

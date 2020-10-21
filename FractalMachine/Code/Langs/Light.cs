@@ -830,9 +830,9 @@ namespace FractalMachine.Code.Langs
                     }
                     else
                     {
-                        if (Properties.DeclarationOperations.Contains(instr.Op) )
+                        if (continuous != null && Properties.DeclarationOperations.Contains(instr.Op) )
                         {
-                            //todo: check if instr has yet a modifier
+                            //todo: check if instr has yet a modifier (?)
                             instr.Attributes.Add(continuous.Op);
                         }
                     }
@@ -1063,6 +1063,9 @@ namespace FractalMachine.Code.Langs
 
                                             if (lin.Continuous)
                                                 lin.Attributes.Pull();
+
+                                            if (lin.Op == "namespace")
+                                                lin.Name = lin.Attributes.Pull(0);
 
                                             break;
 
