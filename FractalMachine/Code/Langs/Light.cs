@@ -52,9 +52,9 @@ namespace FractalMachine.Code.Langs
             return Linear = GetOrderedAst().ToLinear();
         }
 
-        public override string Language
+        public override Language Language
         {
-            get { return "Light"; }
+            get { return Language.Light; }
         }
 
         #endregion

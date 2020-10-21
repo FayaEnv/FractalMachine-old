@@ -36,9 +36,9 @@ namespace FractalMachine.Code.Langs
             return Linear = oAst.ToLinear();
         }
 
-        public override string Language
+        public override Language Language
         {
-            get { return "CPP"; }
+            get { return Language.CPP; }
         }
 
         public abstract class Writer

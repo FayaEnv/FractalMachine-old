@@ -10,6 +10,12 @@ namespace FractalMachine.Code.Langs
     public abstract class Lang
     {
         public abstract Linear GetLinear();
-        public abstract string Language { get; }
+        public abstract Language Language { get; }
+    }
+
+    public enum Language
+    {
+        Light,
+        CPP
     }
 }

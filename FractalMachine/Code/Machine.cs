@@ -54,6 +54,7 @@ namespace FractalMachine.Code
                     break;
 
                 case ".h":
+                case ".hpp":
                     lastScript = script = Langs.CPP.OpenFile(FileName);
                     lastLinear = linear = lastScript.GetLinear();
                     break;

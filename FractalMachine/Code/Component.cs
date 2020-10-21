@@ -86,7 +86,7 @@ namespace FractalMachine.Code
             if (parameters.TryGetValue("as", out par))
             {
                 // Depends if CPP or Light
-                if (Top.script.Language == "CPP")
+                if (Top.script.Language == Language.CPP)
                 {
                     //Check for last import
                     int l = 0;
@@ -345,10 +345,10 @@ namespace FractalMachine.Code
         {
             if (outFileName == null)
             {
-                if (script.Language == "Light")
+                if (script.Language == Language.Light)
                 {
                     var output = WriteToCpp();
-                    outFileName = machine.tempDir + Path.GetFileName(FileName).Replace("/", "-");
+                    outFileName = machine.tempDir + Path.GetFileNameWithoutExtension(FileName.Replace("/", "-")) + ".hpp";
                     File.WriteAllText(outFileName, output);
                 }
             }
