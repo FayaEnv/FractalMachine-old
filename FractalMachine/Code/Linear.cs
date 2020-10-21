@@ -14,10 +14,12 @@ namespace FractalMachine.Code
         internal List<Linear> Settings = new List<Linear>();
         internal Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
-        public string Op;
-        public string Name;
-        public List<string> Attributes = new List<string>();
-        public string Return;
+        internal string Op;
+        internal string Name;
+        internal List<string> Attributes = new List<string>();
+        internal string Return;
+
+        internal bool Continuous = false;
 
         public Linear(AST ast)
         {

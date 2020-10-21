@@ -60,7 +60,6 @@ namespace FractalMachine.Code
 
                     case "namespace":
                         string read = "";
-
                         break;
                 }                
             }

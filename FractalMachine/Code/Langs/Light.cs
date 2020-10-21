@@ -138,7 +138,8 @@ namespace FractalMachine.Code.Langs
 
                 trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
-                    if (trigger.activatorDelimiter == ":" && curAst.Instruction.MainSubject == "namespace")
+                    // Check for continuous statement
+                    if (trigger.activatorDelimiter == ":" && Properties.ContinuousStatements.Contains(curAst.Instruction.MainSubject))
                     {
                         var attr = curAst.Instruction.NewChild(Line, Pos, AST.Type.Attribute);
                         attr.subject = ":";
@@ -293,7 +294,7 @@ namespace FractalMachine.Code.Langs
                 if (!String.IsNullOrEmpty(strBuffer))
                 {
                     //todo: Handle difference between Light and CPP (or create class apart)
-                    if(strBuffer == "#include") // For CPP
+                    if (strBuffer == "#include") // For CPP
                         newInstructionAtNewLine = true;
 
                     var ret = curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
@@ -479,7 +480,7 @@ namespace FractalMachine.Code.Langs
                         return parent.codes[pos - 1];
                     else
                         return null;
-                    
+
                 }
             }
 
@@ -773,8 +774,72 @@ namespace FractalMachine.Code.Langs
                 var bag = new Bag();
                 bag.Linear = new Linear(ast);
                 toLinear(bag);
+                Revision(bag.Linear);
                 return bag.Linear;
             }
+
+            #region Revision
+
+            /// <summary>
+            /// This is used for calculate namespace and modifiers
+            /// </summary>
+            /// <param name="lin"></param>
+            void Revision(Linear lin)
+            {
+                // Check for continuous
+                RevisionContinuousNamespace(lin);
+                RevisionContinuousModifiers(lin);
+            }
+
+            void RevisionContinuousNamespace(Linear lin)
+            {
+                Linear continuous = null;
+
+                for (int i = 0; i < lin.Instructions.Count; i++)
+                {
+                    var instr = lin.Instructions[i];
+
+                    if (instr.Op == "namespace" && instr.Continuous)
+                    {
+                        continuous = instr;
+                        instr.Continuous = false;
+                    }
+                    else
+                    {
+                        if (continuous != null)
+                        {
+                            continuous.Instructions.Add(instr);
+                            lin.Instructions.RemoveAt(i--);
+                        }
+                    }
+                }
+            }
+
+            void RevisionContinuousModifiers(Linear lin)
+            {
+                Linear continuous = null;
+
+                for (int i = 0; i < lin.Instructions.Count; i++)
+                {
+                    var instr = lin.Instructions[i];
+
+                    if (Properties.Modifiers.Contains(instr.Op) && instr.Continuous)
+                    {
+                        continuous = instr;
+                        lin.Instructions.RemoveAt(i--);
+                    }
+                    else
+                    {
+                        if (Properties.DeclarationOperations.Contains(instr.Op) )
+                        {
+                            //todo: check if instr has yet a modifier
+                            instr.Attributes.Add(continuous.Op);
+                        }
+                    }
+                }
+            }
+
+            #endregion
 
             void toLinear(Bag bag)
             {
@@ -844,7 +909,7 @@ namespace FractalMachine.Code.Langs
 
                                 bag = bag.subBag();
                                 bag.disableStatementDecoder = true;
-                              
+
                                 onEnd = delegate
                                 {
                                     for (int l = bag.Params.Count - 1; l >= 0; l--)
@@ -889,7 +954,7 @@ namespace FractalMachine.Code.Langs
                             }
                         }
 
-                        if(Subject == "{")
+                        if (Subject == "{")
                             bag = bag.subBag();
                     }
                     else
@@ -908,7 +973,7 @@ namespace FractalMachine.Code.Langs
 
                             onEnd = delegate
                             {
-                                
+
 
                                 lin.Name = bag.pullParams();
                                 lin.Return = bag.pullParams();
@@ -982,19 +1047,43 @@ namespace FractalMachine.Code.Langs
                                 {
                                     lin = new Linear(bag.Linear, ast);
                                     lin.Op = pars.Pull(0);
-                                    lin.Attributes.Add(pars.Pull(0));
 
-                                    //todo: handle types
-                                    string prev = "";
-                                    int i = 0;
-                                    while (pars.Count > 0)
+                                    var instr = Instruction.Get(lin.Op);
+
+                                    switch (instr.Decoder)
                                     {
-                                        if (i % 2 == 1)
-                                            lin.Parameters.Add(prev, pars.Pull(0));
-                                        else
-                                            prev = pars.Pull(0);
+                                        case Instruction.DecoderType.Normal:
 
-                                        i++;
+                                            while (pars.Count > 0)
+                                            {
+                                                var p = pars.Pull(0);
+                                                lin.Attributes.Add(p);
+                                                lin.Continuous = (p == ":");
+                                            }
+
+                                            if (lin.Continuous)
+                                                lin.Attributes.Pull();
+
+                                            break;
+
+                                        case Instruction.DecoderType.WithParameters:
+
+                                            lin.Attributes.Add(pars.Pull(0));
+
+                                            //todo: handle types (?)
+                                            string prev = "";
+                                            int i = 0;
+                                            while (pars.Count > 0)
+                                            {
+                                                if (i % 2 == 1)
+                                                    lin.Parameters.Add(prev, pars.Pull(0));
+                                                else
+                                                    prev = pars.Pull(0);
+
+                                                i++;
+                                            }
+
+                                            break;
                                     }
                                 }
 
@@ -1057,6 +1146,59 @@ namespace FractalMachine.Code.Langs
 
             }
 
+
+            #endregion
+        }
+
+        public class Instruction
+        {
+            #region Dynamic
+            public string Name;
+            public DecoderType Decoder = DecoderType.Normal;
+
+            #endregion
+
+            public enum DecoderType
+            {
+                Normal,
+                WithParameters
+            }
+
+            #region Static
+
+            public static Dictionary<string, Instruction> List;
+
+            internal static Instruction Add(string Name)
+            {
+                var ins = new Instruction();
+                ins.Name = Name;
+                List.Add(Name, ins);
+                return ins;
+            }
+
+            static void init()
+            {
+                if (List == null)
+                {
+                    List = new Dictionary<string, Instruction>();
+
+                    var import = Add("import");
+                    import.Decoder = DecoderType.WithParameters;
+
+                    var include = Add("#include");
+                }
+            }
+
+            public static Instruction Get(string Name)
+            {
+                init();
+
+                Instruction o;
+                if (!List.TryGetValue(Name, out o))
+                    o = new Instruction();
+
+                return o;
+            }
 
             #endregion
         }
