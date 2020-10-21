@@ -809,6 +809,7 @@ namespace FractalMachine.Code.Langs
                         if (continuous != null)
                         {
                             continuous.Instructions.Add(instr);
+                            instr.parent = continuous;
                             lin.Instructions.RemoveAt(i--);
                         }
                     }

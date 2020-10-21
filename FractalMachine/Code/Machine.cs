@@ -33,7 +33,6 @@ namespace FractalMachine.Code
         public void Compile()
         {
             main = Compile(EntryPoint);
-            main.ReadLinear();
             string output = main.WriteToCpp();
             var re = "ead";
         }
@@ -59,6 +58,9 @@ namespace FractalMachine.Code
 
             var comp = new Component(this, lastLinear, lastScript);
             comp.FileName = FileName;
+
+            comp.ReadLinear();
+
             return comp;
         }
     }

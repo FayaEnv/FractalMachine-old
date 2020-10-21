@@ -111,7 +111,7 @@ namespace FractalMachine.Code
         {           
             var names = Name.Split('.');
             var parent = this;
-            for (int i=0; i<names.Length-1; i++)
+            for (int i=0; i<names.Length; i++)
             {
                 parent = parent.enterComponentOrCreate(names[i]);
             }
@@ -122,8 +122,11 @@ namespace FractalMachine.Code
         internal Component enterComponentOrCreate(string Name)
         {
             Component comp;
-            if(!components.TryGetValue(Name, out comp))
+            if (!components.TryGetValue(Name, out comp))
+            {
                 comp = new Component(this);
+                components.Add(Name, comp);
+            }
 
             return comp;
         }
@@ -173,8 +176,6 @@ namespace FractalMachine.Code
             }
 
             comp.parameters = parameters;
-
-            comp.ReadLinear();
 
             return comp;
         }
@@ -301,7 +302,10 @@ namespace FractalMachine.Code
                         writer.Add(new CPP.Writer.Call(lin));
                         push.Clear();
 
-                        push.Clear();
+                        break;
+
+                    case "namespace":
+                        string read = "";
 
                         break;
                 }

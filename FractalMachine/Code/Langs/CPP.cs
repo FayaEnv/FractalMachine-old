@@ -176,7 +176,7 @@ namespace FractalMachine.Code.Langs
                     Component funComp = null;
                     try
                     {
-                        funComp = Linear.component.Solve(name);
+                        funComp = Linear.component.Top.Solve(name);
                     }
                     catch (Exception ex)
                     {
