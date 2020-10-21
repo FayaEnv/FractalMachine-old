@@ -3,6 +3,7 @@ using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -17,8 +18,10 @@ namespace FractalMachine.Code
         internal string FileName, outFileName;
         internal Component parent;
         internal Linear linear;
+        internal Lang script;
         internal bool called = false;
 
+        internal Dictionary<string, string> parameters = new Dictionary<string, string>();
         internal Dictionary<string, Component> importedComponents = new Dictionary<string, Component>();
         internal Dictionary<string, string> importLink = new Dictionary<string, string>();
 
@@ -26,7 +29,11 @@ namespace FractalMachine.Code
         {
             this.machine = machine;
             this.linear = linear;
-            ReadLinear();
+        }
+
+        public Component(Machine machine, Linear linear, Lang script) : this(machine, linear)
+        {
+            this.script = script;
         }
 
         public void ReadLinear()
@@ -38,7 +45,7 @@ namespace FractalMachine.Code
                 switch (instr.Op)
                 {
                     case "import":
-                        Import(instr.Attributes[0]);
+                        Import(instr.Attributes[0], instr.Parameters);
                         break;
 
                     case "function":
@@ -58,14 +65,14 @@ namespace FractalMachine.Code
 
         #region Import
 
-        public void Import(string ToImport)
+        public void Import(string ToImport, Dictionary<string, string> Parameters)
         {
             if (ToImport.HasMark())
             {
                 // Is file
                 //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
                 var dir = machine.libsDir+"/"+ToImport.NoMark();
-                importFileIntoComponent(dir);
+                importFileIntoComponent(dir, Parameters);
                 //todo: importLink.Add(ResultingNamespace, dir);
             }
             else
@@ -81,12 +88,12 @@ namespace FractalMachine.Code
                 if (File.Exists(dir))
                 {
                     importLink.Add(ToImport, dir);
-                    importFileIntoComponent(dir);
+                    importFileIntoComponent(dir, Parameters);
                 }
             }
         }
 
-        internal void importFileIntoComponent(string file)
+        internal void importFileIntoComponent(string file, Dictionary<string, string> parameters)
         {
             var comp = machine.Compile(file);
 
@@ -97,6 +104,8 @@ namespace FractalMachine.Code
             }
 
             importedComponents.Add(file, comp);
+            comp.parameters = parameters;
+            comp.ReadLinear();
         }
 
         internal void importDirectoryIntoComponent(string dir)
