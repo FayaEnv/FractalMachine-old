@@ -70,7 +70,8 @@ public static class Resources
 
     public static void CreateDirIfNotExists(string dir)
     {
-
+        if (!Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
     }
 
     public static bool InBinPath(string Path)

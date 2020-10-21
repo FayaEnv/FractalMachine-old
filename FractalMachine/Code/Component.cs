@@ -23,8 +23,7 @@ namespace FractalMachine.Code
         internal bool called = false;
 
         internal Dictionary<string, string> parameters = new Dictionary<string, string>();
-        internal Dictionary<string, Component> importedComponents = new Dictionary<string, Component>();
-        internal Dictionary<string, string> importLink = new Dictionary<string, string>();
+        internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
 
         public Component(Component parent)
         {
@@ -36,11 +35,7 @@ namespace FractalMachine.Code
         {
             this.machine = machine;
             this.Linear = linear;
-        }
-
-        public Component(Machine machine, Linear linear, Lang script) : this (machine, linear)
-        {
-            this.script = script;
+            this.parent = linear.component;
         }
 
         bool linearRead = false;
@@ -55,6 +50,8 @@ namespace FractalMachine.Code
             {
                 instr.component = this;
 
+                Component comp;
+
                 switch (instr.Op)
                 {
                     case "import":
@@ -66,12 +63,17 @@ namespace FractalMachine.Code
                         break;
 
                     case "namespace":
-                        var comp = addComponent(instr.Name);
+                        comp = addComponent(instr.Name);
                         comp.Linear = instr;
                         comp.ReadLinear();
+                        break;
+
+                    case "call":
+                        comp = Solve(instr.Name);
+                        comp.called = true;
 
                         break;
-                }                
+                }
             }
 
             linearRead = true;
@@ -157,8 +159,7 @@ namespace FractalMachine.Code
                 var fname = ToImport.NoMark();
                 var dir = machine.libsDir+"/"+ fname;
                 var c = importFileIntoComponent(dir, Parameters);
-                importLink.Add(ToImport, fname);
-                importedComponents.Add(fname, c);
+                importLink.Add(fname, c);
                 //todo: importLink.Add(ResultingNamespace, dir);
             }
             else
@@ -174,8 +175,7 @@ namespace FractalMachine.Code
                 if (File.Exists(dir))
                 {
                     var c = importFileIntoComponent(dir, Parameters);
-                    importLink.Add(ToImport, fname);
-                    importedComponents.Add(fname, c);
+                    importLink.Add(ToImport, c);
                 }
             }
         }
@@ -183,6 +183,7 @@ namespace FractalMachine.Code
         internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
         {
             var comp = machine.Compile(file);
+            //comp.parent = this; // ???
 
             foreach (var c in comp.components)
             {
@@ -253,14 +254,13 @@ namespace FractalMachine.Code
                 bcomp = comp;
             }
 
-            comp = bcomp;
-
-            foreach(var p in parts)
+            for(int p=1; p<parts.Length; p++)
             {
-                if (!comp.components.TryGetValue(p, out comp))
-                    throw new Exception("Error, " + tot + p + " not found");
+                var part = parts[p];
+                if (!comp.components.TryGetValue(part, out comp))
+                    throw new Exception("Error, " + tot + part + " not found");
 
-                tot += p + ".";
+                tot += part + ".";
             }
 
             return comp;
@@ -274,7 +274,21 @@ namespace FractalMachine.Code
         {
             get
             {
-                return (parent!=null) ? parent.Top : this;
+                return (parent!=null && parent != this) ? parent.Top : this;
+            }
+        }
+
+        public bool Called
+        {
+            get
+            {
+                if (called) return true;
+                foreach(var comp in components)
+                {
+                    if (comp.Value.Called) return true;
+                }
+
+                return false;
             }
         }
 
@@ -293,23 +307,18 @@ namespace FractalMachine.Code
 
             foreach(var lin in _linear.Instructions)
             {
-                CPP.Writer o;
+                //lin.component = this;
 
                 switch (lin.Op)
                 {
                     case "import":
-                        o = writer.Add(new CPP.Writer.Import(lin, this));
+                        writer.Add(new CPP.Writer.Import(lin, this));
 
                         break;
 
-                    case "function":
-                        comp = components[lin.Name];
-
-                        //todo: move writetocpp inside writer
-                        // Calculate parameters                       
-                        o = writer.Add(new CPP.Writer.Function(lin));
-                        comp.WriteToCpp(o);
-
+                    case "function":                     
+                        writer.Add(new CPP.Writer.Function(lin));
+                        
                         break;
 
                     case "push":
@@ -322,10 +331,8 @@ namespace FractalMachine.Code
 
                         break;
 
-                    case "namespace":
-                       
-                        o = writer.Add(new CPP.Writer.Namespace(lin));
-                        lin.component.WriteToCpp(o);
+                    case "namespace":                 
+                        writer.Add(new CPP.Writer.Namespace(lin));
 
                         break;
                 }
@@ -338,9 +345,12 @@ namespace FractalMachine.Code
         {
             if (outFileName == null)
             {
-                var output = WriteToCpp();
-                outFileName = machine.tempDir + Path.GetFileName(FileName).Replace("/", "-");
-                File.WriteAllText(outFileName, output);
+                if (script.Language == "Light")
+                {
+                    var output = WriteToCpp();
+                    outFileName = machine.tempDir + Path.GetFileName(FileName).Replace("/", "-");
+                    File.WriteAllText(outFileName, output);
+                }
             }
 
             return outFileName;

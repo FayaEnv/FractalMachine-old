@@ -62,7 +62,8 @@ namespace FractalMachine.Code
 
             if (linear != null)
             {
-                var comp = new Component(this, linear, script);
+                var comp = new Component(this, linear);
+                comp.script = script;
                 comp.FileName = FileName;
 
                 comp.ReadLinear();

@@ -128,6 +128,8 @@ namespace FractalMachine.Code.Langs
                     // Type
                     if (type == "function")
                         type = "void"; //todo: var
+
+                    Linear.component.WriteToCpp(this);
                 }
 
                 internal override void Output()
@@ -176,7 +178,7 @@ namespace FractalMachine.Code.Langs
                     Component funComp = null;
                     try
                     {
-                        funComp = Linear.component.Top.Solve(name);
+                        funComp = Linear.component.Solve(name);
                     }
                     catch (Exception ex)
                     {
@@ -233,19 +235,18 @@ namespace FractalMachine.Code.Langs
                     string path = lin.Attributes[0].NoMark();
 
                     // Check for linking
-                    string link;
-                    if (comp.importLink.TryGetValue(path, out link))
-                        path = link;
 
-                    // Check for compiled resource
-                    comp.importedComponents.TryGetValue(path, out impComp);
+                    if (!comp.importLink.TryGetValue(path, out impComp))
+                    {
+                        throw new Exception("Oops");
+                    }
                 }
 
                 internal override void Output()
                 {
                     Reset();
 
-                    if(impComp.called)
+                    if(impComp.Called)
                     {
                         Write("#include \"");
                         Write(impComp.WriteLibrary());
@@ -260,6 +261,7 @@ namespace FractalMachine.Code.Langs
                 public Namespace(Linear lin)
                 {
                     name = lin.Name;
+                    lin.component.WriteToCpp(this);
                 }
 
                 internal override void Output()
@@ -269,6 +271,7 @@ namespace FractalMachine.Code.Langs
                     Write("namespace ");
                     Write(name);
                     Write("{");
+                    NewLine();
 
                     foreach (var w in writers)
                     {
