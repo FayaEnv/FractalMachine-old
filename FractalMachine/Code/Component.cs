@@ -3,6 +3,7 @@ using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
@@ -15,13 +16,12 @@ namespace FractalMachine.Code
         Linear _linear;
         Machine machine;
 
-        public Dictionary<string, Component> components = new Dictionary<string, Component>();
-
         internal string FileName, outFileName;
         internal Component parent;
         internal Lang script;
         internal bool called = false;
 
+        public Dictionary<string, Component> components = new Dictionary<string, Component>();
         internal Dictionary<string, string> parameters = new Dictionary<string, string>();
         internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
 
@@ -29,6 +29,11 @@ namespace FractalMachine.Code
         {
             this.machine = parent.machine;
             this.parent = parent;
+        }
+
+        public Component(Component parent, Linear linear) : this(parent)
+        {
+            this.Linear = linear;
         }
 
         public Component(Machine machine, Linear linear)
@@ -60,6 +65,11 @@ namespace FractalMachine.Code
                 {
                     case "import":
                         Import(instr.Attributes[0], instr.Parameters);
+                        break;
+
+                    case "declare":
+                        addComponent(instr);
+
                         break;
 
                     case "function":
@@ -107,6 +117,13 @@ namespace FractalMachine.Code
             linearRead = true;
         }
 
+        internal void IsNested()
+        {
+            components = new Dictionary<string, Component>();
+            parameters = new Dictionary<string, string>();
+            importLink = new Dictionary<string, Component>();
+        }
+
         internal void AnalyzeParameters()
         {
             string par;
@@ -130,12 +147,13 @@ namespace FractalMachine.Code
             }
         }
 
-        internal void addComponent(Linear instr)
+        internal Component addComponent(Linear instr)
         {
             var comp = new Component(machine, instr);
             comp.parent = parent;
             components.Add(instr.Name, comp);
             comp.ReadLinear();
+            return comp;
         }
 
         internal Component addComponent(string Name)
@@ -169,13 +187,18 @@ namespace FractalMachine.Code
             var type = Type.Get(request);
             var attrType = Type.GetAttributeType(subject);
 
-
+            if(attrType == Type.AttributeType.Name)
+            {
+                // get component info
+            }
 
         }
 
         #endregion
 
         #region Properties
+
+        static string[] NestedOperations = new string[] { "namespace", "function" };
 
         internal Linear Linear
         {
@@ -184,6 +207,9 @@ namespace FractalMachine.Code
             {
                 _linear = value;
                 _linear.component = this;
+
+                if (NestedOperations.Contains(_linear.Op))
+                    IsNested();
             }
         }
 

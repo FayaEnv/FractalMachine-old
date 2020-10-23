@@ -10,6 +10,11 @@ namespace FractalMachine.Code.Langs
     {
         #region Static
 
+        public static string[] Statements = new string[] { "import", "namespace", "#include" };
+        public static string[] ContinuousStatements = new string[] { "namespace", "private", "public" };
+        public static string[] Modifiers = new string[] { "private", "public", "protected" };
+        public static string[] DeclarationOperations = new string[] { "declaration", "function" };
+
         public static Light OpenFile(string FileName)
         {
             var text = System.IO.File.ReadAllText(FileName);
@@ -139,7 +144,7 @@ namespace FractalMachine.Code.Langs
                 trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
                     // Check for continuous statement
-                    if (trigger.activatorDelimiter == ":" && Properties.ContinuousStatements.Contains(curAst.Instruction.MainSubject))
+                    if (trigger.activatorDelimiter == ":" && Light.ContinuousStatements.Contains(curAst.Instruction.MainSubject))
                     {
                         var attr = curAst.Instruction.NewChild(Line, Pos, AST.Type.Attribute);
                         attr.subject = ":";
@@ -392,7 +397,6 @@ namespace FractalMachine.Code.Langs
             internal AST ast;
             internal OrderedAST parent;
             internal List<OrderedAST> codes = new List<OrderedAST>();
-            //internal List<string> attributes = new List<string>();
 
             internal int tempVarCount = 0, tempVar = -1;
 
@@ -514,7 +518,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    return !IsOperator && CountAttributes >= 2 && !Properties.Statements.Contains(codes[0].Subject);
+                    return !IsOperator && CountAttributes >= 2 && !Light.Statements.Contains(codes[0].Subject);
                 }
             }
 
@@ -658,7 +662,7 @@ namespace FractalMachine.Code.Langs
 
                 public OnCallback OnNextParamOnce;
                 public OnOperation Operation, OnNextParam;
-                public OnOperationInt setTempReturn;
+                //public OnOperationInt setTempReturn;
 
                 internal bool disableStatementDecoder = false;
 
@@ -670,11 +674,11 @@ namespace FractalMachine.Code.Langs
                     ///
                     /// Callbacks
                     ///
-                    setTempReturn = delegate (int val)
+                    /*setTempReturn = delegate (int val)
                     {
                         lin.Return = "$" + val;
                         addParam("$" + val);
-                    };
+                    };*/
 
                 }
 
@@ -684,8 +688,9 @@ namespace FractalMachine.Code.Langs
                     DeclarationParenthesis
                 }
 
-                #region Lin
 
+                #region Lin
+                /*
                 public Linear lin
                 {
                     get
@@ -737,8 +742,9 @@ namespace FractalMachine.Code.Langs
                     else
                         _lin = null;
                 }
-
+                */
                 #endregion
+
 
                 #region Param
                 public void addParam(string p)
@@ -824,14 +830,14 @@ namespace FractalMachine.Code.Langs
                 {
                     var instr = lin.Instructions[i];
 
-                    if (Properties.Modifiers.Contains(instr.Op) && instr.Continuous)
+                    if (Light.Modifiers.Contains(instr.Op) && instr.Continuous)
                     {
                         continuous = instr;
                         lin.Instructions.RemoveAt(i--);
                     }
                     else
                     {
-                        if (continuous != null && Properties.DeclarationOperations.Contains(instr.Op) )
+                        if (continuous != null && Light.DeclarationOperations.Contains(instr.Op) )
                         {
                             //todo: check if instr has yet a modifier (?)
                             instr.Attributes.Add(continuous.Op);
@@ -855,8 +861,8 @@ namespace FractalMachine.Code.Langs
                 ///
                 OnCallback setTempReturn = delegate
                 {
-                    lin.Return = "$" + getTempVar();
-                    bag.addParam("$" + getTempVar());
+                    lin.Return = Properties.InternalVariable + getTempVar();
+                    bag.addParam(Properties.InternalVariable + getTempVar());
                 };
 
                 OnCallback onSquareBrackets = delegate
