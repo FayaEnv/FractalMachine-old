@@ -956,7 +956,13 @@ namespace FractalMachine.Code.Langs
                         }
 
                         if (Subject == "{")
+                        {
                             bag = bag.subBag();
+                            //todo for the future:
+                            // if block has no precedent attributes, so it is an object declaration
+                            // so, make a function specialized for "json" parsing that returns a "var"
+                            // same speech for [ closoure
+                        }
                     }
                     else
                     {

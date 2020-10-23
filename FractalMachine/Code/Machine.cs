@@ -19,6 +19,7 @@ namespace FractalMachine.Code
         Linear lastLinear;
 
         internal string assetsDir, libsDir, tempDir;
+        internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
 
         public Machine()
         {
@@ -40,6 +41,13 @@ namespace FractalMachine.Code
 
         internal Component Compile(string FileName)
         {
+            Component comp;
+
+            FileName = Path.GetFullPath(FileName); 
+
+            if (imports.TryGetValue(FileName, out comp))
+                return comp;
+
             //todo: as
             Lang script = null;
             Linear linear = null;
@@ -61,13 +69,15 @@ namespace FractalMachine.Code
 
             }
 
-            if (linear != null)
+            if (linear != null) // why linear should be null?
             {
-                var comp = new Component(this, linear);
+                comp = new Component(this, linear);
                 comp.script = script;
                 comp.FileName = FileName;
 
                 comp.ReadLinear();
+
+                imports.Add(FileName, comp);
 
                 return comp;
             }
