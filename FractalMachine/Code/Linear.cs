@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using static FractalMachine.Code.AST;
 
 namespace FractalMachine.Code
@@ -11,7 +12,7 @@ namespace FractalMachine.Code
         internal AST ast;
 
         internal List<Linear> Instructions = new List<Linear>();
-        internal List<Linear> Settings = new List<Linear>();
+        internal Dictionary<string, Linear> Settings;
         internal Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
         internal string Op;
@@ -32,11 +33,11 @@ namespace FractalMachine.Code
             //parent.Instructions.Add(this);
         }
 
-        public Linear NewSetting(AST ast)
+        public Linear SetSettings(string Name, AST ast)
         {
             var lin = new Linear(ast);
             lin.parent = this;
-            Settings.Add(lin);
+            Settings[Name] = lin;
             return lin;
         }
 
@@ -80,6 +81,14 @@ namespace FractalMachine.Code
                 if (c > 0)
                     return Instructions[c - 1];
                 return null;
+            }
+        }
+
+        public Linear this[int index]
+        {
+            get
+            {
+                return Instructions[index];
             }
         }
     }

@@ -930,7 +930,7 @@ namespace FractalMachine.Code.Langs
                                 /// This is a good example of different status management
                                 ///
                                 bag = bag.subBag(Bag.Status.DeclarationParenthesis);
-                                var l = bag.Linear = bag.Linear.NewSetting(ast);
+                                var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
                                 l.Op = "parameters";
 
                                 bag.Operation = delegate (Bag bag, OrderedAST oAst)

@@ -10,7 +10,7 @@ namespace FractalMachine.Code
         public static string[] Modifiers = new string[] { "private", "public", "protected" };
         public static string[] DeclarationOperations = new string[] { "declaration", "function" };
 
-        public static string Mark = "^°*";
+        public static string Mark = "*°";
         public static string StringMark = "$$" + Mark;
         public static string AngularBracketsMark = "<>" + Mark;
     }

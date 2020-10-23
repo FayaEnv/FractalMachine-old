@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Classes;
+using System;
 using System.Collections.Generic;
 
 namespace FractalMachine.Code
@@ -79,6 +80,61 @@ namespace FractalMachine.Code
             _string._array = true;
 
         }
+
+        public static Type Get(string TypeName)
+        {
+            initTypes();
+
+            Type o;
+            if(!Types.TryGetValue(TypeName, out o))
+            {
+                o = new Type(TypeName);
+            }
+
+            return o;
+        }
+
+        #region AttributeType
+
+        public enum AttributeType
+        {
+            Number,
+            Float,
+            Double,
+            String,
+            Name,
+            Invalid
+        }
+
+        public static AttributeType GetAttributeType(string Name)
+        {
+            if (Name.HasStringMark())
+            {
+                return AttributeType.String;
+            }
+            else if (Char.IsDigit(Name[0]))
+            {
+                var numb = AttributeType.Number;
+
+                for (int c = 0; c < Name.Length; c++)
+                {
+                    if (!Char.IsLetter(Name[c]))
+                        return AttributeType.Invalid;
+
+                    if (Name[c] == '.')
+                        numb = AttributeType.Double;
+
+                    if (c == Name.Length - 1 && Name[c] == 'f')
+                        return AttributeType.Float;
+                }
+
+                return numb;
+            }
+
+            return AttributeType.Name;
+        }
+
+        #endregion
 
         #endregion
 

@@ -46,11 +46,15 @@ namespace FractalMachine.Code
 
             AnalyzeParameters();
 
-            foreach(var instr in _linear.Instructions)
+            int i = 0;
+            int pushNum = 0;
+            Linear callParameters = null;
+
+            foreach (var instr in _linear.Instructions)
             {
                 instr.component = this;
 
-                Component comp;
+                Component comp;             
 
                 switch (instr.Op)
                 {
@@ -68,12 +72,36 @@ namespace FractalMachine.Code
                         comp.ReadLinear();
                         break;
 
+                    case "push":
+                        if(callParameters == null)
+                        {
+                            int j = 0;
+                            while (_linear[i + j].Op != "call") j++;
+                            var call = _linear.Instructions[i + j];
+                            var function = Solve(_linear.Name).Linear;
+                            callParameters = function.Settings["parameters"];
+                            pushNum = 0;
+                        }
+
+                        // Check parameter
+                        var par = callParameters[pushNum];
+                        CheckType(instr.Name, par.Parameters["parameters"], i);
+
+                        string read = "";
+
+                        pushNum++;
+
+                        break;
+
                     case "call":
                         comp = Solve(instr.Name);
                         comp.called = true;
-
+                        callParameters = null;
+                        
                         break;
                 }
+
+                i++;
             }
 
             linearRead = true;
@@ -133,6 +161,19 @@ namespace FractalMachine.Code
 
             return comp;
         }
+
+        #region Types
+
+        public void CheckType(string subject, string request, int linearPos)
+        {
+            var type = Type.Get(request);
+            var attrType = Type.GetAttributeType(subject);
+
+
+
+        }
+
+        #endregion
 
         #region Properties
 
