@@ -225,16 +225,14 @@ namespace FractalMachine.Code
                 subjType = Type.Get(comp.Linear.Return);
                 subjType.Solve(this); // or comp?
             }
-            else
-            {
-                subjType = Type.AttributeTypeToType(attrType);
 
-                if (subjType.Name != reqType.Name)
-                { 
-                    subject = Type.Convert(subject, reqType);
-                    Linear[linearPos].Name = subject;
-                }
-            }
+            subjType = Type.AttributeTypeToType(attrType);
+
+            if (subjType.Name != reqType.Name)
+            { 
+                subject = Type.Convert(subject, reqType);
+                Linear[linearPos].Name = subject;
+            }     
 
             string done = "";
         }
