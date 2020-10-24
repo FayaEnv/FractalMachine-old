@@ -17,7 +17,7 @@ namespace FractalMachine.Compiler
             if(osVersion.Platform == PlatformID.Win32NT)
             {
                 // Search msys
-                var res = Resources.SearchFile("msys2_shell.cmd", 2); //with 2 search just in the root
+                var res = Resources.SearchFile("msys2.exe", 2); //with 2 search just in the root
                 if (!String.IsNullOrEmpty(res)) list.Add(res);
 
                 // Search cygwin
@@ -59,28 +59,32 @@ namespace FractalMachine.Compiler
             MSYS2
         }
 
-        EnvironmentType type;
-        string path;
+        public EnvironmentType Type;
+        public string Path;
+        public PlatformID Platform;
 
         public Environment(string Path)
         {
-            path = Path;
-
-            var name = System.IO.Path.GetFileName(path);
+            var name = System.IO.Path.GetFileName(Path);
             switch (name)
             {
                 case "bash":
-                    type = EnvironmentType.Bash;
+                    Type = EnvironmentType.Bash;
                     break;
 
                 case "Cygwin.bat":
-                    type = EnvironmentType.Cygwin;
+                    Type = EnvironmentType.Cygwin;
                     break;
 
-                case "msys2_shell.cmd":
-                    type = EnvironmentType.MSYS2;
+                case "msys2.exe":
+                    Type = EnvironmentType.MSYS2;
+                    Path = Path.Substring(0, Path.Length - System.IO.Path.GetFileName(Path).Length);
+                    Path += @"usr\bin\bash.exe";
                     break;
             }
+
+            this.Path = Path;
+            this.Platform = System.Environment.OSVersion.Platform;
 
             SetCurrent();
         }

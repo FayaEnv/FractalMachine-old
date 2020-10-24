@@ -1,6 +1,7 @@
 ﻿using FractalMachine.Code;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace FractalMachine.Classes
 {
@@ -61,5 +62,6 @@ namespace FractalMachine.Classes
         }
 
         #endregion
+
     }
 }
