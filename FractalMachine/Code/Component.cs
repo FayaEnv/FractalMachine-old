@@ -469,6 +469,8 @@ namespace FractalMachine.Code
                     outFileName = machine.tempDir + Path.GetFileNameWithoutExtension(FileName.Replace("/", "-")) + ".hpp";
                     File.WriteAllText(outFileName, output);
                 }
+                else
+                    outFileName = FileName;
             }
 
             return outFileName;

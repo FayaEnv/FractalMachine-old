@@ -50,6 +50,58 @@ public static class Resources
         return null;
     }
 
+    public static void CreateDirIfNotExists(string dir)
+    {
+        if (!Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+    }
+
+    public static string SearchFile(string searchedFile, int maxDepth = -1, int level=0, string path="")
+    {
+        if(level == 0)
+        {
+            var drives = System.IO.DriveInfo.GetDrives();
+            foreach(var drive in drives)
+            {
+                if (drive.DriveType == DriveType.Fixed)
+                {
+                    var res = SearchFile(searchedFile, maxDepth, level + 1, drive.Name);
+                    if (!String.IsNullOrEmpty(res)) return res;
+                }
+            }
+        }
+        else 
+        { 
+            DirectoryInfo d = new DirectoryInfo(path);//Assuming Test is your Folder
+
+            if (d.Attributes == FileAttributes.Hidden || d.Attributes == FileAttributes.System || d.Attributes == FileAttributes.Temporary)
+                return null;
+
+            try
+            {
+                FileInfo[] files = d.GetFiles();
+                foreach (var file in files)
+                {
+                    if (file.Name == searchedFile)
+                        return file.FullName;
+                }
+
+                if (level < maxDepth)
+                {
+                    DirectoryInfo[] dirs = d.GetDirectories();
+                    foreach (var dir in dirs)
+                    {
+                        var res = SearchFile(searchedFile, maxDepth, level + 1, dir.FullName);
+                        if (!String.IsNullOrEmpty(res)) return res;
+                    }
+                }
+            }
+            catch { /* eh vabbè */ }
+        }
+
+        return null;
+    }
+
 
     #region Public
 
@@ -66,17 +118,6 @@ public static class Resources
         }
 
         return null;
-    }
-
-    public static void CreateDirIfNotExists(string dir)
-    {
-        if (!Directory.Exists(dir))
-            Directory.CreateDirectory(dir);
-    }
-
-    public static bool InBinPath(string Path)
-    {
-        return Path.StartsWith(exDir);
     }
 
     #endregion

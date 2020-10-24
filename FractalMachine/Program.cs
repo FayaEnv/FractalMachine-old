@@ -1,6 +1,7 @@
 ﻿using System;
 using FractalMachine.Code;
 using FractalMachine.Code.Langs;
+using FractalMachine.Compiler;
 
 namespace FractalMachine
 {
@@ -15,7 +16,7 @@ namespace FractalMachine
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
-            var test = "machine";
+            var test = "bash-test";
             switch (test)
             {
                 case "short":
@@ -25,14 +26,22 @@ namespace FractalMachine
 
                 case "test":               
                     machine.EntryPoint = assetsDir + "/test.light";
+                    machine.Compile();
                     break;
 
                 case "machine":
                     machine.EntryPoint = assetsDir + "/machine.light";
+                    machine.Compile();
+                    break;
+
+                case "bash-test":
+                    var bash = new Bash();
+                    //bash.ExecuteCommand("echo ciao");
+
                     break;
             }
 
-            machine.Compile();
+            
 
             Debug.Print("leggi qui");
         }
