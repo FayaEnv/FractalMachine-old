@@ -248,6 +248,11 @@ namespace FractalMachine.Code
             get { return _base; }
         }
 
+        public AttributeType MyAttributeType
+        {
+            get { return _attributeType; }
+        }
+
         public string Name
         {
             get { return _name; }
@@ -271,6 +276,11 @@ namespace FractalMachine.Code
         public bool Array
         {
             get { return _array; }
+        }
+
+        public bool Class
+        {
+            get { return _class; }
         }
 
         #endregion
