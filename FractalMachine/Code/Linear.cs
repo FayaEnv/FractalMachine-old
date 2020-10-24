@@ -11,16 +11,18 @@ namespace FractalMachine.Code
         internal Linear parent;
         internal AST ast;
 
-        internal List<Linear> Instructions = new List<Linear>();
-        internal Dictionary<string, Linear> Settings = new Dictionary<string, Linear>();
-        internal Dictionary<string, string> Parameters = new Dictionary<string, string>();
+        public List<Linear> Instructions = new List<Linear>();
+        public Dictionary<string, Linear> Settings = new Dictionary<string, Linear>();
+        public Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
-        internal string Op;
-        internal string Name;
-        internal List<string> Attributes = new List<string>();
-        internal string Return;
+        public string Op;
+        public string Name;
+        public List<string> Attributes = new List<string>();
+        public string Return;
 
-        internal bool Continuous = false;
+        public bool Continuous = false;
+
+        internal int DebugLine = -1;
 
         public Linear(AST ast)
         {

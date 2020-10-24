@@ -43,9 +43,21 @@ namespace FractalMachine.Code.Langs
 
         public abstract class Writer
         {
+            Linear linear;
             Writer parent;
             string content = "";
             List<Writer> writers = new List<Writer>();
+
+            public Writer(Writer Parent, Linear Linear)
+            {
+                parent = Parent;
+                if (Parent != null)
+                    Parent.writers.Add(this);
+
+                linear = Linear;
+                Linear.DebugLine = LineNumber;
+
+            }
 
             #region Write
             public void Write(string toWrite)
@@ -56,6 +68,7 @@ namespace FractalMachine.Code.Langs
             public void NewLine()
             {
                 Write("\r\n");
+                LineNumber++;
             }
 
             void Reset()
@@ -64,6 +77,19 @@ namespace FractalMachine.Code.Langs
             }
 
             #endregion
+
+            internal virtual int LineNumber
+            {
+                get
+                {
+                    return parent.LineNumber;
+                }
+
+                set
+                {
+                    parent.LineNumber = value;
+                }
+            }
 
             public string Compose()
             {
@@ -80,15 +106,21 @@ namespace FractalMachine.Code.Langs
                 return writer;
             }
 
+            internal string ReadAttribute(string Attribute)
+            {
+                if (Attribute.HasStringMark())
+                    return '"'+Attribute.NoMark() + '"';
+
+                return Attribute;
+            }
+
             #region Subclasses
 
             public class Main : Writer
             {
-                public Main() { }
-                public Main(Main Parent)
-                {
-                    parent = Parent;
-                }
+                int _lineNumber = 1;
+
+                public Main(Linear linear):base(null, linear) { }
 
                 internal override void Output()
                 {
@@ -100,6 +132,20 @@ namespace FractalMachine.Code.Langs
                         NewLine();
                     }
                 }
+
+                internal override int LineNumber
+                {
+                    get
+                    {
+                        return _lineNumber;
+                    }
+
+                    set
+                    {
+                        _lineNumber = value;
+                    }
+                }
+
             }
 
             public class Function : Writer
@@ -107,7 +153,7 @@ namespace FractalMachine.Code.Langs
                 string[] attributes, parameters;
                 string type, name;
 
-                public Function(Linear Linear)
+                public Function(Writer Parent, Linear Linear):base(Parent, Linear)
                 {
                     // Calculate parameters
                     var linParams = Linear.Settings["parameters"];
@@ -170,7 +216,7 @@ namespace FractalMachine.Code.Langs
                 string name;
                 string[] parameters;
 
-                public Call(Linear Linear)
+                public Call(Writer Parent, Linear Linear) : base(Parent, Linear)
                 {
                     name = Linear.Name;
                     var args = Linear.component.push;
@@ -195,15 +241,12 @@ namespace FractalMachine.Code.Langs
                     var p = 0;
                     foreach (var par in Params.Instructions)
                     {
+                        //todo: if arg is not setted
                         var arg = args[p];
 
                         string type = "var";
                         par.Parameters.TryGetValue("type", out type);
-
-                        if (arg.HasStringMark())
-                            parameters[p] = '"' + arg.NoMark() + '"';
-                        else
-                            parameters[p] = arg;
+                        parameters[p] = ReadAttribute(arg);
 
                         p++;
                     }
@@ -230,7 +273,7 @@ namespace FractalMachine.Code.Langs
             {
                 Component impComp;
 
-                public Import(Linear lin, Component comp)
+                public Import(Writer Parent, Linear lin, Component comp) : base(Parent, lin)
                 {
                     string path = lin.Attributes[0].NoMark();
 
@@ -258,7 +301,7 @@ namespace FractalMachine.Code.Langs
             public class Namespace : Writer
             {
                 string name;
-                public Namespace(Linear lin)
+                public Namespace(Writer Parent, Linear lin) : base(Parent, lin)
                 {
                     name = lin.Name;
                     lin.component.WriteToCpp(this);

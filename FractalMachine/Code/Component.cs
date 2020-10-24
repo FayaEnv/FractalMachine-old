@@ -419,7 +419,7 @@ namespace FractalMachine.Code
         public string WriteToCpp(CPP.Writer writer = null)
         {        
             if(writer == null)
-                writer = new CPP.Writer.Main();
+                writer = new CPP.Writer.Main(Linear);
 
             Component comp;
 
@@ -430,12 +430,12 @@ namespace FractalMachine.Code
                 switch (lin.Op)
                 {
                     case "import":
-                        writer.Add(new CPP.Writer.Import(lin, this));
+                        new CPP.Writer.Import(writer, lin, this);
 
                         break;
 
                     case "function":                     
-                        writer.Add(new CPP.Writer.Function(lin));
+                        new CPP.Writer.Function(writer, lin);
                         
                         break;
 
@@ -444,13 +444,13 @@ namespace FractalMachine.Code
                         break;
 
                     case "call":
-                        writer.Add(new CPP.Writer.Call(lin));
+                        new CPP.Writer.Call(writer, lin);
                         push.Clear();
 
                         break;
 
                     case "namespace":                 
-                        writer.Add(new CPP.Writer.Namespace(lin));
+                        new CPP.Writer.Namespace(writer, lin);
 
                         break;
                 }
