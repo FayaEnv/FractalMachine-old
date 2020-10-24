@@ -1,2 +1,2 @@
-﻿- Controlla cosa succede ad OrderedAst se manca il punto e virgola ;
-- Crea la gestione degli erorri
+﻿- Crea la gestione degli errori
+- Introdurre '' per char

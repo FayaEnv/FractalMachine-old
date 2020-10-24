@@ -948,7 +948,10 @@ namespace FractalMachine.Code.Langs
                                         lin.List();
 
                                         if (bag.Params.Count > 0)
-                                            lin.Parameters.Add("type", bag.pullParams());
+                                        {
+                                            lin.Return = bag.pullParams();
+                                            //lin.Parameters.Add("type", lin.Return);
+                                        }
                                     }
                                 };
 

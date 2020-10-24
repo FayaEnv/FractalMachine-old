@@ -1,6 +1,7 @@
 ﻿using FractalMachine.Classes;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 
 namespace FractalMachine.Code
 {
@@ -9,13 +10,20 @@ namespace FractalMachine.Code
         #region Static
 
         public static Dictionary<string, Type> Types = new Dictionary<string, Type>();
+        public static Dictionary<AttributeType, Type> DefaultTypes = new Dictionary<AttributeType, Type>();
         static bool inited = false;
 
-        public static Type AddType(string Name)
+        private static Type AddType(string Name)
         {
             var t = new Type();
+            Types.Add(Name, t);
             t._name = Name;
             return t;
+        }
+
+        private static void SetAsDefault(Type t, AttributeType attrType = AttributeType.Invalid)
+        {
+            DefaultTypes[attrType == AttributeType.Invalid ? t._attributeType : attrType] = t;
         }
 
         static void initTypes()
@@ -27,58 +35,75 @@ namespace FractalMachine.Code
             var _char = AddType("char");
             _char._bytes = 1;
             _char._signed = true;
+            _char._attributeType = AttributeType.String | AttributeType.Number;
 
             /// uchar
             var _uchar = AddType("uchar");
             _uchar._bytes = 1;
+            _uchar._attributeType = AttributeType.String | AttributeType.Number;
 
             /// short
             var _short = AddType("short");
             _short._bytes = 2;
             _short._signed = true;
+            _short._attributeType = AttributeType.Number;
 
             /// ushort
             var _ushort = AddType("ushort");
             _ushort._bytes = 2;
+            _ushort._attributeType = AttributeType.Number;
 
             /// int
             var _int = AddType("int");
             _int._bytes = 4;
             _int._signed = true;
+            _int._attributeType = AttributeType.Number;
+            SetAsDefault(_int);
 
             /// uint
             var _uint = AddType("uint");
             _uint._bytes = 4;
+            _uint._attributeType = AttributeType.Number;
 
             /// long
             var _long = AddType("long");
             _long._bytes = 8;
             _long._signed = true;
+            _long._attributeType = AttributeType.Number;
 
             /// ulong
             var _ulong = AddType("ulong");
             _ulong._bytes = 8;
+            _ulong._attributeType = AttributeType.Number;
 
             /// float
             var _float = AddType("float");
             _float._bytes = 4;
             _float._floating = true;
+            _float._attributeType = AttributeType.Float;
+            SetAsDefault(_float);
 
             /// double
             var _double = AddType("double");
             _double._bytes = 8;
             _double._floating = true;
+            _double._attributeType = AttributeType.Double;
+            SetAsDefault(_double);
 
             /// double
             var _decimal = AddType("decimal");
             _decimal._bytes = 12;
             _decimal._floating = true;
+            _decimal._attributeType = AttributeType.Float;
 
             /// string
             var _string = AddType("string");
             _string._base = _char;
             _string._array = true;
+            _string._attributeType = AttributeType.String;
+            SetAsDefault(_string);
 
+            inited = true;
         }
 
         public static Type Get(string TypeName)
@@ -153,6 +178,29 @@ namespace FractalMachine.Code
             return new Type();
         }
 
+        public static string Convert(string cont, Type to)
+        {
+            var from = GetAttributeType(cont);
+
+            if (to._class)
+            {
+                //todo
+            }
+
+            switch (from)
+            {
+                case AttributeType.String:
+                    return cont.NoMark();
+
+                default:
+                    if (to._attributeType == AttributeType.String)
+                        return Properties.StringMark + cont;
+                    break;
+            }
+
+            return cont;
+        }
+
         #endregion
 
         #endregion
@@ -160,6 +208,7 @@ namespace FractalMachine.Code
         #region Dynamic
 
         Type _base;
+        AttributeType _attributeType;
         string _name;
         int _bytes;
         bool _floating = false;
@@ -228,12 +277,13 @@ namespace FractalMachine.Code
 
         public void Solve(Component comp)
         {
-            if (!_class)
-                throw new Exception("This is useless");
-            //todo
+            if (_class)
+            {
+                //todo
+            }
         }
 
-        public Converter GetConverter
+        /*public Converter GetConverter
         {
             get
             {
@@ -245,23 +295,16 @@ namespace FractalMachine.Code
 
                 return null;
             }
-        }
+        }*/
 
         #endregion
 
         #region Converters
 
-        public class Converter
+        /*public class Converter
         {
-            #region Types
-
-            public class String : Converter
-            {
-
-            }
-
-            #endregion
-        }
+            
+        }*/
 
         #endregion
     }

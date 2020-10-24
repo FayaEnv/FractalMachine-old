@@ -2,6 +2,7 @@
 using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -88,14 +89,14 @@ namespace FractalMachine.Code
                             int j = 0;
                             while (_linear[i + j].Op != "call") j++;
                             var call = _linear.Instructions[i + j];
-                            var function = Solve(_linear.Name).Linear;
+                            var function = Solve(call.Name).Linear;
                             callParameters = function.Settings["parameters"];
                             pushNum = 0;
                         }
 
                         // Check parameter
                         var par = callParameters[pushNum];
-                        CheckType(instr.Name, par.Parameters["type"], i);
+                        CheckType(instr.Name, par.Return, i);
 
                         string read = "";
                         
@@ -127,9 +128,9 @@ namespace FractalMachine.Code
 
         internal void AnalyzeParameters()
         {
-            string par;
+            string parAs;
 
-            if (parameters.TryGetValue("as", out par))
+            if (parameters.TryGetValue("as", out parAs))
             {
                 // Depends if CPP or Light
                 if (Top.script.Language == Language.CPP)
@@ -138,7 +139,7 @@ namespace FractalMachine.Code
                     int l = 0;
                     for (; l < _linear.Instructions.Count; l++)
                     {
-                        if (_linear.Instructions[l].Op != "#include") 
+                        if (_linear.Instructions[l].Op != "#include")
                             break;
                     }
 
@@ -146,6 +147,25 @@ namespace FractalMachine.Code
                     string read = "";
                 }
             }
+
+            if (_linear != null)
+            {             
+                switch (_linear.Op)
+                {
+                    case "function":
+                        Linear sett;
+                        if (!_linear.Settings.TryGetValue("parameters", out sett))
+                            throw new Exception("Missing function parameters");
+
+                        foreach(var param in sett.Instructions)
+                        {
+                            addComponent(param);
+                        }
+
+                        break;
+                }
+            }
+
         }
 
         #region Components
@@ -208,14 +228,15 @@ namespace FractalMachine.Code
             else
             {
                 subjType = Type.AttributeTypeToType(attrType);
+
+                if (subjType.Name != reqType.Name)
+                { 
+                    subject = Type.Convert(subject, reqType);
+                    Linear[linearPos].Name = subject;
+                }
             }
 
-            if (subjType.Name != reqType.Name)
-            {
-                // needed converter
-                // it try with both converters
-                string todo = "";
-            }
+            string done = "";
         }
 
         #endregion
