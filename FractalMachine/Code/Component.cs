@@ -39,8 +39,8 @@ namespace FractalMachine.Code
         public Component(Machine machine, Linear linear)
         {
             this.machine = machine;
-            this.Linear = linear;
             this.parent = linear.component;
+            this.Linear = linear;       
         }
 
         bool linearRead = false;
@@ -73,7 +73,7 @@ namespace FractalMachine.Code
                         break;
 
                     case "function":
-                        addComponent(instr);
+                        comp = addComponent(instr);
                         break;
 
                     case "namespace":
@@ -95,10 +95,10 @@ namespace FractalMachine.Code
 
                         // Check parameter
                         var par = callParameters[pushNum];
-                        CheckType(instr.Name, par.Parameters["parameters"], i);
+                        CheckType(instr.Name, par.Parameters["type"], i);
 
                         string read = "";
-
+                        
                         pushNum++;
 
                         break;
@@ -117,6 +117,7 @@ namespace FractalMachine.Code
             linearRead = true;
         }
 
+        //tothink: is it so important that this parameters are instanced when strictly necessary?
         internal void IsNested()
         {
             components = new Dictionary<string, Component>();
@@ -147,11 +148,12 @@ namespace FractalMachine.Code
             }
         }
 
+        #region Components
+
         internal Component addComponent(Linear instr)
         {
-            var comp = new Component(machine, instr);
-            comp.parent = parent;
-            components.Add(instr.Name, comp);
+            var comp = addComponent(instr.Name);
+            comp.Linear = instr;
             comp.ReadLinear();
             return comp;
         }
@@ -162,13 +164,13 @@ namespace FractalMachine.Code
             var parent = this;
             for (int i=0; i<names.Length; i++)
             {
-                parent = parent.enterComponentOrCreate(names[i]);
+                parent = parent.getComponentOrCreate(names[i]);
             }
 
             return parent;
         }
 
-        internal Component enterComponentOrCreate(string Name)
+        internal Component getComponentOrCreate(string Name)
         {
             Component comp;
             if (!components.TryGetValue(Name, out comp))
@@ -180,18 +182,40 @@ namespace FractalMachine.Code
             return comp;
         }
 
+        #endregion
+
         #region Types
 
         public void CheckType(string subject, string request, int linearPos)
         {
-            var type = Type.Get(request);
-            var attrType = Type.GetAttributeType(subject);
+            Type reqType = Type.Get(request);
+            Type subjType;
 
-            if(attrType == Type.AttributeType.Name)
+            var attrType = Type.GetAttributeType(subject);
+            
+            if(attrType == Type.AttributeType.Invalid)
             {
-                // get component info
+                throw new Exception("Invalid type");
             }
 
+            if (attrType == Type.AttributeType.Name)
+            {
+                // get component info    
+                var comp = Solve(subject);
+                subjType = Type.Get(comp.Linear.Return);
+                subjType.Solve(this); // or comp?
+            }
+            else
+            {
+                subjType = Type.AttributeTypeToType(attrType);
+            }
+
+            if (subjType.Name != reqType.Name)
+            {
+                // needed converter
+                // it try with both converters
+                string todo = "";
+            }
         }
 
         #endregion
@@ -205,6 +229,9 @@ namespace FractalMachine.Code
             get { return _linear; }
             set
             {
+                if (value == null)
+                    return;
+
                 _linear = value;
                 _linear.component = this;
 

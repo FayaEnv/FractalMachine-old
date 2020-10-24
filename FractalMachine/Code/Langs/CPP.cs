@@ -110,7 +110,7 @@ namespace FractalMachine.Code.Langs
                 public Function(Linear Linear)
                 {
                     // Calculate parameters
-                    var linParams = Linear.Settings[0];
+                    var linParams = Linear.Settings["parameters"];
                     var instrs = linParams.Instructions;
                     var param = new string[instrs.Count];
                     for (int p = 0; p < param.Length; p++)
@@ -189,7 +189,7 @@ namespace FractalMachine.Code.Langs
                     funComp.Top.called = true;
 
                     var funLin = funComp.Linear;
-                    var Params = funLin.Settings[0];
+                    var Params = funLin.Settings["parameters"];
                     parameters = new string[args.Count];
 
                     var p = 0;

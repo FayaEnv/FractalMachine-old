@@ -12,7 +12,7 @@ namespace FractalMachine.Code
         internal AST ast;
 
         internal List<Linear> Instructions = new List<Linear>();
-        internal Dictionary<string, Linear> Settings;
+        internal Dictionary<string, Linear> Settings = new Dictionary<string, Linear>();
         internal Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
         internal string Op;

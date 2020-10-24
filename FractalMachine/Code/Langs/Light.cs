@@ -73,9 +73,7 @@ namespace FractalMachine.Code.Langs
             private string strBuffer;
 
             private Switch isSymbol = new Switch();
-
-            int Line = 0, Pos = 0;
-
+       
             public Amanuensis()
             {
                 statusSwitcher = new StatusSwitcher(this);

@@ -134,6 +134,25 @@ namespace FractalMachine.Code
             return AttributeType.Name;
         }
 
+        public static Type AttributeTypeToType(AttributeType attrType)
+        {
+            initTypes();
+
+            switch (attrType)
+            {
+                case AttributeType.Number:
+                    return Types["int"];
+                case AttributeType.Float:
+                    return Types["float"];
+                case AttributeType.Double:
+                    return Types["double"];
+                case AttributeType.String:
+                    return Types["string"];
+            }
+
+            return new Type();
+        }
+
         #endregion
 
         #endregion
@@ -206,6 +225,43 @@ namespace FractalMachine.Code
         }
 
         #endregion
+
+        public void Solve(Component comp)
+        {
+            if (!_class)
+                throw new Exception("This is useless");
+            //todo
+        }
+
+        public Converter GetConverter
+        {
+            get
+            {
+                switch (_name)
+                {
+                    case "string":
+                        return new Converter.String();
+                }
+
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Converters
+
+        public class Converter
+        {
+            #region Types
+
+            public class String : Converter
+            {
+
+            }
+
+            #endregion
+        }
 
         #endregion
     }

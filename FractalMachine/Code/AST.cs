@@ -197,6 +197,7 @@ namespace FractalMachine.Code
         public abstract class Amanuensis
         {
             internal int Cycle = 0;
+            internal int Line = 1, Pos = 0;
         }
 
         public abstract class OrderedAST
