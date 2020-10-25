@@ -1,7 +1,10 @@
-﻿using System;
+﻿using FractalMachine.Code;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Text;
 
 namespace FractalMachine.Compiler
@@ -36,16 +39,55 @@ namespace FractalMachine.Compiler
             {
                 if (!Directory.Exists("cygwin64-light"))
                 {
+                    Console.WriteLine("Preparing cygwin64-light environment, just few minutes");
 
+                    if(!File.Exists(cygwinDownloadZipPath))
+                        startCygwinDownload();
                 }
 
                 Path = "cygwin64-light" + Path;
             }
         }
 
+        #region DownloadCygwin
+        string cygwinDownloadZipPath = Properties.TempDir + "cygwin64-light.zip";
+        int cygwinDownloadLastPercentage;
+        bool cygwinDownloadEnded;
+        private void startCygwinDownload()
+        {
+            cygwinDownloadEnded = false;
+            cygwinDownloadLastPercentage = -1;
+
+            WebClient client = new WebClient();
+            client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
+            client.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
+            client.DownloadFileAsync(new Uri(Properties.CygwinDownloadUrl), cygwinDownloadZipPath);
+
+            while (!cygwinDownloadEnded) ;
+        }
+        void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            double bytesIn = double.Parse(e.BytesReceived.ToString());
+            double totalBytes = double.Parse(e.TotalBytesToReceive.ToString());
+            int percentage = (int)(bytesIn / totalBytes * 100);
+            if (cygwinDownloadLastPercentage != percentage)
+            {
+                Console.Write((int)percentage + "% ");
+                cygwinDownloadLastPercentage = percentage;
+            }
+        }
+        void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        { 
+            cygwinDownloadEnded = true;
+            Console.WriteLine("\r\nCompleted!");
+        }
+        #endregion
+
         public Command ExecuteCommand(string command)
         {
             var cmd = new Command(this);
+
+            var splitCmd = command.Split(' ');
 
             cmd.Process = new Process()
             {

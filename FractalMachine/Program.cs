@@ -9,6 +9,7 @@ namespace FractalMachine
     {
         static void Main(string[] args)
         {
+            Properties.Init();
 
             Console.WriteLine("Hello fractal!");
 
@@ -36,8 +37,11 @@ namespace FractalMachine
                     break;
 
                 case "bash-test":
-                   
-                    var gcc = new GCC(Compiler.Environment.GetEnvironment);
+                    var env = Compiler.Environment.GetEnvironment;
+                    var cmd = env.ExecuteCommand("which gcc");
+                    cmd.Run();
+
+                    var gcc = new GCC(env);
                     //gcc.Compile("test.c");
 
                     string read = "";

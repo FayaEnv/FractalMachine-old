@@ -26,8 +26,7 @@ namespace FractalMachine.Code
             assetsDir = Resources.Solve("Assets");
             libsDir = assetsDir + "/libs";
 
-            tempDir = "temp/";
-            Resources.CreateDirIfNotExists(tempDir);
+            tempDir = Properties.TempDir;
         }
 
         public string EntryPoint;
