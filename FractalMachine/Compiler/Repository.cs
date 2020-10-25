@@ -506,6 +506,7 @@ namespace FractalMachine.Compiler
         /// </summary>
         public class Brew : Repository
         {
+            // https://formulae.brew.sh/docs/api/
             public Brew(Environment Env) : base(Env)
             {
                 Resources.CreateDirIfNotExists(Dir);
