@@ -1,7 +1,9 @@
 ﻿using FractalMachine.Code;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace FractalMachine.Classes
 {
@@ -63,5 +65,16 @@ namespace FractalMachine.Classes
 
         #endregion
 
+        #region JSON.Net
+
+        public static JObject ToJObject<T>(this Dictionary<string, T> dict)
+        {
+            JObject res = new JObject();
+            foreach(var kp in dict)
+                res[kp.Key] = new JObject(kp.Value);
+            return res;
+        }
+
+        #endregion
     }
 }

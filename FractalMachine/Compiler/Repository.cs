@@ -1,6 +1,7 @@
 ﻿using FractalMachine.Code;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,14 +19,12 @@ namespace FractalMachine.Compiler
         public Environment Env { get; set; }
         public Repository(Environment env)
         {
-            Env = env;
-
-            Resources.CreateDirIfNotExists(Dir);
+            Env = env; 
         }
 
         abstract public void Search(string query);
         abstract public void Info(string query);
-        abstract public void Install(string query);
+        abstract public InstallationResult Install(string Package);
         abstract public void List(string query);
         abstract public void Upgrade(string query);
         abstract public void Update();
@@ -106,6 +105,17 @@ namespace FractalMachine.Compiler
 
         #endregion
 
+        #region Enums
+
+        public enum InstallationResult
+        {
+            PackageNotFound,
+            Success,
+            Error
+        }
+
+        #endregion
+
         #region Classes
         public class Cygwin : Repository
         {
@@ -124,6 +134,9 @@ namespace FractalMachine.Compiler
                 setupDir = Dir + setupDir;
                 setupJsonName = setupDir + setupJsonName;
                 setupInstalled = setupDir + setupInstalled;
+
+                if (File.Exists(setupDir))
+                    load();
             }
 
             public override string Dir 
@@ -141,12 +154,19 @@ namespace FractalMachine.Compiler
 
             }
 
-            public override void Install(string query)
+            public override InstallationResult Install(string Package)
             {
+                Package package;
+                if(packages.TryGetValue(Package, out package))
+                {
+                    var fn = defaultMirror + package.FileName;
+                    var str = "";
+                }
 
+                return InstallationResult.PackageNotFound;
             }
 
-            public override void List(string query)
+            public override void List(string query = "")
             {
 
             }
@@ -177,19 +197,34 @@ namespace FractalMachine.Compiler
                     Console.WriteLine("Repository updated!");
                 }
 
-                checkInstalledDb(); 
+                checkInstalledDb();
+                load();
             }
 
             #region Structs
 
+            internal void load()
+            {
+                loadPackages();
+                loadInstalledPackages();
+            }
+
             void loadPackages()
             {
-
+                if(packages == null && File.Exists(setupJsonName))
+                {
+                    var json = File.ReadAllText(setupJsonName);
+                    packages = JsonConvert.DeserializeObject<Dictionary<string, Package>>(json);
+                }
             }
 
             void loadInstalledPackages()
             {
-
+                if (installedPackages == null && File.Exists(setupInstalled))
+                {
+                    var json = File.ReadAllText(setupInstalled);
+                    installedPackages = JsonConvert.DeserializeObject<Dictionary<string, InstalledPackage>>(json);
+                }
             }
 
             #endregion
@@ -234,14 +269,17 @@ namespace FractalMachine.Compiler
                     }
 
                     Console.WriteLine("Saving DB");
-                    var arr = res.ToArray();
-                    var json = JsonConvert.SerializeObject(arr, Formatting.Indented);
-                    File.WriteAllText(fnInstalled, json);
 
-                    Console.WriteLine("Removing old files");
-                    foreach (var del in toDelete)
-                        File.Delete(del);
-                    File.Delete(fn);
+                    var json = JsonConvert.SerializeObject(res, Formatting.Indented);
+                    File.WriteAllText(fnInstalled, json);
+             
+                    if (Properties.Debugging)
+                    {
+                        Console.WriteLine("Removing old files");
+                        foreach (var del in toDelete)
+                            File.Delete(del);
+                        File.Delete(fn);
+                    }
 
                     Console.WriteLine("Completed");
                 }
@@ -387,7 +425,10 @@ namespace FractalMachine.Compiler
         // https://wiki.archlinux.org/index.php/Official_repositories_web_interface
         public class ArchLinux : Repository
         {
-            public ArchLinux(Environment Env) : base(Env) { }
+            public ArchLinux(Environment Env) : base(Env) 
+            {
+                Resources.CreateDirIfNotExists(Dir);
+            }
 
             public override string Dir
             {
@@ -404,9 +445,9 @@ namespace FractalMachine.Compiler
 
             }
 
-            public override void Install(string query)
+            public override InstallationResult Install(string Package)
             {
-
+                return InstallationResult.PackageNotFound;
             }
 
             public override void List(string query)

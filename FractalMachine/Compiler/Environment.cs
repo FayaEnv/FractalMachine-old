@@ -50,7 +50,7 @@ namespace FractalMachine.Compiler
                     Console.WriteLine("First time? You are welcome!");
                     Console.WriteLine("Preparing cygwin64-light environment, just few minutes");
 
-                    if(!File.Exists(cygwinDownloadZipPath))
+                    if(!File.Exists(cygwinDownloadZipPath)) //if dubbio
                         startCygwinDownload();
 
                     Console.WriteLine("Extracting zip archive...");

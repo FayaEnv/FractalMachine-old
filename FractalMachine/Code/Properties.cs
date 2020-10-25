@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
+
 namespace FractalMachine.Code
 {
     public static class Properties
     {
+        public static bool Debugging = Debugger.IsAttached;
+
         public static string TempDir = "temp/";
         public static string CygwinDownloadUrl = "https://srv-store2.gofile.io/download/iITx0L/cygwin64-light.zip";
         public static int MaxRepositoryDays = 7;

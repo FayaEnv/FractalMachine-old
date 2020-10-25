@@ -41,6 +41,8 @@ namespace FractalMachine
                     var cmd = env.NewCommand("which gcc");
                     cmd.Run();
 
+                    var res = env.Repository.Install("");
+
                     var gcc = new GCC(env);
                     //gcc.Compile("test.c");
 
