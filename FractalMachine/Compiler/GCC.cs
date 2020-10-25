@@ -6,11 +6,11 @@ namespace FractalMachine.Compiler
 {
     public class GCC
     {
-        Bash bash;
+        Environment env;
 
-        public GCC(Bash Bash)
+        public GCC(Environment Env)
         {
-            bash = Bash;
+            env = Env;
         }
 
         public void Compile(string FileName)

@@ -36,12 +36,8 @@ namespace FractalMachine
                     break;
 
                 case "bash-test":
-                    var bash = new Bash();
-                    System.Threading.Thread.Sleep(1000);
-                    //bash.Execute("echo ciao");
-                    var s2 = bash.ExecuteCommand("pacman -h");
                    
-                    var gcc = new GCC(bash);
+                    var gcc = new GCC(Compiler.Environment.GetEnvironment);
                     //gcc.Compile("test.c");
 
                     string read = "";
