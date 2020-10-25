@@ -38,7 +38,7 @@ namespace FractalMachine
 
                 case "bash-test":
                     var env = Compiler.Environment.GetEnvironment;
-                    var cmd = env.ExecuteCommand("which gcc");
+                    var cmd = env.NewCommand("which gcc");
                     cmd.Run();
 
                     var gcc = new GCC(env);

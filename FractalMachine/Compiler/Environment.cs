@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Text;
 
@@ -27,33 +28,51 @@ namespace FractalMachine.Compiler
 
         #endregion
 
-        PlatformID Platform;
-        public string Path = "/usr/bin/";
+        public PlatformID Platform;
+        public string Path = "/bin/";
+        public Repository Repository;
+        public string Arch;
 
         public Environment()
         {
-            var osVersion = System.Environment.OSVersion;
-            Platform = osVersion.Platform;
+            if (!System.Environment.Is64BitProcess)
+                throw new Exception("32 bit currently not supported. Update your self, upgrade to 64 bit!");
+
+            Platform = System.Environment.OSVersion.Platform;
 
             if (Platform == PlatformID.Win32NT)
             {
-                if (!Directory.Exists("cygwin64-light"))
+                Repository = new Repository.Cygwin(this);
+
+                if (!Directory.Exists(Repository.Dir))
                 {
+                    Console.WriteLine("First time? You are welcome!");
                     Console.WriteLine("Preparing cygwin64-light environment, just few minutes");
 
                     if(!File.Exists(cygwinDownloadZipPath))
                         startCygwinDownload();
+
+                    Console.WriteLine("Extracting zip archive...");
+                    ZipFile.ExtractToDirectory(cygwinDownloadZipPath, "./");                   
+                    Console.WriteLine("Completed!");
                 }
 
                 Path = "cygwin64-light" + Path;
             }
+            else
+            {
+                Repository = new Repository.ArchLinux(this);
+            }
+
+            Arch = ExecCmd("arch").Split('\n')[0];
+            Repository.Update();
         }
 
         #region DownloadCygwin
         string cygwinDownloadZipPath = Properties.TempDir + "cygwin64-light.zip";
         int cygwinDownloadLastPercentage;
         bool cygwinDownloadEnded;
-        private void startCygwinDownload()
+        internal void startCygwinDownload(/* "hack" */ string url = null, string output = null) 
         {
             cygwinDownloadEnded = false;
             cygwinDownloadLastPercentage = -1;
@@ -61,7 +80,7 @@ namespace FractalMachine.Compiler
             WebClient client = new WebClient();
             client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
             client.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
-            client.DownloadFileAsync(new Uri(Properties.CygwinDownloadUrl), cygwinDownloadZipPath);
+            client.DownloadFileAsync(new Uri(url ?? Properties.CygwinDownloadUrl), output ?? cygwinDownloadZipPath);
 
             while (!cygwinDownloadEnded) ;
         }
@@ -83,18 +102,21 @@ namespace FractalMachine.Compiler
         }
         #endregion
 
-        public Command ExecuteCommand(string command)
+        /* 4 LINUX
+         * Set temporary dynamic linking dir: https://unix.stackexchange.com/questions/24811/changing-linked-library-for-a-given-executable-centos-6
+         * 
+         */
+
+        public Command NewCommand(string command)
         {
             var cmd = new Command(this);
-
-            var splitCmd = command.Split(' ');
 
             cmd.Process = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = Path,
-                    Arguments = $"",                    
+                    FileName = Path + "bash",
+                    Arguments = $"-login -c "+ command, // 2>&1 | tee test.txt               
                     UseShellExecute = false,
                     CreateNoWindow = false,
                     RedirectStandardOutput = true,
@@ -104,6 +126,17 @@ namespace FractalMachine.Compiler
             };
 
             return cmd;
+        }
+
+        public string ExecCmd(string cmd)
+        {
+            var comm = NewCommand(cmd);
+            comm.Run();
+
+            string res = "";
+            foreach (string s in comm.OutLines) res += s + "\n";
+            foreach (string s in comm.OutErrors) res += s + "\n";
+            return res;
         }
     }
 
@@ -130,6 +163,11 @@ namespace FractalMachine.Compiler
             while ((s = Process.StandardError.ReadLine()) != null) err.Add(s);
             OutLines = lines.ToArray();
             OutErrors = lines.ToArray();
+        }
+
+        public void AddArgument(string arg)
+        {
+            Process.StartInfo.Arguments += " " + arg;
         }
     }
 }

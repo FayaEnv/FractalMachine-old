@@ -15,8 +15,7 @@ namespace FractalMachine.Compiler
 
         public void Compile(string FileName)
         {
-            //var exe = bash.NewExecution("gcc --help");
-            //exe.Run();
+            var cmd = env.NewCommand("gcc");
             string re = "ea";
         }
     }
