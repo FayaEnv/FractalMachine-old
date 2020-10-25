@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace FractalMachine.Compiler
 {
@@ -116,7 +117,7 @@ namespace FractalMachine.Compiler
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = Path + "bash",
-                    Arguments = $"-login -c "+ command, // 2>&1 | tee test.txt               
+                    Arguments = $"-login -c '"+ command, // 2>&1 | tee test.txt               
                     UseShellExecute = false,
                     CreateNoWindow = false,
                     RedirectStandardOutput = true,
@@ -153,16 +154,25 @@ namespace FractalMachine.Compiler
 
         public void Run()
         {
+            Process.StartInfo.Arguments += "' 2>&1 | tee test.txt";
             Process.Start();
+            bool peak = false;
+            int startModules = Process.Modules.Count, currentModules = 0, ticks = 0;
 
-            while (!Process.HasExited) ;
+            while (!Process.HasExited && !(peak && currentModules <= startModules))
+            {
+                currentModules = Process.Modules.Count;
+                if (currentModules > startModules) peak = true;
+                Thread.Sleep(10);
+                if (ticks++ > 100) Process.Start();
+            }
 
             List<string> lines = new List<string>(), err = new List<string>();
             string s;
             while ((s = Process.StandardOutput.ReadLine()) != null) lines.Add(s);
             while ((s = Process.StandardError.ReadLine()) != null) err.Add(s);
             OutLines = lines.ToArray();
-            OutErrors = lines.ToArray();
+            OutErrors = err.ToArray();
         }
 
         public void AddArgument(string arg)
