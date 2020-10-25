@@ -159,8 +159,43 @@ namespace FractalMachine.Compiler
                 Package package;
                 if(packages.TryGetValue(Package, out package))
                 {
+                    //todo: check first requirements
+
                     var fn = defaultMirror + package.FileName;
-                    var str = "";
+
+                    Console.WriteLine("Downloading " + Package + " package...");
+                    var installingPath = Properties.TempDir + "installing.tar.xz";                    
+                    Env.startCygwinDownload(fn, installingPath);
+
+                    var installPckgs = new InstalledPackage();
+                    installPckgs.Name = package.Name;
+                    installPckgs.DirectlyInstalled = true;
+                    installPckgs.Version = package.Version;
+
+                    List<string> tree = new List<string>();
+                    var res = Env.ExecCmd("tar -tvf " + PathToCygdrive(installingPath));               
+                    var lines = res.Split("\n");
+                    for(int l=0; l<lines.Length; l++)
+                    {
+                        var line = lines[l];
+                        while (line.Contains("  ")) line = line.Replace("  ", " ");
+
+                        var parts = line.Split(' ');
+                        if (parts.Length >= 5)
+                        {
+                            var path = Dir + parts[5];
+
+                            if (!(Directory.Exists(path) || File.Exists(path)))
+                                tree.Add(parts[5]);
+                        }
+                    }
+                    installPckgs.Tree = tree.ToArray();
+
+                    //todo: extract files
+
+                    //todo: call (and create) updateInstalledPackages()
+
+                    string read = "";
                 }
 
                 return InstallationResult.PackageNotFound;
@@ -433,6 +468,52 @@ namespace FractalMachine.Compiler
             public override string Dir
             {
                 get { return "arch/"; }
+            }
+
+            public override void Search(string query)
+            {
+
+            }
+
+            public override void Info(string query)
+            {
+
+            }
+
+            public override InstallationResult Install(string Package)
+            {
+                return InstallationResult.PackageNotFound;
+            }
+
+            public override void List(string query)
+            {
+
+            }
+
+            public override void Upgrade(string query)
+            {
+
+            }
+
+            public override void Update()
+            {
+
+            }
+        }
+
+        /// <summary>
+        /// Mac OS X repo
+        /// </summary>
+        public class Brew : Repository
+        {
+            public Brew(Environment Env) : base(Env)
+            {
+                Resources.CreateDirIfNotExists(Dir);
+            }
+
+            public override string Dir
+            {
+                get { return "brew/"; }
             }
 
             public override void Search(string query)
