@@ -37,7 +37,7 @@ namespace FractalMachine.Compiler
             Start();
 
             Thread.Sleep(1000);
-            ExecuteCommand("#! /bin/bash && set -m");
+            ExecuteCommand("alias unbuffer='unbuffer '");
         }
 
         public void Start()
@@ -47,12 +47,12 @@ namespace FractalMachine.Compiler
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = env.Path,
-                    Arguments = "--login -i",
+                    Arguments = "--login -i -c bash",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    RedirectStandardInput = true,
+                    RedirectStandardInput = true
                 }
             };
 
@@ -63,6 +63,7 @@ namespace FractalMachine.Compiler
             }*/
 
             process.Start();
+            
             defaultModules = process.Modules.Count;
 
             thResponse = new Thread(AsyncResponse);

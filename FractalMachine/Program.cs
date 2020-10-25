@@ -9,6 +9,7 @@ namespace FractalMachine
     {
         static void Main(string[] args)
         {
+
             Console.WriteLine("Hello fractal!");
 
             Machine machine = new Machine();
@@ -37,8 +38,8 @@ namespace FractalMachine
                 case "bash-test":
                     var bash = new Bash();
                     System.Threading.Thread.Sleep(1000);
-                    //var s1 = bash.ExecuteCommand("echo ciao");
-                    //var s2 = bash.ExecuteCommand("pacman -h");
+                    //bash.Execute("echo ciao");
+                    var s2 = bash.ExecuteCommand("pacman -h");
                    
                     var gcc = new GCC(bash);
                     //gcc.Compile("test.c");
