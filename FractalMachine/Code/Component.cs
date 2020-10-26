@@ -26,6 +26,11 @@ namespace FractalMachine.Code
         internal Dictionary<string, string> parameters = new Dictionary<string, string>();
         internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
 
+        /// 
+        /// File
+        /// 
+        List<string> usings;
+
         public Component(Component parent)
         {
             this.context = parent.context;
@@ -44,6 +49,38 @@ namespace FractalMachine.Code
             this.Linear = linear;       
         }
 
+        #region ComponentTypes
+
+        public enum Types
+        {
+            Light,
+            Namespace
+        }
+
+        Types type;
+        public Types Type
+        {
+            get { return type; }
+            set
+            {
+                type = value;
+                switch (type)
+                {
+                    case Types.Light:
+                        usings = new List<string>();
+                        usings.Add("namespace std");
+                        break;
+                }
+            }
+        }
+
+        void initType()
+        {
+
+        }
+
+        #endregion
+
         bool linearRead = false;
         public void ReadLinear()
         {
@@ -52,14 +89,18 @@ namespace FractalMachine.Code
 
             AnalyzeParameters();
 
-            int i = 0;
+
             int pushNum = 0;
             Linear callParameters = null;
 
-            foreach (var instr in _linear.Instructions)
+            bool afterIncludes = false;
+
+            for(int i=0; i<_linear.Instructions.Count; i++)
             {
+                var instr = _linear[i];
                 instr.component = this;
 
+                bool closesIncludes = afterIncludes;
                 Component comp;             
 
                 switch (instr.Op)
@@ -70,6 +111,7 @@ namespace FractalMachine.Code
 
                     case "declare":
                         addComponent(instr);
+                        closesIncludes = true;
 
                         break;
 
@@ -112,7 +154,15 @@ namespace FractalMachine.Code
                         break;
                 }
 
-                i++;
+                if(!afterIncludes && closesIncludes)
+                {
+                    // Inser linear advisor
+                    var lin = new Linear(instr.ast);
+                    lin.Op = "compiler_endIncluse";
+                    _linear.Instructions.Insert(i, lin);
+
+                    afterIncludes = true;
+                }
             }
 
             linearRead = true;
@@ -208,21 +258,21 @@ namespace FractalMachine.Code
 
         public void CheckType(string subject, string request, int linearPos)
         {
-            Type reqType = Type.Get(request);
+            Type reqType = Code.Type.Get(request);
             Type subjType;
 
-            var attrType = Type.GetAttributeType(subject);
+            var attrType = Code.Type.GetAttributeType(subject);
             
-            if(attrType == Type.AttributeType.Invalid)
+            if(attrType == Code.Type.AttributeType.Invalid)
             {
                 throw new Exception("Invalid type");
             }
 
-            if (attrType == Type.AttributeType.Name)
+            if (attrType == Code.Type.AttributeType.Name)
             {
                 // get component info    
                 var comp = Solve(subject);
-                subjType = Type.Get(comp.Linear.Return);
+                subjType = Code.Type.Get(comp.Linear.Return);
                 subjType.Solve(this); // or comp?
 
                 if (subjType.Name != reqType.Name)
@@ -234,7 +284,7 @@ namespace FractalMachine.Code
             {
                 if (attrType != reqType.MyAttributeType)
                 {
-                    subject = Type.Convert(subject, reqType);
+                    subject = Code.Type.Convert(subject, reqType);
                     Linear[linearPos].Name = subject;
                 }
             }   
@@ -431,12 +481,10 @@ namespace FractalMachine.Code
                 {
                     case "import":
                         new CPP.Writer.Import(writer, lin, this);
-
                         break;
 
                     case "function":                     
-                        new CPP.Writer.Function(writer, lin);
-                        
+                        new CPP.Writer.Function(writer, lin);                   
                         break;
 
                     case "push":
@@ -446,11 +494,24 @@ namespace FractalMachine.Code
                     case "call":
                         new CPP.Writer.Call(writer, lin);
                         push.Clear();
-
                         break;
 
                     case "namespace":                 
                         new CPP.Writer.Namespace(writer, lin);
+                        break;
+
+                    ///
+                    /// Compiler instructions
+                    /// 
+
+                    case "compiler_endIncluse":
+
+                        // Write usings
+                        while(usings.Count > 0)
+                        {
+                            new CPP.Writer.Using(writer, lin, usings[0]);
+                            usings.RemoveAt(0);
+                        }
 
                         break;
                 }

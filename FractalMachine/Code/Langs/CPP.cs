@@ -147,6 +147,24 @@ namespace FractalMachine.Code.Langs
 
             }
 
+            public class Using : Writer
+            {
+                string us;
+
+                public Using(Writer Writer, Linear Linear, string Using):base(Writer, Linear)
+                {
+                    us = Using;
+                }
+
+                internal override void Output()
+                {
+                    Reset();
+
+                    Write("using " + us);
+
+                }
+            }
+
             public class Function : Writer
             {
                 string[] attributes, parameters;
