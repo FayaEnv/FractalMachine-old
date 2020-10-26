@@ -151,11 +151,13 @@ namespace FractalMachine.Compiler
 
             public override void Info(string query)
             {
-
+                //todo
             }
 
             public override InstallationResult Install(string Package)
             {
+                // Check if package is not yet installed
+
                 Package package;
                 if(packages.TryGetValue(Package, out package))
                 {
@@ -191,11 +193,12 @@ namespace FractalMachine.Compiler
                     }
                     installPckgs.Tree = tree.ToArray();
 
-                    //todo: extract files
+                    //extract files
+                    res = Env.ExecCmd("tar -tvf " + PathToCygdrive(installingPath)+ " --directory /");
 
-                    //todo: call (and create) updateInstalledPackages()
+                    updateInstalledPackages();
 
-                    string read = "";
+                    Console.WriteLine(Package + " installed!");
                 }
 
                 return InstallationResult.PackageNotFound;
@@ -262,19 +265,27 @@ namespace FractalMachine.Compiler
                 }
             }
 
+            public void updateInstalledPackages()
+            {
+                if(installedPackages != null)
+                {
+                    var json = JsonConvert.SerializeObject(installedPackages, Formatting.Indented);
+                    File.WriteAllText(setupInstalled, json);
+                }
+            }
+
             #endregion
 
             #region Additional
 
             void checkInstalledDb()
             {
-                string fnInstalled = setupInstalled;
                 string fn = setupDir + "installed.db";
-                if (!File.Exists(fnInstalled))
+                if (!File.Exists(setupInstalled))
                 {
                     Console.WriteLine("Making installed packages database...");
                     List<string> toDelete = new List<string>();
-                    Dictionary<string, InstalledPackage> res = new Dictionary<string, InstalledPackage>();
+                    installedPackages = new Dictionary<string, InstalledPackage>();
                     var lines = File.ReadAllLines(fn);
                     for (int l = 1; l < lines.Length; l++)
                     {
@@ -300,13 +311,12 @@ namespace FractalMachine.Compiler
                             toDelete.Add(list);
                         }
 
-                       res[name] = package;
+                        installedPackages[name] = package;
                     }
 
                     Console.WriteLine("Saving DB");
 
-                    var json = JsonConvert.SerializeObject(res, Formatting.Indented);
-                    File.WriteAllText(fnInstalled, json);
+                    updateInstalledPackages();
              
                     if (Properties.Debugging)
                     {
@@ -472,32 +482,33 @@ namespace FractalMachine.Compiler
 
             public override void Search(string query)
             {
-
+                //todo
             }
 
             public override void Info(string query)
             {
-
+                //todo
             }
 
             public override InstallationResult Install(string Package)
             {
+                //todo
                 return InstallationResult.PackageNotFound;
             }
 
             public override void List(string query)
             {
-
+                //todo
             }
 
             public override void Upgrade(string query)
             {
-
+                //todo
             }
 
             public override void Update()
             {
-
+                //todo
             }
         }
 
@@ -519,32 +530,33 @@ namespace FractalMachine.Compiler
 
             public override void Search(string query)
             {
-
+                //todo
             }
 
             public override void Info(string query)
             {
-
+                //todo
             }
 
             public override InstallationResult Install(string Package)
             {
+                //todo
                 return InstallationResult.PackageNotFound;
             }
 
             public override void List(string query)
             {
-
+                //todo
             }
 
             public override void Upgrade(string query)
             {
-
+                //todo
             }
 
             public override void Update()
             {
-
+                //todo
             }
         }
 
