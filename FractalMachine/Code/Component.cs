@@ -15,7 +15,7 @@ namespace FractalMachine.Code
     public class Component
     {
         Linear _linear;
-        Machine machine;
+        Context context;
 
         internal string FileName, outFileName;
         internal Component parent;
@@ -28,7 +28,7 @@ namespace FractalMachine.Code
 
         public Component(Component parent)
         {
-            this.machine = parent.machine;
+            this.context = parent.context;
             this.parent = parent;
         }
 
@@ -37,9 +37,9 @@ namespace FractalMachine.Code
             this.Linear = linear;
         }
 
-        public Component(Machine machine, Linear linear)
+        public Component(Context context, Linear linear)
         {
-            this.machine = machine;
+            this.context = context;
             this.parent = linear.component;
             this.Linear = linear;       
         }
@@ -275,7 +275,7 @@ namespace FractalMachine.Code
                 // Is file
                 //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
                 var fname = ToImport.NoMark();
-                var dir = machine.libsDir+"/"+ fname;
+                var dir = context.libsDir+"/"+ fname;
                 var c = importFileIntoComponent(dir, Parameters);
                 importLink.Add(fname, c);
                 //todo: importLink.Add(ResultingNamespace, dir);
@@ -284,7 +284,7 @@ namespace FractalMachine.Code
             {
                 // Is namespace
                 var fname = findNamespaceDirectory(ToImport);
-                var dir = machine.libsDir + fname;
+                var dir = context.libsDir + fname;
 
                 if (Directory.Exists(dir))
                     importDirectoryIntoComponent(dir);
@@ -300,7 +300,7 @@ namespace FractalMachine.Code
 
         internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
         {
-            var comp = machine.Compile(file);
+            var comp = context.ExtractComponent(file);
             //comp.parent = this; // ???
 
             foreach (var c in comp.components)
@@ -332,7 +332,7 @@ namespace FractalMachine.Code
                 var ss = split[s];
                 dir += "/" + ss;
 
-                if (!(dirExists = Directory.Exists(machine.libsDir + dir)))
+                if (!(dirExists = Directory.Exists(context.libsDir + dir)))
                 {
                     break;
                 }
@@ -344,7 +344,7 @@ namespace FractalMachine.Code
             }
             else
             {
-                while (!File.Exists(machine.libsDir + dir + ".light") && s >= 0)
+                while (!File.Exists(context.libsDir + dir + ".light") && s >= 0)
                 {
                     dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
                     s--;
@@ -466,7 +466,7 @@ namespace FractalMachine.Code
                 if (script.Language == Language.Light)
                 {
                     var output = WriteToCpp();
-                    outFileName = machine.tempDir + Path.GetFileNameWithoutExtension(FileName.Replace("/", "-")) + ".hpp";
+                    outFileName = context.tempDir + Misc.DirectoryToFile(FileName) + ".hpp";
                     File.WriteAllText(outFileName, output);
                 }
                 else

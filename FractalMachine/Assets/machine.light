@@ -5,7 +5,7 @@
 
 import System.IO; // as IO;
 
-namespace Test:
+// namespace Test:
 
 function main(){
 	Print("ciao");

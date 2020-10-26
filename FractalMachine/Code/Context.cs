@@ -12,16 +12,12 @@ namespace FractalMachine.Code
     /// <summary>
     /// Used for compiling and source code preparation
     /// </summary>
-    public class Machine
+    public class Context
     {
-        Component main;
-        Lang lastScript;
-        Linear lastLinear;
-
         internal string assetsDir, libsDir, tempDir;
         internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
 
-        public Machine()
+        public Context()
         {
             assetsDir = Resources.Solve("Assets");
             libsDir = assetsDir + "/libs";
@@ -31,14 +27,7 @@ namespace FractalMachine.Code
 
         public string EntryPoint;
 
-        public void Compile()
-        {
-            main = Compile(EntryPoint);
-            string output = main.WriteToCpp();
-            var re = "ead";
-        }
-
-        internal Component Compile(string FileName)
+        internal Component ExtractComponent(string FileName)
         {
             Component comp;
 
@@ -56,14 +45,14 @@ namespace FractalMachine.Code
             switch (ext)
             {
                 case ".light":
-                    lastScript = script = Langs.Light.OpenFile(FileName);
-                    lastLinear = linear = lastScript.GetLinear();
+                    script = Langs.Light.OpenFile(FileName);
+                    linear = script.GetLinear();
                     break;
 
                 case ".h":
                 case ".hpp":
-                    lastScript = script = Langs.CPP.OpenFile(FileName);
-                    lastLinear = linear = lastScript.GetLinear();
+                    script = Langs.CPP.OpenFile(FileName);
+                    linear = script.GetLinear();
                     break;
 
             }

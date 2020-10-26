@@ -13,12 +13,12 @@ namespace FractalMachine
 
             Console.WriteLine("Hello fractal!");
 
-            Machine machine = new Machine();
+            Context machine = new Context();
 
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
-            var test = "bash-test";
+            var test = "project";
             switch (test)
             {
                 case "short":
@@ -27,16 +27,14 @@ namespace FractalMachine
                     break;
 
                 case "test":               
-                    machine.EntryPoint = assetsDir + "/test.light";
-                    machine.Compile();
+                    machine.ExtractComponent(assetsDir + "/test.light");
                     break;
 
                 case "machine":
-                    machine.EntryPoint = assetsDir + "/machine.light";
-                    machine.Compile();
+                    machine.ExtractComponent(assetsDir + "/test.light");
                     break;
 
-                case "bash-test":
+                case "bashTest":
                     var env = Compiler.Environment.GetEnvironment;
                     var cmd = env.NewCommand("which gcc");
                     cmd.Run();
@@ -47,6 +45,14 @@ namespace FractalMachine
                     //gcc.Compile("test.c");
 
                     string read = "";
+
+                    break;
+
+                case "project":
+                    var proj = new Project(assetsDir+"/machine.light");
+                    proj.Compile();
+
+                    read = "";
 
                     break;
             }
