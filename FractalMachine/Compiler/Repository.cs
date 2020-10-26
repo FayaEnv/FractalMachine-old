@@ -24,7 +24,7 @@ namespace FractalMachine.Compiler
 
         abstract public void Search(string query);
         abstract public void Info(string query);
-        abstract public InstallationResult Install(string Package);
+        abstract public InstallationResult Install(string Package, bool Depedency = false);
         abstract public void List(string query);
         abstract public void Upgrade(string query);
         abstract public void Update();
@@ -111,6 +111,7 @@ namespace FractalMachine.Compiler
         {
             PackageNotFound,
             Success,
+            PackageYetInstalled,
             Error
         }
 
@@ -154,54 +155,83 @@ namespace FractalMachine.Compiler
                 //todo
             }
 
-            public override InstallationResult Install(string Package)
+            List<string> installQueue;
+            public override InstallationResult Install(string Package, bool Dependency = false)
             {
+                if (!Dependency)
+                    installQueue = new List<string>();
+
                 // Check if package is not yet installed
+                InstalledPackage ipckg;
+                if (installedPackages.TryGetValue(Package, out ipckg) || installQueue.Contains(Package))
+                    return InstallationResult.PackageYetInstalled;
+
+                installQueue.Add(Package);
 
                 Package package;
-                if(packages.TryGetValue(Package, out package))
+                if (!packages.TryGetValue(Package, out package))
+                    return InstallationResult.PackageNotFound;
+
+                if (package.Dependencies != null)
                 {
-                    //todo: check first requirements
-
-                    var fn = defaultMirror + package.FileName;
-
-                    Console.WriteLine("Downloading " + Package + " package...");
-                    var installingPath = Properties.TempDir + "installing.tar.xz";                    
-                    Env.startCygwinDownload(fn, installingPath);
-
-                    var installPckgs = new InstalledPackage();
-                    installPckgs.Name = package.Name;
-                    installPckgs.DirectlyInstalled = true;
-                    installPckgs.Version = package.Version;
-
-                    List<string> tree = new List<string>();
-                    var res = Env.ExecCmd("tar -tvf " + PathToCygdrive(installingPath));               
-                    var lines = res.Split("\n");
-                    for(int l=0; l<lines.Length; l++)
+                    foreach (var req in package.Dependencies)
                     {
-                        var line = lines[l];
-                        while (line.Contains("  ")) line = line.Replace("  ", " ");
-
-                        var parts = line.Split(' ');
-                        if (parts.Length >= 5)
+                        Console.WriteLine("Check for dependency " + req);
+                        var rqIn = Install(req, true);
+                        if (rqIn == InstallationResult.Error)
                         {
-                            var path = Dir + parts[5];
-
-                            if (!(Directory.Exists(path) || File.Exists(path)))
-                                tree.Add(parts[5]);
+                            Console.WriteLine("Unable to install dependency " + req + "!");
+                            Console.WriteLine("Aborted :(");
+                            return InstallationResult.Error;
                         }
                     }
-                    installPckgs.Tree = tree.ToArray();
-
-                    //extract files
-                    res = Env.ExecCmd("tar -tvf " + PathToCygdrive(installingPath)+ " --directory /");
-
-                    updateInstalledPackages();
-
-                    Console.WriteLine(Package + " installed!");
                 }
 
-                return InstallationResult.PackageNotFound;
+                var fn = defaultMirror + package.FileName;
+
+                Console.WriteLine("Downloading " + Package + " package...");
+                var installingPath = Properties.TempDir + "installing.tar.xz";
+                Env.startCygwinDownload(fn, installingPath);
+
+                var installPckgs = new InstalledPackage();
+                installPckgs.Name = package.Name;
+                if (!Dependency) installPckgs.DirectlyInstalled = true;
+                installPckgs.Version = package.Version;
+
+                List<string> tree = new List<string>();
+                var res = Env.ExecCmd("tar -tvf " + PathToCygdrive(installingPath));
+                var lines = res.Split("\n");
+                for (int l = 0; l < lines.Length; l++)
+                {
+                    var line = lines[l];
+                    while (line.Contains("  ")) line = line.Replace("  ", " ");
+
+                    var parts = line.Split(' ');
+                    if (parts.Length >= 5)
+                    {
+                        var path = Dir + parts[5];
+
+                        if (!(Directory.Exists(path) || File.Exists(path)))
+                            tree.Add(parts[5]);
+                    }
+                }
+                installPckgs.Tree = tree.ToArray();
+
+                //extract files                             
+                res = Env.ExecCmd("tar -xf " + PathToCygdrive(installingPath) + " --directory /");
+
+                if (res.StartsWith("ERR!"))
+                {
+                    throw new Exception(res); // For the moment
+                    return InstallationResult.Error;
+                }
+
+                updateInstalledPackages();
+                if (!Dependency) installQueue = null;
+
+                Console.WriteLine(Package + " installed!");
+
+                return InstallationResult.Success;
             }
 
             public override void List(string query = "")
@@ -490,7 +520,7 @@ namespace FractalMachine.Compiler
                 //todo
             }
 
-            public override InstallationResult Install(string Package)
+            public override InstallationResult Install(string Package, bool Depedency = false)
             {
                 //todo
                 return InstallationResult.PackageNotFound;
@@ -538,7 +568,7 @@ namespace FractalMachine.Compiler
                 //todo
             }
 
-            public override InstallationResult Install(string Package)
+            public override InstallationResult Install(string Package, bool Depedency = false)
             {
                 //todo
                 return InstallationResult.PackageNotFound;

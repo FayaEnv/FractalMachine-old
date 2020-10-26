@@ -30,7 +30,7 @@ namespace FractalMachine.Compiler
         #endregion
 
         public PlatformID Platform;
-        public string Path = "/bin/";
+        public string ContextPath = "";
         public Repository Repository;
         public string Arch;
 
@@ -58,7 +58,7 @@ namespace FractalMachine.Compiler
                     Console.WriteLine("Completed!");
                 }
 
-                Path = "cygwin64-light" + Path;
+                ContextPath = "cygwin64-light";
             }
             else
             {
@@ -111,21 +111,6 @@ namespace FractalMachine.Compiler
         public Command NewCommand(string command)
         {
             var cmd = new Command(this);
-
-            cmd.Process = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = Path + "bash",
-                    Arguments = $"-login -c '"+ command, // 2>&1 | tee test.txt               
-                    UseShellExecute = false,
-                    CreateNoWindow = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    RedirectStandardInput = true,
-                }
-            };
-
             return cmd;
         }
 
@@ -136,25 +121,63 @@ namespace FractalMachine.Compiler
 
             string res = "";
             foreach (string s in comm.OutLines) res += s + "\n";
-            foreach (string s in comm.OutErrors) res += s + "\n";
+            foreach (string s in comm.OutErrors) res += "ERR! " + s + "\n";
             return res;
         }
     }
 
     public class Command
     {
+        public bool UseStdWrapper = true;
+        public bool DirectCall = false;
         public Process Process;
         public Environment Environment;
         public string[] OutLines, OutErrors;
+
+        public string arguments = "";
+        public string command = "";
 
         public Command(Environment environment)
         {
             Environment = environment;
         }
 
+        void createProcess()
+        {
+            string call = "";
+            string args = "";
+
+            if (DirectCall)
+            {
+                throw new Exception("todo");
+            }
+            else
+            {
+                call = Environment.ContextPath+"/bin/bash";
+                args = $"-login -c '" + command;
+                if (UseStdWrapper) args += " 2>&1 | tee out.txt";
+                args += "'";
+            }
+
+            Process = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = call,
+                    Arguments = args,             
+                    UseShellExecute = false,
+                    CreateNoWindow = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                }
+            };
+        }
+
         public void Run()
         {
-            Process.StartInfo.Arguments += "' 2>&1 | tee test.txt";
+            createProcess();
+
             Process.Start();
             bool peak = false;
             int startModules = Process.Modules.Count, currentModules = 0, ticks = 0;
@@ -167,6 +190,9 @@ namespace FractalMachine.Compiler
                 if (ticks++ > 100) Process.Start();
             }
 
+            Process.StandardInput.Flush();
+            Process.StandardInput.Close();
+
             List<string> lines = new List<string>(), err = new List<string>();
             string s;
             while ((s = Process.StandardOutput.ReadLine()) != null) lines.Add(s);
@@ -177,7 +203,7 @@ namespace FractalMachine.Compiler
 
         public void AddArgument(string arg)
         {
-            Process.StartInfo.Arguments += " " + arg;
+            arguments += " " + arg;
         }
     }
 }
