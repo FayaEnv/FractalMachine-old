@@ -14,20 +14,171 @@ namespace FractalMachine.Compiler
 {
     abstract public class Repository
     {
-        public abstract string Dir { get; }
+        Dictionary<string, Package> packages = null;
+        Dictionary<string, InstalledPackage> installedPackages = null;
 
+        public abstract string Dir { get; }
+        public abstract string Mirror { get; }
+
+        internal virtual string setupDir { get { return Dir ; } }
+        internal virtual string setupJsonName { get { return setupDir + "setup.json"; } }
+        internal virtual string setupInstalled { get { return setupDir + "installed.json"; } }
+        
         public Environment Env { get; set; }
         public Repository(Environment env)
         {
-            Env = env; 
+            Env = env;
+
+            if (File.Exists(setupDir)) load();
         }
 
         abstract public void Search(string query);
         abstract public void Info(string query);
-        abstract public InstallationResult Install(string Package, bool Depedency = false);
         abstract public void List(string query);
         abstract public void Upgrade(string query);
         abstract public void Update();
+
+        #region Install
+
+        List<string> installQueue;
+        public virtual InstallationResult Install(string Package, bool Dependency = false)
+        {
+            if (!Dependency)
+            {
+                load();
+                installQueue = new List<string>();
+            }
+
+            // Check if package is not yet installed
+            InstalledPackage ipckg;
+            if (installedPackages.TryGetValue(Package, out ipckg) || installQueue.Contains(Package))
+                return InstallationResult.PackageYetInstalled;
+
+            installQueue.Add(Package);
+
+            Package package;
+            if (!packages.TryGetValue(Package, out package))
+                return InstallationResult.PackageNotFound;
+
+            if (package.Dependencies != null)
+            {
+                foreach (var req in package.Dependencies)
+                {
+                    Console.WriteLine("Check for dependency " + req);
+                    var rqIn = Install(req, true);
+                    if (rqIn == InstallationResult.Error)
+                    {
+                        Console.WriteLine("Unable to install dependency " + req + "!");
+                        Console.WriteLine("Aborted :(");
+                        return InstallationResult.Error;
+                    }
+                }
+            }
+
+            var fn = Mirror + package.FileName;
+
+            Console.WriteLine("Downloading " + Package + " package...");
+            var installingPath = Properties.TempDir + "installing.tar.xz";
+            Env.startCygwinDownload(fn, installingPath);
+
+            var installPckgs = new InstalledPackage();
+            installPckgs.Name = package.Name;
+            if (!Dependency) installPckgs.DirectlyInstalled = true;
+            installPckgs.Version = package.Version;
+
+            // elaborate directory tree
+            List<string> tree = new List<string>();
+            var lines = tarListContent(installingPath);
+            for (int l = 0; l < lines.Length; l++)
+            {
+                var line = lines[l];
+                while (line.Contains("  ")) line = line.Replace("  ", " ");
+
+                var parts = line.Split(' ');
+                if (parts.Length >= 5)
+                {
+                    var path = Dir + parts[5];
+
+                    if (!(Directory.Exists(path) || File.Exists(path)))
+                        tree.Add(parts[5]);
+                }
+            }
+            installPckgs.Tree = tree.ToArray();
+
+            //extract files                             
+            var res = tarExtract(installingPath, "/");
+
+            installedPackages[installPckgs.Name] = installPckgs;
+            updateInstalledPackages();
+
+            if (!Dependency) installQueue = null;
+
+            Console.WriteLine(Package + " installed!");
+
+            return InstallationResult.Success;
+        }
+
+        #endregion
+
+        #region Functions
+
+        internal virtual string[] tarListContent(string filename)
+        {
+            var res = Env.ExecCmd("tar -tvf " + filename);
+
+            if (res.Contains("tar: Error"))
+                throw new Exception(res);
+
+            return res.Split("\n");
+        }
+
+        internal virtual string tarExtract(string filename, string directory = null)
+        {
+            var cmd = "tar -xf " + filename;
+            if (directory != null) cmd += " --directory " + directory;
+
+            var res = Env.ExecCmd(cmd);
+
+            if (res.Contains("tar: Error"))
+                throw new Exception(res);
+
+            return res;
+        }
+
+        internal void load()
+        {
+            loadPackages();
+            loadInstalledPackages();
+        }
+
+        void loadPackages()
+        {
+            if (packages == null && File.Exists(setupJsonName))
+            {
+                var json = File.ReadAllText(setupJsonName);
+                packages = JsonConvert.DeserializeObject<Dictionary<string, Package>>(json);
+            }
+        }
+
+        void loadInstalledPackages()
+        {
+            if (installedPackages == null && File.Exists(setupInstalled))
+            {
+                var json = File.ReadAllText(setupInstalled);
+                installedPackages = JsonConvert.DeserializeObject<Dictionary<string, InstalledPackage>>(json);
+            }
+        }
+
+        public void updateInstalledPackages()
+        {
+            if (installedPackages != null)
+            {
+                var json = JsonConvert.SerializeObject(installedPackages, Formatting.Indented);
+                File.WriteAllText(setupInstalled, json);
+            }
+        }
+
+        #endregion
 
         #region Struct
 
@@ -120,24 +271,15 @@ namespace FractalMachine.Compiler
         #region Classes
         public class Cygwin : Repository
         {
-            public string defaultMirror = "https://ftp-stud.hs-esslingen.de/pub/Mirrors/sources.redhat.com/cygwin/";
-            string setupName = "setup.ini";
-            string setupDir = "etc/setup/";
-            string setupJsonName = "setup.json";
-            string setupInstalled = "installed.json";
-            string setupInstalledDb = "installed.db";
+            public override string Mirror { get { return "https://ftp-stud.hs-esslingen.de/pub/Mirrors/sources.redhat.com/cygwin/"; } }
+            internal override string setupDir { get { return Dir + "etc/setup/"; } }
 
-            Dictionary<string, Package> packages = null;
-            Dictionary<string, InstalledPackage> installedPackages = null;
+            string setupName = "setup.ini";
+            string setupInstalledDb = "installed.db";
 
             public Cygwin(Environment Env) : base(Env) 
             {          
-                setupDir = Dir + setupDir;
-                setupJsonName = setupDir + setupJsonName;
-                setupInstalled = setupDir + setupInstalled;
-
-                if (File.Exists(setupDir))
-                    load();
+                
             }
 
             public override string Dir 
@@ -153,86 +295,7 @@ namespace FractalMachine.Compiler
             public override void Info(string query)
             {
                 //todo
-            }
-
-            List<string> installQueue;
-            public override InstallationResult Install(string Package, bool Dependency = false)
-            {
-                if (!Dependency)
-                    installQueue = new List<string>();
-
-                // Check if package is not yet installed
-                InstalledPackage ipckg;
-                if (installedPackages.TryGetValue(Package, out ipckg) || installQueue.Contains(Package))
-                    return InstallationResult.PackageYetInstalled;
-
-                installQueue.Add(Package);
-
-                Package package;
-                if (!packages.TryGetValue(Package, out package))
-                    return InstallationResult.PackageNotFound;
-
-                if (package.Dependencies != null)
-                {
-                    foreach (var req in package.Dependencies)
-                    {
-                        Console.WriteLine("Check for dependency " + req);
-                        var rqIn = Install(req, true);
-                        if (rqIn == InstallationResult.Error)
-                        {
-                            Console.WriteLine("Unable to install dependency " + req + "!");
-                            Console.WriteLine("Aborted :(");
-                            return InstallationResult.Error;
-                        }
-                    }
-                }
-
-                var fn = defaultMirror + package.FileName;
-
-                Console.WriteLine("Downloading " + Package + " package...");
-                var installingPath = Properties.TempDir + "installing.tar.xz";
-                Env.startCygwinDownload(fn, installingPath);
-
-                var installPckgs = new InstalledPackage();
-                installPckgs.Name = package.Name;
-                if (!Dependency) installPckgs.DirectlyInstalled = true;
-                installPckgs.Version = package.Version;
-
-                List<string> tree = new List<string>();
-                var res = Env.ExecCmd("tar -tvf " + PathToCygdrive(installingPath));
-                var lines = res.Split("\n");
-                for (int l = 0; l < lines.Length; l++)
-                {
-                    var line = lines[l];
-                    while (line.Contains("  ")) line = line.Replace("  ", " ");
-
-                    var parts = line.Split(' ');
-                    if (parts.Length >= 5)
-                    {
-                        var path = Dir + parts[5];
-
-                        if (!(Directory.Exists(path) || File.Exists(path)))
-                            tree.Add(parts[5]);
-                    }
-                }
-                installPckgs.Tree = tree.ToArray();
-
-                //extract files                             
-                res = Env.ExecCmd("tar -xf " + PathToCygdrive(installingPath) + " --directory /");
-
-                if (res.StartsWith("ERR!"))
-                {
-                    throw new Exception(res); // For the moment
-                    return InstallationResult.Error;
-                }
-
-                updateInstalledPackages();
-                if (!Dependency) installQueue = null;
-
-                Console.WriteLine(Package + " installed!");
-
-                return InstallationResult.Success;
-            }
+            }        
 
             public override void List(string query = "")
             {
@@ -258,7 +321,7 @@ namespace FractalMachine.Compiler
                 {
                     Console.WriteLine("Updating cygwin repository...");
                     //WebClient webClient = new WebClient(); webClient.DownloadFile();
-                    Env.startCygwinDownload(defaultMirror + Env.Arch + "/"+ setupName, Properties.TempDir + setupName);
+                    Env.startCygwinDownload(Mirror + Env.Arch + "/"+ setupName, Properties.TempDir + setupName);
                     Console.WriteLine("\r\nDownload completed");
 
                     ConvertSetupXsToJson();
@@ -271,37 +334,27 @@ namespace FractalMachine.Compiler
 
             #region Structs
 
-            internal void load()
+            internal override string[] tarListContent(string filename)
             {
-                loadPackages();
-                loadInstalledPackages();
+                var res = Env.ExecCmd("tar -tvf " + PathToCygdrive(filename));
+
+                if (res.Contains("tar: Error"))
+                    throw new Exception(res);
+
+                return res.Split("\n");
             }
 
-            void loadPackages()
+            internal override string tarExtract(string filename, string directory = null)
             {
-                if(packages == null && File.Exists(setupJsonName))
-                {
-                    var json = File.ReadAllText(setupJsonName);
-                    packages = JsonConvert.DeserializeObject<Dictionary<string, Package>>(json);
-                }
-            }
+                var cmd = "tar -xf " + PathToCygdrive(filename);
+                if (directory != null) cmd += " --directory " + directory;
 
-            void loadInstalledPackages()
-            {
-                if (installedPackages == null && File.Exists(setupInstalled))
-                {
-                    var json = File.ReadAllText(setupInstalled);
-                    installedPackages = JsonConvert.DeserializeObject<Dictionary<string, InstalledPackage>>(json);
-                }
-            }
+                var res = Env.ExecCmd(cmd);
 
-            public void updateInstalledPackages()
-            {
-                if(installedPackages != null)
-                {
-                    var json = JsonConvert.SerializeObject(installedPackages, Formatting.Indented);
-                    File.WriteAllText(setupInstalled, json);
-                }
+                if (res.Contains("tar: Error"))
+                    throw new Exception(res);
+
+                return res;
             }
 
             #endregion
@@ -310,7 +363,7 @@ namespace FractalMachine.Compiler
 
             void checkInstalledDb()
             {
-                string fn = setupDir + "installed.db";
+                string fn = setupDir + setupInstalledDb;
                 if (!File.Exists(setupInstalled))
                 {
                     Console.WriteLine("Making installed packages database...");
@@ -382,7 +435,11 @@ namespace FractalMachine.Compiler
                 START_INFO["name"] = "$START_INFO";
 
                 JArray currentDescriptor = null;
-                var xs = File.ReadAllLines(Properties.TempDir + setupName);
+                string[] xs = File.ReadAllLines(Properties.TempDir + setupName);
+
+                if (xs.Length == 0)
+                    throw new Exception("Blank setup file!");
+
                 bool dividing = true;
                 foreach(var x in xs)
                 {
@@ -500,6 +557,8 @@ namespace FractalMachine.Compiler
         // https://wiki.archlinux.org/index.php/Official_repositories_web_interface
         public class ArchLinux : Repository
         {
+            public override string Mirror { get { return "todo"; } }
+
             public ArchLinux(Environment Env) : base(Env) 
             {
                 Resources.CreateDirIfNotExists(Dir);
@@ -548,6 +607,8 @@ namespace FractalMachine.Compiler
         public class Brew : Repository
         {
             // https://formulae.brew.sh/docs/api/
+            public override string Mirror { get { return "todo"; } }
+
             public Brew(Environment Env) : base(Env)
             {
                 Resources.CreateDirIfNotExists(Dir);

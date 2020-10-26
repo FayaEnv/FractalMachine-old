@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 
@@ -54,8 +55,8 @@ namespace FractalMachine.Compiler
                         startCygwinDownload();
 
                     Console.WriteLine("Extracting zip archive...");
-                    ZipFile.ExtractToDirectory(cygwinDownloadZipPath, "./");                   
-                    Console.WriteLine("Completed!");
+                    ZipFile.ExtractToDirectory(cygwinDownloadZipPath, "./");
+                    ExecCmd("echo flush");
                 }
 
                 ContextPath = "cygwin64-light";
@@ -73,17 +74,36 @@ namespace FractalMachine.Compiler
         string cygwinDownloadZipPath = Properties.TempDir + "cygwin64-light.zip";
         int cygwinDownloadLastPercentage;
         bool cygwinDownloadEnded;
+        DateTime cygwinDownloadLastUpdate;
+        WebClient cygwinDownloadClient;
+
         internal void startCygwinDownload(/* "hack" */ string url = null, string output = null) 
         {
+            retry:
+
             cygwinDownloadEnded = false;
             cygwinDownloadLastPercentage = -1;
 
-            WebClient client = new WebClient();
-            client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
-            client.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
-            client.DownloadFileAsync(new Uri(url ?? Properties.CygwinDownloadUrl), output ?? cygwinDownloadZipPath);
+            cygwinDownloadClient = new WebClient();
+            cygwinDownloadClient.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
+            cygwinDownloadClient.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
+            cygwinDownloadClient.DownloadFileAsync(new Uri(url ?? Properties.CygwinDownloadUrl), output ?? cygwinDownloadZipPath);
+            
+            cygwinDownloadLastUpdate = DateTime.Now;
+            while (!cygwinDownloadEnded)
+            {
+                // If there is no update within 20 seconds so restart the download
+                if(DateTime.Now.Subtract(cygwinDownloadLastUpdate).TotalSeconds > 20)
+                {
+                    Console.WriteLine("Maybe download is blocked, retry...");
+                    cygwinDownloadClient.CancelAsync();
+                    cygwinDownloadClient.Dispose();                    
+                    Thread.Sleep(1000);
+                    goto retry;
+                }
 
-            while (!cygwinDownloadEnded) ;
+                Thread.Sleep(100);
+            }
         }
         void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
@@ -95,9 +115,18 @@ namespace FractalMachine.Compiler
                 Console.Write((int)percentage + "% ");
                 cygwinDownloadLastPercentage = percentage;
             }
+            cygwinDownloadLastUpdate = DateTime.Now;
         }
         void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
-        { 
+        {
+            if (e.Error != null)
+            {
+                if (sender == cygwinDownloadClient)
+                {
+                    throw e.Error;
+                }
+            }
+
             cygwinDownloadEnded = true;
             Console.WriteLine("\r\nCompleted!");
         }
@@ -111,6 +140,7 @@ namespace FractalMachine.Compiler
         public Command NewCommand(string command)
         {
             var cmd = new Command(this);
+            cmd.Cmd = command;
             return cmd;
         }
 
@@ -135,7 +165,7 @@ namespace FractalMachine.Compiler
         public string[] OutLines, OutErrors;
 
         public string arguments = "";
-        public string command = "";
+        public string Cmd = "";
 
         public Command(Environment environment)
         {
@@ -154,7 +184,7 @@ namespace FractalMachine.Compiler
             else
             {
                 call = Environment.ContextPath+"/bin/bash";
-                args = $"-login -c '" + command;
+                args = $"-login -c '" + Cmd;
                 if (UseStdWrapper) args += " 2>&1 | tee out.txt";
                 args += "'";
             }
