@@ -1,3 +1,5 @@
 ﻿- Crea la gestione degli errori
 - Introdurre '' per char
 - Forse il primo setup.json viene creato vuoto (da verificare)
+- controlla se è già la versione più recente compilata
+- compila in gcc

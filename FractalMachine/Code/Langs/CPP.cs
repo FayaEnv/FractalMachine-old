@@ -10,7 +10,6 @@ namespace FractalMachine.Code.Langs
     public class CPP : Lang
     {
         AST AST;
-        Light.OrderedAST orderedAst;
         Linear Linear;
 
         public static CPP OpenFile(string FileName)
@@ -161,7 +160,15 @@ namespace FractalMachine.Code.Langs
                     var param = new string[instrs.Count];
                     for (int p = 0; p < param.Length; p++)
                     {
-                        param[p] = instrs[p].Name;
+                        var instr = instrs[p];
+                        string type, par = "";
+
+                        if (instr.Parameters.TryGetValue("type", out type))
+                            par = type + " ";
+
+                        par += instr.Name;
+
+                        param[p] = par;
                     }
 
                     parameters = param;

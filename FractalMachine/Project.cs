@@ -1,5 +1,6 @@
 ﻿using FractalMachine.Classes;
 using FractalMachine.Code;
+using FractalMachine.Ambiance;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +10,9 @@ namespace FractalMachine
 {
     public class Project
     {
+        string outName;
         string entryPoint;
+        string directory;
 
         public Project(string Path) 
         {
@@ -24,6 +27,8 @@ namespace FractalMachine
             else
             {
                 entryPoint = Path;
+                directory = System.IO.Path.GetDirectoryName(Path);
+                outName = System.IO.Path.GetFileNameWithoutExtension(entryPoint);
             }
         }
 
@@ -38,10 +43,28 @@ namespace FractalMachine
 
             var context = new Context();
 
-            var comp = context.ExtractComponent(entryPoint);
-            var output = comp.WriteToCpp();
-            var outPath = Properties.TempDir + Misc.DirectoryToFile(entryPoint) + ".cpp";
-            File.WriteAllText(outPath, output);
+            var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
+            if (Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
+            {
+                var comp = context.ExtractComponent(entryPoint);
+                var output = comp.WriteToCpp();
+                File.WriteAllText(cppOutPath, output);
+            }
+
+            // Compile
+            var env = Ambiance.Environment.GetEnvironment;
+
+            var exeOutPath = directory+"/"+outName;
+            if (env.Platform == PlatformID.Win32NT)
+                exeOutPath += ".exe";
+
+            // Pay attention to the case of an updated library but not the entry point
+            if (Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
+            {
+                var gcc = new GCC(env);
+                gcc.Compile(cppOutPath, exeOutPath);
+            }
+
 
             string read = "";
         }

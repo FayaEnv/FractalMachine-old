@@ -56,6 +56,21 @@ public static class Resources
             Directory.CreateDirectory(dir);
     }
 
+    public static int FilesWriteTimeCompare(string file1, string file2)
+    {
+        if (!File.Exists(file2))
+            return 1;
+
+        DateTime f1 = File.GetLastWriteTime(file1);
+        DateTime f2 = File.GetLastWriteTime(file2);
+
+        var sec = f1.Subtract(f2).TotalSeconds;
+
+        if (sec > 0) return 1;
+        else if (sec < 0) return -1;
+        return 0;
+    }
+
     public static string SearchFile(string searchedFile, int maxDepth = -1, int level=0, string path="")
     {
         if(level == 0)

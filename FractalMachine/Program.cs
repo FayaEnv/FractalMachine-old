@@ -1,7 +1,7 @@
 ﻿using System;
 using FractalMachine.Code;
 using FractalMachine.Code.Langs;
-using FractalMachine.Compiler;
+using FractalMachine.Ambiance;
 
 namespace FractalMachine
 {
@@ -35,7 +35,7 @@ namespace FractalMachine
                     break;
 
                 case "bashTest":
-                    var env = Compiler.Environment.GetEnvironment;
+                    var env = Ambiance.Environment.GetEnvironment;
                     var cmd = env.NewCommand("which gcc");
                     cmd.Run();
 

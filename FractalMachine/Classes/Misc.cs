@@ -7,7 +7,7 @@ namespace FractalMachine.Classes
 {
     public class Misc
     {
-        public static string DirectoryToFile(string dir)
+        public static string DirectoryNameToFile(string dir)
         {
             return dir.Replace("/", "-").Replace("\\", "-").Replace(":", "");
         }

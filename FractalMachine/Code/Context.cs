@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using FractalMachine.Ambiance;
 using FractalMachine.Classes;
 using FractalMachine.Code.Langs;
 
@@ -14,6 +15,7 @@ namespace FractalMachine.Code
     /// </summary>
     public class Context
     {
+        internal Ambiance.Environment env;
         internal string assetsDir, libsDir, tempDir;
         internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
 
@@ -21,11 +23,9 @@ namespace FractalMachine.Code
         {
             assetsDir = Resources.Solve("Assets");
             libsDir = assetsDir + "/libs";
-
             tempDir = Properties.TempDir;
+            env = Ambiance.Environment.GetEnvironment;
         }
-
-        public string EntryPoint;
 
         internal Component ExtractComponent(string FileName)
         {

@@ -464,16 +464,21 @@ namespace FractalMachine.Code
             if (outFileName == null)
             {
                 if (script.Language == Language.Light)
-                {
-                    var output = WriteToCpp();
-                    outFileName = context.tempDir + Misc.DirectoryToFile(FileName) + ".hpp";
-                    File.WriteAllText(outFileName, output);
+                {               
+                    outFileName = context.tempDir + Misc.DirectoryNameToFile(FileName) + ".hpp";
+                    outFileName = Path.GetFullPath(outFileName);
+                    if (Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
+                    {
+                        var output = WriteToCpp();
+                        File.WriteAllText(outFileName, output);
+                    }
                 }
                 else
                     outFileName = FileName;
             }
 
-            return outFileName;
+            // non so se l'AssertPath metterlo qui o direttamente in WriteCPP
+            return context.env.AssertPath(outFileName);
         }
 
         #endregion

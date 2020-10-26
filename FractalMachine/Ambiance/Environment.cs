@@ -10,7 +10,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 
-namespace FractalMachine.Compiler
+namespace FractalMachine.Ambiance
 {
     public class Environment
     {
@@ -132,12 +132,20 @@ namespace FractalMachine.Compiler
         }
         #endregion
 
+        #region Projections
+
+        public string AssertPath(string Path)
+        {
+            return Repository.AssertPath(Path);
+        }
+
+        #endregion
+
         /* 4 LINUX
          * Set temporary dynamic linking dir: https://unix.stackexchange.com/questions/24811/changing-linked-library-for-a-given-executable-centos-6
-         * 
          */
 
-        public Command NewCommand(string command)
+        public Command NewCommand(string command = "")
         {
             var cmd = new Command(this);
             cmd.Cmd = command;
@@ -184,7 +192,7 @@ namespace FractalMachine.Compiler
             else
             {
                 call = Environment.ContextPath+"/bin/bash";
-                args = $"-login -c '" + Cmd;
+                args = $"-login -c '" + Cmd + " " + arguments;
                 if (UseStdWrapper) args += " 2>&1 | tee out.txt";
                 args += "'";
             }
@@ -231,9 +239,16 @@ namespace FractalMachine.Compiler
             OutErrors = err.ToArray();
         }
 
-        public void AddArgument(string arg)
+        public void AddArgument(string arg, string ass = null)
         {
-            arguments += " " + arg;
+            if (ass == null)
+            {
+                arguments += " " + arg;
+            }
+            else
+            {
+                arguments += " " + arg + " " + ass;
+            }
         }
     }
 }

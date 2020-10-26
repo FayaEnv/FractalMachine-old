@@ -10,7 +10,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 
-namespace FractalMachine.Compiler
+namespace FractalMachine.Ambiance
 {
     abstract public class Repository
     {
@@ -121,6 +121,11 @@ namespace FractalMachine.Compiler
         #endregion
 
         #region Functions
+
+        public virtual string AssertPath(string Path)
+        {
+            return Path;
+        }
 
         internal virtual string[] tarListContent(string filename)
         {
@@ -336,7 +341,7 @@ namespace FractalMachine.Compiler
 
             internal override string[] tarListContent(string filename)
             {
-                var res = Env.ExecCmd("tar -tvf " + PathToCygdrive(filename));
+                var res = Env.ExecCmd("tar -tvf " + AssertPath(filename));
 
                 if (res.Contains("tar: Error"))
                     throw new Exception(res);
@@ -346,7 +351,7 @@ namespace FractalMachine.Compiler
 
             internal override string tarExtract(string filename, string directory = null)
             {
-                var cmd = "tar -xf " + PathToCygdrive(filename);
+                var cmd = "tar -xf " + AssertPath(filename);
                 if (directory != null) cmd += " --directory " + directory;
 
                 var res = Env.ExecCmd(cmd);
@@ -383,7 +388,7 @@ namespace FractalMachine.Compiler
 
                         var list = setupDir + name + ".lst";
                         if (File.Exists(list + ".gz"))
-                            Env.ExecCmd("gzip -d " + PathToCygdrive(list + ".gz"));
+                            Env.ExecCmd("gzip -d " + AssertPath(list + ".gz"));
 
                         if (File.Exists(list))
                         {
@@ -535,7 +540,7 @@ namespace FractalMachine.Compiler
                 File.WriteAllText(setupJsonName, res);
             }
 
-            public string PathToCygdrive(string path)
+            public override string AssertPath(string path)
             {
                 path = Path.GetFullPath(path);
                 var fdir = Path.GetFullPath(Dir);
