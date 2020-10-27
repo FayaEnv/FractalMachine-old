@@ -20,10 +20,14 @@ namespace FractalMachine.Ambiance
             FileName = env.AssertPath(FileName);
             Out = env.AssertPath(Out);
 
-            var cmd = env.NewCommand("gcc");
-            cmd.UseStdWrapper = false;
+            var cmd = env.NewCommand("cpp");
+            //cmd.DirectCall = true;
+            cmd.UseStdWrapper = true;
             cmd.AddArgument(FileName);
             cmd.AddArgument("-o", Out);
+
+            // Std libs
+            cmd.AddArgument("-std=c++11");
 
             cmd.Run();
 

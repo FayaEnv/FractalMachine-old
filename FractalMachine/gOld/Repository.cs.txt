@@ -49,6 +49,9 @@ namespace FractalMachine.Ambiance
                 installQueue = new List<string>();
             }
 
+            // For cygwin, look for mingw version of the package
+            solvePackageName(Package);
+
             // Check if package is not yet installed
             InstalledPackage ipckg;
             if (installedPackages.TryGetValue(Package, out ipckg) || installQueue.Contains(Package))
@@ -148,6 +151,10 @@ namespace FractalMachine.Ambiance
                 throw new Exception(res);
 
             return res;
+        }
+
+        internal virtual void solvePackageName(string name)
+        {
         }
 
         internal void load()
@@ -337,7 +344,7 @@ namespace FractalMachine.Ambiance
                 load();
             }
 
-            #region Structs
+            #region Functions
 
             internal override string[] tarListContent(string filename)
             {
@@ -360,6 +367,16 @@ namespace FractalMachine.Ambiance
                     throw new Exception(res);
 
                 return res;
+            }
+
+            internal override void solvePackageName(string name)
+            {
+                string prefix = "mingw64-x86_64-";
+                Package res;
+                if (packages.TryGetValue(prefix + name, out res))
+                {
+                    Install(prefix + name, true);
+                }
             }
 
             #endregion

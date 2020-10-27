@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace FractalMachine.Ambiance
 {
-    public class Environment
+    public abstract class Environment
     {
         #region Static
 
@@ -22,7 +22,14 @@ namespace FractalMachine.Ambiance
             get
             {
                 if (current == null)
-                    current = new Environment();
+                {
+                    var Platform = System.Environment.OSVersion.Platform;
+
+                    if (Platform == PlatformID.Win32NT)
+                        current = new Environments.Windows();
+                    else
+                        current = new Environments.Unix();
+                }
 
                 return current;
             }
@@ -37,105 +44,15 @@ namespace FractalMachine.Ambiance
 
         public Environment()
         {
-            if (!System.Environment.Is64BitProcess)
-                throw new Exception("32 bit currently not supported. Update your self, upgrade to 64 bit!");
-
-            Platform = System.Environment.OSVersion.Platform;
-
-            if (Platform == PlatformID.Win32NT)
-            {
-                Repository = new Repository.Cygwin(this);
-
-                if (!Directory.Exists(Repository.Dir))
-                {
-                    Console.WriteLine("First time? You are welcome!");
-                    Console.WriteLine("Preparing cygwin64-light environment, just few minutes");
-
-                    if(!File.Exists(cygwinDownloadZipPath)) //if dubbio
-                        startCygwinDownload();
-
-                    Console.WriteLine("Extracting zip archive...");
-                    ZipFile.ExtractToDirectory(cygwinDownloadZipPath, "./");
-                    ExecCmd("echo flush");
-                }
-
-                ContextPath = "cygwin64-light";
-            }
-            else
-            {
-                Repository = new Repository.ArchLinux(this);
-            }
-
-            Arch = ExecCmd("arch").Split('\n')[0];
-            Repository.Update();
+            //Arch = ExecCmd("arch").Split('\n')[0];
+            //Repository.Update();
         }
-
-        #region DownloadCygwin
-        string cygwinDownloadZipPath = Properties.TempDir + "cygwin64-light.zip";
-        int cygwinDownloadLastPercentage;
-        bool cygwinDownloadEnded;
-        DateTime cygwinDownloadLastUpdate;
-        WebClient cygwinDownloadClient;
-
-        internal void startCygwinDownload(/* "hack" */ string url = null, string output = null) 
-        {
-            retry:
-
-            cygwinDownloadEnded = false;
-            cygwinDownloadLastPercentage = -1;
-
-            cygwinDownloadClient = new WebClient();
-            cygwinDownloadClient.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
-            cygwinDownloadClient.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
-            cygwinDownloadClient.DownloadFileAsync(new Uri(url ?? Properties.CygwinDownloadUrl), output ?? cygwinDownloadZipPath);
-            
-            cygwinDownloadLastUpdate = DateTime.Now;
-            while (!cygwinDownloadEnded)
-            {
-                // If there is no update within 20 seconds so restart the download
-                if(DateTime.Now.Subtract(cygwinDownloadLastUpdate).TotalSeconds > 20)
-                {
-                    Console.WriteLine("Maybe download is blocked, retry...");
-                    cygwinDownloadClient.CancelAsync();
-                    cygwinDownloadClient.Dispose();                    
-                    Thread.Sleep(1000);
-                    goto retry;
-                }
-
-                Thread.Sleep(100);
-            }
-        }
-        void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            double bytesIn = double.Parse(e.BytesReceived.ToString());
-            double totalBytes = double.Parse(e.TotalBytesToReceive.ToString());
-            int percentage = (int)(bytesIn / totalBytes * 100);
-            if (cygwinDownloadLastPercentage != percentage)
-            {
-                Console.Write((int)percentage + "% ");
-                cygwinDownloadLastPercentage = percentage;
-            }
-            cygwinDownloadLastUpdate = DateTime.Now;
-        }
-        void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
-        {
-            if (e.Error != null)
-            {
-                if (sender == cygwinDownloadClient)
-                {
-                    throw e.Error;
-                }
-            }
-
-            cygwinDownloadEnded = true;
-            Console.WriteLine("\r\nCompleted!");
-        }
-        #endregion
-
+    
         #region Projections
 
         public string AssertPath(string Path)
         {
+            if (Repository == null) return Path;
             return Repository.AssertPath(Path);
         }
 
@@ -166,6 +83,9 @@ namespace FractalMachine.Ambiance
 
     public class Command
     {
+        /// <summary>
+        /// Revelant in case of DirectCall == false
+        /// </summary>
         public bool UseStdWrapper = true;
         public bool DirectCall = false;
         public Process Process;
@@ -187,13 +107,19 @@ namespace FractalMachine.Ambiance
 
             if (DirectCall)
             {
-                throw new Exception("todo");
+                var splitCmd = Cmd.Split(' ');
+
+                call = Environment.ContextPath + "/bin/" + splitCmd[0];
+
+                for (int c = 1; c < splitCmd.Length; c++)
+                    args += splitCmd[c] + ' ';
+                args += arguments + ' ';
             }
             else
             {
                 call = Environment.ContextPath+"/bin/bash";
                 args = $"-login -c '" + Cmd + " " + arguments;
-                if (UseStdWrapper) args += " 2>&1 | tee out.txt";
+                if (UseStdWrapper) args += " > /home/out.txt 2>/home/err.txt"; // 2>&1 | tee out.txt
                 args += "'";
             }
 
@@ -226,17 +152,54 @@ namespace FractalMachine.Ambiance
                 if (currentModules > startModules) peak = true;
                 Thread.Sleep(10);
                 if (ticks++ > 100) Process.Start();
-            }
+            }            
 
             Process.StandardInput.Flush();
             Process.StandardInput.Close();
 
-            List<string> lines = new List<string>(), err = new List<string>();
-            string s;
-            while ((s = Process.StandardOutput.ReadLine()) != null) lines.Add(s);
-            while ((s = Process.StandardError.ReadLine()) != null) err.Add(s);
-            OutLines = lines.ToArray();
-            OutErrors = err.ToArray();
+            OutLines = OutErrors = new string[0];
+            DateTime endProcess = DateTime.Now;
+
+            if (UseStdWrapper && !DirectCall)
+            {
+                // Load file errors
+                var fnOut = Environment.ContextPath + "/home/out.txt";
+                var fnErr = Environment.ContextPath + "/home/err.txt";
+
+                // Yes, this is a little ugly
+                while (!Resources.IsFileReady(fnOut) || !Resources.IsFileReady(fnErr))
+                {
+                    if (DateTime.Now.Subtract(endProcess).TotalSeconds > 0)
+                        break;
+
+                    Thread.Sleep(10);
+                }
+
+                if(Resources.IsFileReady(fnOut))
+                    OutLines = File.ReadAllLines(fnOut);
+
+                if(Resources.IsFileReady(fnErr))
+                    OutErrors = File.ReadAllLines(fnErr);
+            }
+            else
+            {
+                var taskStdOut = Process.StandardOutput.ReadToEndAsync();
+                var taskStdErr = Process.StandardOutput.ReadToEndAsync();
+
+                while(!taskStdOut.IsCompleted || !taskStdErr.IsCompleted)
+                {
+                    if (DateTime.Now.Subtract(endProcess).TotalSeconds > 0)
+                        break;
+
+                    Thread.Sleep(10);
+                }
+
+                if (taskStdOut.IsCompleted)
+                    OutLines = taskStdOut.Result.Split("\n");
+
+                if (taskStdErr.IsCompleted)
+                    OutErrors = taskStdErr.Result.Split("\n");
+            }
         }
 
         public void AddArgument(string arg, string ass = null)

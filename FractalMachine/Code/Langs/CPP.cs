@@ -117,9 +117,13 @@ namespace FractalMachine.Code.Langs
 
             public class Main : Writer
             {
+                Context context;
                 int _lineNumber = 1;
 
-                public Main(Linear linear):base(null, linear) { }
+                public Main(Context context, Linear linear):base(null, linear) 
+                {
+                    this.context = context;
+                }
 
                 internal override void Output()
                 {
@@ -144,7 +148,6 @@ namespace FractalMachine.Code.Langs
                         _lineNumber = value;
                     }
                 }
-
             }
 
             public class Using : Writer
@@ -160,7 +163,7 @@ namespace FractalMachine.Code.Langs
                 {
                     Reset();
 
-                    Write("using " + us);
+                    Write("using " + us + ";");
 
                 }
             }
@@ -179,10 +182,10 @@ namespace FractalMachine.Code.Langs
                     for (int p = 0; p < param.Length; p++)
                     {
                         var instr = instrs[p];
-                        string type, par = "";
+                        string par = "";
 
-                        if (instr.Parameters.TryGetValue("type", out type))
-                            par = type + " ";
+                        if (!String.IsNullOrEmpty(instr.Return))
+                            par = instr.Return + " ";
 
                         par += instr.Name;
 
@@ -198,7 +201,11 @@ namespace FractalMachine.Code.Langs
 
                     // Type
                     if (type == "function")
+                    {
                         type = "void"; //todo: var
+                        if (name == "main" && Linear.component.Top.Type == Component.Types.Light) 
+                            type = "int";
+                    }
 
                     Linear.component.WriteToCpp(this);
                 }

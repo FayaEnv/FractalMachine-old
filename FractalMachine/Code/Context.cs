@@ -39,27 +39,33 @@ namespace FractalMachine.Code
             //todo: as
             Lang script = null;
             Linear linear = null;
-            
+
+            Component.Types compType;
             var ext = Path.GetExtension(FileName);
 
             switch (ext)
             {
                 case ".light":
-                    script = Langs.Light.OpenFile(FileName);
+                    script = Light.OpenFile(FileName);
                     linear = script.GetLinear();
+                    compType = Component.Types.Light;
                     break;
 
                 case ".h":
                 case ".hpp":
-                    script = Langs.CPP.OpenFile(FileName);
+                    script = CPP.OpenFile(FileName);
                     linear = script.GetLinear();
+                    compType = Component.Types.CPP;
                     break;
 
+                default:
+                    throw new Exception("Todo");
             }
 
             if (linear != null) // why linear should be null?
             {
                 comp = new Component(this, linear);
+                comp.Type = compType;
                 comp.script = script;
                 comp.FileName = FileName;
 

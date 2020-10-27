@@ -53,30 +53,39 @@ namespace FractalMachine.Code
 
         public enum Types
         {
+            Default,
             Light,
-            Namespace
+            CPP,
+            Namespace,
+            Function
         }
 
-        Types type;
+        Types type = Types.Default;
         public Types Type
         {
             get { return type; }
             set
             {
                 type = value;
-                switch (type)
-                {
-                    case Types.Light:
-                        usings = new List<string>();
-                        usings.Add("namespace std");
-                        break;
-                }
+                initType();
             }
         }
 
         void initType()
         {
+            switch (type)
+            {
+                case Types.Light:
+                    usings = new List<string>();
+                    usings.Add("namespace std");
+                    break;
 
+                case Types.Function:
+                    //tothink
+                    break;
+
+                // also todo Light and CPP
+            }
         }
 
         #endregion
@@ -117,11 +126,14 @@ namespace FractalMachine.Code
 
                     case "function":
                         comp = addComponent(instr);
+                        comp.Type = Types.Function;
+                        closesIncludes = true;
                         break;
 
                     case "namespace":
                         comp = addComponent(instr.Name);
                         comp.Linear = instr;
+                        comp.Type = Types.Namespace;
                         comp.ReadLinear();
                         break;
 
@@ -158,8 +170,10 @@ namespace FractalMachine.Code
                 {
                     // Inser linear advisor
                     var lin = new Linear(instr.ast);
-                    lin.Op = "compiler_endIncluse";
+                    lin.Op = "compiler";
+                    lin.Name = "endIncluse";
                     _linear.Instructions.Insert(i, lin);
+                    i++;
 
                     afterIncludes = true;
                 }
@@ -469,7 +483,7 @@ namespace FractalMachine.Code
         public string WriteToCpp(CPP.Writer writer = null)
         {        
             if(writer == null)
-                writer = new CPP.Writer.Main(Linear);
+                writer = new CPP.Writer.Main(context, Linear);
 
             Component comp;
 
@@ -483,8 +497,8 @@ namespace FractalMachine.Code
                         new CPP.Writer.Import(writer, lin, this);
                         break;
 
-                    case "function":                     
-                        new CPP.Writer.Function(writer, lin);                   
+                    case "function":
+                        new CPP.Writer.Function(writer, lin);
                         break;
 
                     case "push":
@@ -496,7 +510,7 @@ namespace FractalMachine.Code
                         push.Clear();
                         break;
 
-                    case "namespace":                 
+                    case "namespace":
                         new CPP.Writer.Namespace(writer, lin);
                         break;
 
@@ -504,13 +518,17 @@ namespace FractalMachine.Code
                     /// Compiler instructions
                     /// 
 
-                    case "compiler_endIncluse":
+                    case "compiler":
 
-                        // Write usings
-                        while(usings.Count > 0)
-                        {
-                            new CPP.Writer.Using(writer, lin, usings[0]);
-                            usings.RemoveAt(0);
+                        switch (lin.Name) {
+                            case "endIncluse":
+                                // Write usings
+                                while (usings.Count > 0)
+                                {
+                                    new CPP.Writer.Using(writer, lin, usings[0]);
+                                    usings.RemoveAt(0);
+                                }
+                                break;
                         }
 
                         break;
