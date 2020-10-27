@@ -53,6 +53,20 @@ Riccardo
 
 
 
+## Info aggiuntive
+
+### Struttura delle directory
+
+#### Gerarchie
+
+Se una classe madre (come una astratta) ha classi derivate, queste verranno messe in una cartella con lo stesso nome della classe al plurale. Ma nel caso la classe non avesse un plurale verrà messa direttamente nella cartella avente lo stesso nome. 
+
+
+
+
+
+
+
 
 
 

@@ -39,10 +39,12 @@ namespace FractalMachine
                     var cmd = env.NewCommand("which gcc");
                     cmd.Run();
 
-                    var res = env.Repository.Install("git");
+                    /*var res = env.Repository.Install("git");
 
                     var gcc = new Ambiance.Compilers.GCC(env);
                     //gcc.Compile("test.c");
+
+                    */
 
                     string read = "";
 

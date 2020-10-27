@@ -27,9 +27,9 @@ namespace FractalMachine.Ambiance
                     var Platform = System.Environment.OSVersion.Platform;
 
                     if (Platform == PlatformID.Win32NT)
-                        current = new Environments.Windows();
+                        current = new Environments.Windows.Windows();
                     else
-                        current = new Environments.Unix();
+                        current = new Environments.Unix.Unix();
                 }
 
                 return current;
@@ -38,27 +38,69 @@ namespace FractalMachine.Ambiance
 
         #endregion
 
-        public PlatformID Platform;
-        public string ContextPath = "";
-        //public Repository Repository;
-        //public string Arch;
+        #region Dynamic
+
+        internal string syspath, shell;
+        internal Environment parent;
+        internal Compiler compiler;
+        internal Repository repository;
 
         public Environment()
         {
             //Arch = ExecCmd("arch").Split('\n')[0];
             //Repository.Update();
         }
-    
-        #region Projections
 
-        public string AssertPath(string Path)
+        #region Subsystems
+
+        internal Dictionary<string, Environment> subsystems = new Dictionary<string, Environment>();
+        internal Environment subsystem;
+
+        public Environment SelectSubsystem(string name)
         {
-            return Path;
-            //if (Repository == null) return Path;
-            //return Repository.AssertPath(Path);
+            Environment ret;
+            if (subsystems.TryGetValue(name, out ret))
+            {
+                subsystem = ret;
+                ret.init();
+            }
+
+            return ret;
+        }
+
+        internal virtual void init() { }
+
+        #endregion
+
+        #region Properties
+
+        public Compiler Compiler { 
+            get 
+            {
+                return subsystem?.Compiler ?? compiler;
+            } 
+        }
+
+        public Repository Repository
+        {
+            get
+            {
+                return subsystem?.Repository ?? repository;
+            }
+        }
+
+        public string SysPath
+        {
+            get
+            {
+                return syspath;
+            }
         }
 
         #endregion
+
+        #region Methods
+
 
         /* 4 LINUX
          * Set temporary dynamic linking dir: https://unix.stackexchange.com/questions/24811/changing-linked-library-for-a-given-executable-centos-6
@@ -81,139 +123,14 @@ namespace FractalMachine.Ambiance
             foreach (string s in comm.OutErrors) res += "ERR! " + s + "\n";
             return res;
         }
-    }
 
-    public class Command
-    {
-        /// <summary>
-        /// Revelant in case of DirectCall == false
-        /// </summary>
-        public bool UseStdWrapper = true;
-        public bool DirectCall = false;
-        public Process Process;
-        public Environment Environment;
-        public string[] OutLines, OutErrors;
-
-        public string arguments = "";
-        public string Cmd = "";
-
-        public Command(Environment environment)
+        public virtual string Path(string Path)
         {
-            Environment = environment;
+            return subsystem?.Path(Path) ?? Path;
         }
 
-        void createProcess()
-        {
-            string call = "";
-            string args = "";
+        #endregion
 
-            if (DirectCall)
-            {
-                var splitCmd = Cmd.Split(' ');
-
-                call = Environment.ContextPath + "/bin/" + splitCmd[0];
-
-                for (int c = 1; c < splitCmd.Length; c++)
-                    args += splitCmd[c] + ' ';
-                args += arguments + ' ';
-            }
-            else
-            {
-                call = Environment.ContextPath+"/bin/bash";
-                args = $"-login -c '" + Cmd + " " + arguments;
-                if (UseStdWrapper) args += " > /home/out.txt 2>/home/err.txt"; // 2>&1 | tee out.txt
-                args += "'";
-            }
-
-            Process = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = call,
-                    Arguments = args,             
-                    UseShellExecute = false,
-                    CreateNoWindow = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    RedirectStandardInput = true,
-                }
-            };
-        }
-
-        public void Run()
-        {
-            createProcess();
-
-            Process.Start();
-            bool peak = false;
-            int startModules = Process.Modules.Count, currentModules = 0, ticks = 0;
-
-            while (!Process.HasExited && !(peak && currentModules <= startModules))
-            {
-                currentModules = Process.Modules.Count;
-                if (currentModules > startModules) peak = true;
-                Thread.Sleep(10);
-                if (ticks++ > 100) Process.Start();
-            }            
-
-            Process.StandardInput.Flush();
-            Process.StandardInput.Close();
-
-            OutLines = OutErrors = new string[0];
-            DateTime endProcess = DateTime.Now;
-
-            if (UseStdWrapper && !DirectCall)
-            {
-                // Load file errors
-                var fnOut = Environment.ContextPath + "/home/out.txt";
-                var fnErr = Environment.ContextPath + "/home/err.txt";
-
-                // Yes, this is a little ugly
-                while (!Resources.IsFileReady(fnOut) || !Resources.IsFileReady(fnErr))
-                {
-                    if (DateTime.Now.Subtract(endProcess).TotalSeconds > 0)
-                        break;
-
-                    Thread.Sleep(10);
-                }
-
-                if(Resources.IsFileReady(fnOut))
-                    OutLines = File.ReadAllLines(fnOut);
-
-                if(Resources.IsFileReady(fnErr))
-                    OutErrors = File.ReadAllLines(fnErr);
-            }
-            else
-            {
-                var taskStdOut = Process.StandardOutput.ReadToEndAsync();
-                var taskStdErr = Process.StandardOutput.ReadToEndAsync();
-
-                while(!taskStdOut.IsCompleted || !taskStdErr.IsCompleted)
-                {
-                    if (DateTime.Now.Subtract(endProcess).TotalSeconds > 0)
-                        break;
-
-                    Thread.Sleep(10);
-                }
-
-                if (taskStdOut.IsCompleted)
-                    OutLines = taskStdOut.Result.Split("\n");
-
-                if (taskStdErr.IsCompleted)
-                    OutErrors = taskStdErr.Result.Split("\n");
-            }
-        }
-
-        public void AddArgument(string arg, string ass = null)
-        {
-            if (ass == null)
-            {
-                arguments += " " + arg;
-            }
-            else
-            {
-                arguments += " " + arg + " " + ass;
-            }
-        }
+        #endregion
     }
 }

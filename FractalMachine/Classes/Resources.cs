@@ -86,16 +86,16 @@ public static class Resources
         }
     }
 
-    public static string SearchFile(string searchedFile, int maxDepth = -1, int level=0, string path="")
+    public static string SearchFile(string searchedFile, string path = "$", int maxDepth = -1, int level=0)
     {
-        if(level == 0)
+        if(path == "$")
         {
             var drives = System.IO.DriveInfo.GetDrives();
             foreach(var drive in drives)
             {
                 if (drive.DriveType == DriveType.Fixed)
                 {
-                    var res = SearchFile(searchedFile, maxDepth, level + 1, drive.Name);
+                    var res = SearchFile(searchedFile, drive.Name, maxDepth, level + 1);
                     if (!String.IsNullOrEmpty(res)) return res;
                 }
             }
@@ -116,12 +116,12 @@ public static class Resources
                         return file.FullName;
                 }
 
-                if (level < maxDepth)
+                if (level < maxDepth || maxDepth < 0)
                 {
                     DirectoryInfo[] dirs = d.GetDirectories();
                     foreach (var dir in dirs)
                     {
-                        var res = SearchFile(searchedFile, maxDepth, level + 1, dir.FullName);
+                        var res = SearchFile(searchedFile, dir.FullName, maxDepth, level + 1);
                         if (!String.IsNullOrEmpty(res)) return res;
                     }
                 }

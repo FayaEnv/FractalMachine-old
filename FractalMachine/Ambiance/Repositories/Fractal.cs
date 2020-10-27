@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Ambiance.Environments
+namespace FractalMachine.Ambiance.Repositories
 {
-    class Unix : Environment
+    /*public class Fractal : Repository
     {
         //todo
-    }
+    }*/
 }

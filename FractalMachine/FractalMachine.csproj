@@ -9,11 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="gOld\Repository.cs.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="gOld\Repository.cs.txt" />
+    <Compile Remove="gOld\**" />
+    <EmbeddedResource Remove="gOld\**" />
+    <None Remove="gOld\**" />
   </ItemGroup>
 
   <ItemGroup>

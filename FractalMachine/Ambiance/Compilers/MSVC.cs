@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 
 namespace FractalMachine.Ambiance.Compilers
 {
-    public class GCC : Compiler
+    public class MSVC : Compiler
     {
-        public GCC(Environment Env):base(Env)
+        public MSVC(Environment Env) : base(Env)
         {
         }
 
         public override void Compile(string FileName, string Out)
         {
-            FileName = Path.GetFullPath(FileName);
+            FileName = System.IO.Path.GetFullPath(FileName);
             FileName = env.Path(FileName);
             Out = env.Path(Out);
 
