@@ -54,15 +54,13 @@ namespace FractalMachine
             // Compile
             var env = Ambiance.Environment.GetEnvironment;
 
-            var exeOutPath = directory+"/"+outName;
-            if (env.Platform == PlatformID.Win32NT)
-                exeOutPath += ".exe";
+            var exeOutPath = directory+"/"+outName+env.exeFormat;
 
             // Pay attention to the case of an updated library but not the entry point
             if (Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
             {
-                var gcc = new GCC(env);
-                gcc.Compile(cppOutPath, exeOutPath);
+                var compiler = env.Compiler;
+                compiler.Compile(cppOutPath, exeOutPath);
             }
 
 

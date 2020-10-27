@@ -8,8 +8,9 @@ namespace FractalMachine.Ambiance.Environments.Unix
     {
         public Unix()
         {
-            syspath = "/";
-            shell = "bin/bash";
+            sysPath = "/";
+            binPath = ""; // because it yet has environment PATH
+            shell = "bash";
         }
     }
 }

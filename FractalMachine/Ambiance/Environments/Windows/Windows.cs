@@ -4,12 +4,13 @@ using System.Text;
 
 namespace FractalMachine.Ambiance.Environments.Windows
 {
-    class Windows : Environment
+    public class Windows : Environment
     {
         public Windows()
         {
             compiler = new Compilers.MSVC(this);
-            shell = "cmd.exe";
+            shell = "cmd";
+            exeFormat = ".exe";
 
             checkMSYS2();
 
@@ -21,14 +22,14 @@ namespace FractalMachine.Ambiance.Environments.Windows
 
         public void checkMSYS2()
         {         
-            var path = Resources.SearchFile("msys2.exe", "");
+            var path = Resources.SearchFile("msys2.exe", 3, Environment.ExecutionDirectory);
 
             if(String.IsNullOrEmpty(path)) 
-                path = Resources.SearchFile("msys2.exe");
+                path = Resources.SearchFile("msys2.exe", 3);
 
             if (!String.IsNullOrEmpty(path))
             {
-                var subsys = new MSYS2(this, path);
+                var subsys = new MSYS2(this, System.IO.Path.GetDirectoryName(path)+"/");
                 subsystems.Add("msys2", subsys);
             }
             else

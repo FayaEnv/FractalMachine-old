@@ -557,7 +557,7 @@ namespace FractalMachine.Code
             }
 
             // non so se l'AssertPath metterlo qui o direttamente in WriteCPP
-            return context.env.AssertPath(outFileName);
+            return context.env.Path(outFileName);
         }
 
         #endregion

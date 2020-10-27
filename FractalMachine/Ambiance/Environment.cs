@@ -36,11 +36,21 @@ namespace FractalMachine.Ambiance
             }
         }
 
+        public static string ExecutionDirectory
+        {
+            get
+            {
+                return System.Reflection.Assembly.GetExecutingAssembly().Location;
+            }
+        }
+
         #endregion
 
         #region Dynamic
 
-        internal string syspath, shell;
+        internal string sysPath, shell;
+        internal string exeFormat = "";
+        internal string binPath = "";
         internal Environment parent;
         internal Compiler compiler;
         internal Repository repository;
@@ -86,14 +96,6 @@ namespace FractalMachine.Ambiance
             get
             {
                 return subsystem?.Repository ?? repository;
-            }
-        }
-
-        public string SysPath
-        {
-            get
-            {
-                return syspath;
             }
         }
 

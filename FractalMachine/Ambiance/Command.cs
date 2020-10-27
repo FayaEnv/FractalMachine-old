@@ -15,7 +15,7 @@ namespace FractalMachine.Ambiance
         public bool UseStdWrapper = true;
         public bool DirectCall = false;
         public Process Process;
-        public Environment Environment;
+        public Environment Env;
         public string[] OutLines, OutErrors;
 
         public string arguments = "";
@@ -23,7 +23,7 @@ namespace FractalMachine.Ambiance
 
         public Command(Environment environment)
         {
-            Environment = environment;
+            Env = environment;
         }
 
         void createProcess()
@@ -35,7 +35,7 @@ namespace FractalMachine.Ambiance
             {
                 var splitCmd = Cmd.Split(' ');
 
-                call = Environment.SysPath + "/bin/" + splitCmd[0];
+                call = Env.sysPath + Env.binPath + splitCmd[0];
 
                 for (int c = 1; c < splitCmd.Length; c++)
                     args += splitCmd[c] + ' ';
@@ -43,7 +43,7 @@ namespace FractalMachine.Ambiance
             }
             else
             {
-                call = Environment.SysPath + "/bin/bash";
+                call = Env.sysPath + Env.binPath + Env.shell;
                 args = $"-login -c '" + Cmd + " " + arguments;
                 if (UseStdWrapper) args += " > /home/out.txt 2>/home/err.txt"; // 2>&1 | tee out.txt
                 args += "'";
@@ -89,8 +89,8 @@ namespace FractalMachine.Ambiance
             if (UseStdWrapper && !DirectCall)
             {
                 // Load file errors
-                var fnOut = Environment.SysPath + "/home/out.txt";
-                var fnErr = Environment.SysPath + "/home/err.txt";
+                var fnOut = Env.sysPath + "/home/out.txt";
+                var fnErr = Env.sysPath + "/home/err.txt";
 
                 // Yes, this is a little ugly
                 while (!Resources.IsFileReady(fnOut) || !Resources.IsFileReady(fnErr))

@@ -6,10 +6,21 @@ namespace FractalMachine.Ambiance.Environments.Windows
 {
     public class MSYS2 : Unix.Unix
     {
-        public MSYS2 (Environment parent, string path) : base()
+        public MSYS2 (Windows parent, string path) : base()
         {
             this.parent = parent;
-            syspath = path;
+            sysPath = path;
+            binPath = "usr/bin/";
+            exeFormat = parent.exeFormat;
+
+            compiler = new Compilers.GCC(this);
+        }
+
+        public override string Path(string Path)
+        {
+            Path = "/" + System.IO.Path.GetFullPath(Path);
+            Path = Path.Replace('\\', '/').Replace(":", "");
+            return Path;
         }
     }
 }
