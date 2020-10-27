@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace FractalMachine.Ambiance
+namespace FractalMachine.Ambiance.Compilers
 {
-    public class GCC
+    public class GCC : Compiler
     {
         Environment env;
 
@@ -14,13 +14,13 @@ namespace FractalMachine.Ambiance
             env = Env;
         }
 
-        public void Compile(string FileName, string Out)
+        public override void Compile(string FileName, string Out)
         {
             FileName = Path.GetFullPath(FileName);
             FileName = env.AssertPath(FileName);
             Out = env.AssertPath(Out);
 
-            var cmd = env.NewCommand("cpp");
+            var cmd = env.NewCommand("g++");
             //cmd.DirectCall = true;
             cmd.UseStdWrapper = true;
             cmd.AddArgument(FileName);

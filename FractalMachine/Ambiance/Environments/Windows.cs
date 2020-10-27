@@ -4,7 +4,11 @@ using System.Text;
 
 namespace FractalMachine.Ambiance.Environments
 {
-    class Windows
+    class Windows : Environment
     {
+        public Windows()
+        {
+
+        }
     }
 }

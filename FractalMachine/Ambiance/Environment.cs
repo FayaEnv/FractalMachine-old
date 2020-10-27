@@ -17,6 +17,7 @@ namespace FractalMachine.Ambiance
         #region Static
 
         static Environment current;
+
         public static Environment GetEnvironment
         {
             get
@@ -39,8 +40,8 @@ namespace FractalMachine.Ambiance
 
         public PlatformID Platform;
         public string ContextPath = "";
-        public Repository Repository;
-        public string Arch;
+        //public Repository Repository;
+        //public string Arch;
 
         public Environment()
         {
@@ -52,8 +53,9 @@ namespace FractalMachine.Ambiance
 
         public string AssertPath(string Path)
         {
-            if (Repository == null) return Path;
-            return Repository.AssertPath(Path);
+            return Path;
+            //if (Repository == null) return Path;
+            //return Repository.AssertPath(Path);
         }
 
         #endregion

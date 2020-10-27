@@ -4,7 +4,7 @@ using System.Text;
 
 namespace FractalMachine.Ambiance.Environments
 {
-    class Unix
+    class Unix : Environment
     {
         //todo
     }
