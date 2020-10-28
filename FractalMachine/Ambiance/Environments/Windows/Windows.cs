@@ -18,6 +18,11 @@ namespace FractalMachine.Ambiance.Environments.Windows
                 throw new Exception("In this moment Windows environmnet is not supported without MSYS2");
         }
 
+        public override char PathChar
+        {
+            get { return '\\'; }
+        }
+
         #region Subsystems
 
         public void checkMSYS2()

@@ -10,8 +10,11 @@
 
   <ItemGroup>
     <Compile Remove="gOld\**" />
+    <Compile Remove="g_old\**" />
     <EmbeddedResource Remove="gOld\**" />
+    <EmbeddedResource Remove="g_old\**" />
     <None Remove="gOld\**" />
+    <None Remove="g_old\**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -62,12 +62,12 @@ namespace FractalMachine
 
                     */
 
-string read = "";
+                    string read = "";
 
                     break;
 
                 case "project":
-                    var proj = new Project(assetsDir+"/machine.light");
+                    var proj = new Project(assetsDir+"/proj_example");
                     proj.Compile();
 
                     read = "";

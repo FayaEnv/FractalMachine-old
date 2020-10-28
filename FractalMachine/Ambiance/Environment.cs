@@ -84,6 +84,9 @@ namespace FractalMachine.Ambiance
 
         #region Properties
 
+        // Path.DirectorySeparatorChar... e vabbè, ma PathChar è più bella
+        abstract public char PathChar { get; }
+
         public Compiler Compiler { 
             get 
             {
@@ -96,6 +99,14 @@ namespace FractalMachine.Ambiance
             get
             {
                 return subsystem?.Repository ?? repository;
+            }
+        }
+
+        public Environment Top
+        {
+            get
+            {
+                return parent?.Top ?? this;
             }
         }
 

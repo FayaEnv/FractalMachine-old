@@ -14,21 +14,31 @@ namespace FractalMachine
         string entryPoint;
         string directory;
 
-        public Project(string Path) 
+        public Project(string ProjectPath) 
         {
+            var env = Ambiance.Environment.GetEnvironment;
+
             FileAttributes attr;
-            try { attr = File.GetAttributes(Path); }
-            catch { throw new Exception("Path " + Path + " not found"); }
+            try { attr = File.GetAttributes(ProjectPath); }
+            catch { throw new Exception("Path " + ProjectPath + " not found"); }
 
             if(attr == FileAttributes.Directory)
             {
-                //todo
+                if (!ProjectPath.EndsWith(env.PathChar))
+                    ProjectPath += env.PathChar;
+                
+                directory = ProjectPath;
+                entryPoint = ProjectPath + "Main.light";
+                outName = ProjectPath + Path.GetFileName(ProjectPath) + env.exeFormat;
+
+                if (!File.Exists(entryPoint))
+                    throw new Exception("Unable to open project directory " + ProjectPath);
             }
             else
             {
-                entryPoint = Path;
-                directory = System.IO.Path.GetDirectoryName(Path);
-                outName = System.IO.Path.GetFileNameWithoutExtension(entryPoint);
+                entryPoint = ProjectPath;
+                directory = Path.GetDirectoryName(ProjectPath);
+                outName = Path.GetFileNameWithoutExtension(entryPoint);
             }
         }
 

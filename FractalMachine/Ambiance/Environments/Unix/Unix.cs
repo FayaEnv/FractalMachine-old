@@ -12,5 +12,10 @@ namespace FractalMachine.Ambiance.Environments.Unix
             binPath = ""; // because it yet has environment PATH
             shell = "bash";
         }
+
+        public override char PathChar
+        {
+            get { return '/'; }
+        }
     }
 }
