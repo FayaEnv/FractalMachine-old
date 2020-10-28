@@ -526,12 +526,13 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    var pos = parent.codes.IndexOf(this);
+                    /*var pos = parent.codes.IndexOf(this);
                     if (pos > 0)
                         return parent.codes[pos - 1];
                     else
-                        return null;
+                        return null;*/
 
+                    return prev;
                 }
             }
 
@@ -575,11 +576,11 @@ namespace FractalMachine.Code.Langs
                 {
                     var cc = codes.Count;
                     if (cc < 2) return false;
-                    return ((IsDeclaration && codes[cc - 1].IsBlockBrackets) || CodeBlocks.Contains(codes[0].Subject)) && codes[cc - 2].IsBlockParenthesis;
+                    return IsDeclaration && codes[cc - 1].IsBlockBrackets && (codes[cc - 2].IsBlockParenthesis || IsCodeBlockWithoutParameters);
                 }
             }
 
-            public bool IsCodeBlock
+            public bool IsCodeBlockWithoutParameters
             {
                 get
                 {
@@ -784,8 +785,44 @@ namespace FractalMachine.Code.Langs
                     b.Parent = this;
                     b.status = status;
                     b.Linear = Linear;
-                    b.OnRepeteable = OnRepeteable;
+                    //b.OnRepeteable = OnRepeteable; //Repeteable should works at the same level
                     return b;
+                }
+            }
+
+            class Attribute
+            {
+                string strValue;
+                List<string> values;
+
+                public Attribute(string value) 
+                {
+                    strValue = value;
+                }
+
+                public Attribute(List<string> values)
+                {
+                    this.values = values;
+                }
+
+                public string StrValue
+                {
+                    get
+                    {
+                        if (strValue != null)
+                            throw new Exception("oops");
+                        return strValue;
+                    }
+                }
+
+                public string[] Values
+                {
+                    get
+                    {
+                        if(!String.IsNullOrEmpty(strValue))
+                            return new string[] { strValue };
+                        return values.ToArray() ?? new string[] { };
+                    }
                 }
             }
 
@@ -918,7 +955,7 @@ namespace FractalMachine.Code.Langs
                     // todo: try catch for error checking(?)
 
                     var sbag = bag;
-                    //if (IsMainBlock) sbag = bag.subBag();
+                    //if (IsMainBlock && !IsRepeatedInstruction) sbag = bag.subBag();
 
                     code.toLinear(sbag);
                 }
@@ -938,27 +975,6 @@ namespace FractalMachine.Code.Langs
 
             }
 
-            void toLinear_checkSquareBrackets()
-            {
-                if (Subject == "[")
-                {
-                    bag = bag.subBag();
-
-                    onEnd = delegate
-                    {
-                        if (bag.Params.Count > 0)
-                        {
-                                //todo
-                            }
-                        else if (Left.ast.type == AST.Type.Attribute)
-                        {
-                                //todo: Pensare ad un metodo migliore...
-                                bag.addParam(bag.pullParams() + "[]");
-                        }
-                    };
-                }
-            }
-
             void toLinear_attribute()
             {
                 if (ast.aclass == "string")
@@ -974,7 +990,7 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_declarationParenthesis()
             {
-                toLinear_checkSquareBrackets();
+                //toLinear_checkSquareBrackets();
 
                 if (IsOperator)
                 {
@@ -1011,7 +1027,8 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block()
             {
-                toLinear_checkSquareBrackets();
+                if (Subject == "[")
+                    toLinear_ground_block_squareBrackets();
 
                 if (Subject == "(")
                     toLinear_ground_block_parenthesis();
@@ -1020,19 +1037,40 @@ namespace FractalMachine.Code.Langs
                     toLinear_ground_block_brackets();
             }
 
+            void toLinear_ground_block_squareBrackets()
+            {
+                bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+
+                /*bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
+                {
+                };*/
+
+                onEnd = delegate
+                {
+                    if (bag.Params.Count > 0)
+                    {
+                        //todo
+                    }
+
+                    if (Left.ast.type == AST.Type.Attribute)
+                    {
+                        //todo: metodo temporaneo per dichiarare i tipi array
+                        //todo put Paramas into []
+                        bag.addParam(bag.pullParams() + "[]");
+                    }
+                };
+            }
+
             void toLinear_ground_block_brackets()
             {
-                if (!parent.IsDeclaration && !IsCodeBlock)
+                if (!parent.IsDeclaration && !IsBlockDeclaration)
                 {
-                    // Is a code accumulator
+                    // is JSON
+                    throw new Exception("json todo");
                 }
                 else
                 {
                     bag = bag.subBag();
-                    //todo for the future:
-                    // if block has no precedent attributes, so it is an object declaration
-                    // so, make a function specialized for "json" parsing that returns a "var"
-                    // same speech for [ closoure
                 }
 
 
@@ -1126,13 +1164,11 @@ namespace FractalMachine.Code.Langs
                 {
                     ///
                     /// This means that it is an entry statement, so parameters could cleared at the end
-                    ///
-
-                    toLinear_checkSquareBrackets();
-
-                    ///
                     /// Statement decoder could cause a statement confusion
                     ///
+
+                    // toLinear_checkSquareBrackets(); // it make no sense here
+
                     onEnd = delegate
                     {
                         var pars = bag.Params;
@@ -1192,7 +1228,10 @@ namespace FractalMachine.Code.Langs
             void toLinear_ground_instruction_declaration()
             {
                 lin = new Linear(bag.Linear, ast);
-                if (HasFinalBracketsBlock)
+
+                bool isFunction = HasFinalBracketsBlock;
+
+                if (isFunction)
                     lin.Op = "function";
                 else
                     lin.Op = "declare";
@@ -1207,8 +1246,11 @@ namespace FractalMachine.Code.Langs
                     b.Params = new List<string>();
                 };
 
-                bag = bag.subBag();
-                bag.Linear = lin;
+                if (isFunction)
+                {
+                    bag = bag.subBag();
+                    bag.Linear = lin;
+                }
 
                 onEnd = delegate
                 {
