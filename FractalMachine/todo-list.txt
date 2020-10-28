@@ -1,6 +1,3 @@
 ﻿- Crea la gestione degli errori
 - Introdurre '' per char
-- Forse il primo setup.json viene creato vuoto (da verificare)
-- controlla se è già la versione più recente compilata
-- compila in gcc
-- give priority to mingw64-x86_64- if windows
+- test tipi composti [] comportamento Linear converter

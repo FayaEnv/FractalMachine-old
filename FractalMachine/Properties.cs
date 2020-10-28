@@ -30,9 +30,11 @@ namespace FractalMachine
         public static string[] FileImportExtensions = new string[] { ".h", ".light" };
         public static string InternalVariable = "£";
 
+        // Marks should have just 2 chars
         public static string Mark = "*°";
         public static string StringMark = "$$" + Mark;
         public static string AngularBracketsMark = "<>" + Mark;
+        public static string ReferenceMark = "rf" + Mark;
 
         /// <summary>
         /// Init things that depends on one of these properties

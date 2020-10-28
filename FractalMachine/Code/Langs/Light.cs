@@ -435,16 +435,16 @@ namespace FractalMachine.Code.Langs
             {
                 if (IsOperator)
                 {
-                    if(Subject != "=")
+                    if (Subject != "=")
                     {
                         // is short operation
-                        if(codes.Count == 1 && LastCode.Subject == "=")
+                        if (codes.Count == 1 && LastCode.Subject == "=")
                         {
                             var lc = LastCode;
                             codes = LastCode.codes;
                             lc.codes = new List<OrderedAST>();
                             new OrderedAST(parent.ast.children[0], lc);
-                            lc.codes.Add(this);                          
+                            lc.codes.Add(this);
                             parent.codes[parent.codes.Count - 1] = lc;
                             // it's a little twisted
                             // ex: test += 2
@@ -734,7 +734,8 @@ namespace FractalMachine.Code.Langs
                 public enum Status
                 {
                     Ground,
-                    DeclarationParenthesis
+                    DeclarationParenthesis,
+                    JSON //todo
                 }
 
 
@@ -831,7 +832,7 @@ namespace FractalMachine.Code.Langs
                     }
                     else
                     {
-                        if (continuous != null && Light.DeclarationOperations.Contains(instr.Op) )
+                        if (continuous != null && Light.DeclarationOperations.Contains(instr.Op))
                         {
                             //todo: check if instr has yet a modifier (?)
                             instr.Attributes.Add(continuous.Op);
@@ -842,317 +843,51 @@ namespace FractalMachine.Code.Langs
 
             #endregion
 
-            void toLinear(Bag bag)
-            {
-                //if (outLin == null) outLin = new Linear(oAst.ast);
+            Bag bag;
+            Linear lin = null;
+            OnCallback onEnd = null, setTempReturn;
+            bool enter = false;
 
-                Linear lin = null;
-                OnCallback onEnd = null;
-                bool enter = false;
+            void toLinear(Bag parentBag)
+            {
+                bag = parentBag;
+
+                //if (outLin == null) outLin = new Linear(oAst.ast);
 
                 ///
                 /// Callbacks
                 ///
-                OnCallback setTempReturn = delegate
+                setTempReturn = delegate
                 {
                     lin.Return = Properties.InternalVariable + getTempVar();
                     bag.addParam(Properties.InternalVariable + getTempVar());
-                };
-
-                OnCallback onSquareBrackets = delegate
-                {
-                    if (Subject == "[")
-                    {
-                        if (Left.ast.type == AST.Type.Attribute)
-                        {
-                            //todo: Pensare ad un metodo migliore...
-                            bag.addParam(bag.pullParams() + "[]");
-                        }
-                    }
                 };
 
                 ///
                 /// Analyze AST
                 ///
 
-                ///
                 /// Attributes
-                ///
                 if (ast.type == AST.Type.Attribute)
                 {
-                    if (ast.aclass == "string")
-                        ast.subject = Properties.StringMark + Subject;
-                    if (ast.aclass == "angularBracket")
-                        ast.subject = Properties.AngularBracketsMark + Subject;
-
-                    bag.addParam(Subject);
-
-                    bag.OnNextParamOnce?.Invoke();
-                    bag.OnNextParamOnce = null;
-
+                    toLinear_attribute();
                     return;
                 }
 
-                if (bag.status == Bag.Status.Ground)
+                switch (bag.status)
                 {
-                    ///
-                    /// Blocks
-                    ///
-                    if (ast.type == AST.Type.Block)
-                    {
-                        onSquareBrackets();
-
-                        if (Subject == "(")
-                        {
-                            if (parent.IsDeclaration)
-                            {
-                                ///
-                                /// This is a good example of different status management
-                                ///
-                                bag = bag.subBag(Bag.Status.DeclarationParenthesis);
-                                var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
-                                l.Op = "parameters";
-
-                                bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
-                                {
-                                    var p = bag.pullParams();
-                                    if (p != null)
-                                    {
-                                        var lin = new Linear(l, oAst.ast);
-                                        lin.Op = "parameter";
-                                        lin.Name = p;
-                                        lin.List();
-
-                                        if (bag.Params.Count > 0)
-                                            lin.Return = bag.pullParams();
-                                    }
-                                };
-
-                                onEnd = delegate
-                                {
-                                    bag.OnRepeteable(bag, LastCode);
-                                };
-                            }
-                            else
-                            {
-                                ///
-                                /// Here parameters are simply collected from bag.Paramas
-                                ///
-                                lin = new Linear(bag.Linear, ast);
-                                lin.Op = "call";
-                                lin.Name = bag.pullParams();
-
-                                bag = bag.subBag();
-                                bag.disableStatementDecoder = true;
-
-                                onEnd = delegate
-                                {
-                                    for (int l = bag.Params.Count - 1; l >= 0; l--)
-                                    {
-                                        Linear lin = new Linear(bag.Linear, ast);
-                                        lin.Op = "push";
-                                        lin.Name = bag.Params.Pull(0);
-                                        lin.List();
-                                    }
-
-                                    setTempReturn();
-                                };
-                            }                          
-                        }
-
-                        if (Subject == "{")
-                        {
-                            bag = bag.subBag();
-                            //todo for the future:
-                            // if block has no precedent attributes, so it is an object declaration
-                            // so, make a function specialized for "json" parsing that returns a "var"
-                            // same speech for [ closoure
-                        }
-                    }
-                    ///
-                    /// Instructions
-                    ///
-                    else
-                    {
-                        if (Subject == null && codes.Count == 0)
-                            return; // Is a dummy instruction
-
-                        if (IsDeclaration)
-                        {
-                            lin = new Linear(bag.Linear, ast);
-                            if (HasFinalBracketsBlock)
-                                lin.Op = "function";
-                            else
-                                lin.Op = "declare";
-                            enter = true;
-
-                            bag.OnRepeteable = delegate (Bag b, OrderedAST oa)
-                            {
-                                var lin = b.Linear;
-                                lin.Name = b.pullParams();
-                                lin.Return = b.pullParams() ?? lin.Return;
-                                lin.Attributes = b.Params; //todo for repeated instructions
-                                b.Params = new List<string>();
-                            };
-
-                            bag = bag.subBag();
-                            bag.Linear = lin;
-
-                            onEnd = delegate
-                            {
-                                bag.OnRepeteable(bag, this);
-                            };
-                        }
-                        else if (IsOperator)
-                        {
-                            ///
-                            /// Operators
-                            ///
-
-                            switch (Subject)
-                            {
-                                case "=":
-                                    lin = new Linear(bag.Linear, ast);
-                                    lin.Op = Subject;
-                                    lin.Name = bag.pullParams(true);
-
-                                    onEnd = delegate
-                                    {
-                                        lin.Attributes.Add(bag.pullParams());
-                                    };
-
-                                    break;
-
-                                case ".":
-
-                                    bag.OnNextParamOnce = delegate
-                                    {
-                                        var p = bag.pullParams();
-                                        bag.addParam(bag.pullParams() + "." + p);
-                                    };
-
-                                    break;
-
-                                default:
-                                    lin = new Linear(bag.Linear, ast);
-                                    lin.Op = Subject;
-                                    lin.Attributes.Add(bag.pullParams());
-                                    setTempReturn();
-
-                                    onEnd = delegate
-                                    {
-                                        lin.Attributes.Add(bag.pullParams());
-                                    };
-
-                                    break;
-                            }
-
-                        }
-                        else if (IsRepeatedInstruction)
-                        {
-                            if (bag.OnRepeteable != null)
-                            {
-                                bag = bag.subBag();
-                                bag.Linear = bag.Linear.LastInstruction.Clone(ast);
-                                onEnd = delegate ()
-                                {
-                                    bag.OnRepeteable.Invoke(bag, this);
-                                };
-                            }
-                        }
-                        else
-                        {      
-                            /// This also means that it is an entry statement, so parameters could cleared at the end
-
-                            onSquareBrackets();
-
-                            ///
-                            /// Statement decoder could cause a statement confusion
-                            ///
-                            onEnd = delegate
-                            {
-                                var pars = bag.Params;
-
-                                if (!bag.disableStatementDecoder && pars.Count > 1)
-                                {
-                                    lin = new Linear(bag.Linear, ast);
-                                    lin.Op = pars.Pull(0);
-
-                                    var instr = Instruction.Get(lin.Op);
-
-                                    switch (instr.Decoder)
-                                    {
-                                        case Instruction.DecoderType.Normal:
-
-                                            while (pars.Count > 0)
-                                            {
-                                                var p = pars.Pull(0);
-                                                lin.Attributes.Add(p);
-                                                lin.Continuous = (p == ":");
-                                            }
-
-                                            if (lin.Continuous)
-                                                lin.Attributes.Pull();
-
-                                            if (lin.Op == "namespace")
-                                                lin.Name = lin.Attributes.Pull(0);
-
-                                            break;
-
-                                        case Instruction.DecoderType.WithParameters:
-
-                                            lin.Attributes.Add(pars.Pull(0));
-
-                                            //todo: handle types (?)
-                                            string prev = "";
-                                            int i = 0;
-                                            while (pars.Count > 0)
-                                            {
-                                                if (i % 2 == 1)
-                                                    lin.Parameters.Add(prev, pars.Pull(0));
-                                                else
-                                                    prev = pars.Pull(0);
-
-                                                i++;
-                                            }
-
-                                            break;
-                                    }
-                                }
-
-                                bag.Params.Clear();
-                            };
-                        }
-                    }
-                }
-                else if (bag.status == Bag.Status.DeclarationParenthesis)
-                {
-                    onSquareBrackets();
-
-                    if (IsOperator)
-                    {
-                        switch (Subject)
-                        { 
-                            case "=":
-                                bag.OnRepeteable?.Invoke(bag, this.prev);
-                                onEnd = delegate
-                                {
-                                    bag.Linear.LastInstruction.Return = bag.pullParams();
-                                };
-                                break;
-                        }
-                    }
-                    else if (IsRepeatedInstruction)
-                    {
-                        bag.OnRepeteable?.Invoke(bag, this.prev);
-                    }
+                    case Bag.Status.Ground:
+                        toLinear_ground();
+                        break;
+                    case Bag.Status.DeclarationParenthesis:
+                        toLinear_declarationParenthesis();
+                        break;
                 }
 
                 if (enter)
                 {
                     bag.Linear = lin;
                 }
-
 
                 ///
                 /// Child analyzing
@@ -1183,6 +918,315 @@ namespace FractalMachine.Code.Langs
 
             }
 
+            void toLinear_checkSquareBrackets()
+            {
+                if (Subject == "[")
+                {
+                    bag = bag.subBag();
+
+                    onEnd = delegate
+                    {
+                        if (bag.Params.Count > 0)
+                        {
+                                //todo
+                            }
+                        else if (Left.ast.type == AST.Type.Attribute)
+                        {
+                                //todo: Pensare ad un metodo migliore...
+                                bag.addParam(bag.pullParams() + "[]");
+                        }
+                    };
+                }
+            }
+
+            void toLinear_attribute()
+            {
+                if (ast.aclass == "string")
+                    ast.subject = Properties.StringMark + Subject;
+                if (ast.aclass == "angularBracket")
+                    ast.subject = Properties.AngularBracketsMark + Subject;
+
+                bag.addParam(Subject);
+
+                bag.OnNextParamOnce?.Invoke();
+                bag.OnNextParamOnce = null;
+            }
+
+            void toLinear_declarationParenthesis()
+            {
+                toLinear_checkSquareBrackets();
+
+                if (IsOperator)
+                {
+                    switch (Subject)
+                    {
+                        case "=":
+                            bag.OnRepeteable?.Invoke(bag, this.prev);
+                            onEnd = delegate
+                            {
+                                bag.Linear.LastInstruction.Return = bag.pullParams();
+                            };
+                            break;
+                    }
+                }
+                else if (IsRepeatedInstruction)
+                {
+                    bag.OnRepeteable?.Invoke(bag, this.prev);
+                }
+            }
+
+            void toLinear_ground()
+            {
+                /// Blocks
+                if (ast.type == AST.Type.Block)
+                {
+                    toLinear_ground_block();
+                }
+                /// Instructions
+                else
+                {
+                    toLinear_ground_instruction();
+                }
+            }
+
+            void toLinear_ground_block()
+            {
+                toLinear_checkSquareBrackets();
+
+                if (Subject == "(")
+                    toLinear_ground_block_parenthesis();
+
+                if (Subject == "{")
+                    toLinear_ground_block_brackets();
+            }
+
+            void toLinear_ground_block_brackets()
+            {
+                bag = bag.subBag();
+                //todo for the future:
+                // if block has no precedent attributes, so it is an object declaration
+                // so, make a function specialized for "json" parsing that returns a "var"
+                // same speech for [ closoure
+            }
+
+            void toLinear_ground_block_parenthesis()
+            {
+                if (parent.IsDeclaration)
+                {
+                    ///
+                    /// This is a good example of different status management
+                    ///
+                    bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                    var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
+                    l.Op = "parameters";
+
+                    bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
+                    {
+                        var p = bag.pullParams();
+                        if (p != null)
+                        {
+                            var lin = new Linear(l, oAst.ast);
+                            lin.Op = "parameter";
+                            lin.Name = p;
+                            lin.List();
+
+                            if (bag.Params.Count > 0)
+                                lin.Return = bag.pullParams();
+                        }
+                    };
+
+                    onEnd = delegate
+                    {
+                        bag.OnRepeteable(bag, LastCode);
+                    };
+                }
+                else
+                {
+                    ///
+                    /// Here parameters are simply collected from bag.Paramas
+                    ///
+                    lin = new Linear(bag.Linear, ast);
+                    lin.Op = "call";
+                    lin.Name = bag.pullParams();
+
+                    bag = bag.subBag();
+                    bag.disableStatementDecoder = true;
+
+                    onEnd = delegate
+                    {
+                        for (int l = bag.Params.Count - 1; l >= 0; l--)
+                        {
+                            Linear lin = new Linear(bag.Linear, ast);
+                            lin.Op = "push";
+                            lin.Name = bag.Params.Pull(0);
+                            lin.List();
+                        }
+
+                        setTempReturn();
+                    };
+                }
+            }
+
+            void toLinear_ground_instruction()
+            {
+                if (Subject == null && codes.Count == 0)
+                    return; // Is a dummy instruction
+
+                if (IsDeclaration)
+                {
+                    toLinear_ground_instruction_declaration();
+                }
+                else if (IsOperator)
+                {
+                    toLinear_ground_instruction_operator();
+
+                }
+                else if (IsRepeatedInstruction)
+                {
+                    if (bag.OnRepeteable != null)
+                    {
+                        bag = bag.subBag();
+                        bag.Linear = bag.Linear.LastInstruction.Clone(ast);
+                        onEnd = delegate ()
+                        {
+                            bag.OnRepeteable.Invoke(bag, this);
+                        };
+                    }
+                }
+                else
+                {
+                    ///
+                    /// This means that it is an entry statement, so parameters could cleared at the end
+                    ///
+
+                    toLinear_checkSquareBrackets();
+
+                    ///
+                    /// Statement decoder could cause a statement confusion
+                    ///
+                    onEnd = delegate
+                    {
+                        var pars = bag.Params;
+
+                        if (!bag.disableStatementDecoder && pars.Count > 1)
+                        {
+                            lin = new Linear(bag.Linear, ast);
+                            lin.Op = pars.Pull(0);
+
+                            var instr = Instruction.Get(lin.Op);
+
+                            switch (instr.Decoder)
+                            {
+                                case Instruction.DecoderType.Normal:
+
+                                    while (pars.Count > 0)
+                                    {
+                                        var p = pars.Pull(0);
+                                        lin.Attributes.Add(p);
+                                        lin.Continuous = (p == ":");
+                                    }
+
+                                    if (lin.Continuous)
+                                        lin.Attributes.Pull();
+
+                                    if (lin.Op == "namespace")
+                                        lin.Name = lin.Attributes.Pull(0);
+
+                                    break;
+
+                                case Instruction.DecoderType.WithParameters:
+
+                                    lin.Attributes.Add(pars.Pull(0));
+
+                                    //todo: handle types (?)
+                                    string prev = "";
+                                    int i = 0;
+                                    while (pars.Count > 0)
+                                    {
+                                        if (i % 2 == 1)
+                                            lin.Parameters.Add(prev, pars.Pull(0));
+                                        else
+                                            prev = pars.Pull(0);
+
+                                        i++;
+                                    }
+
+                                    break;
+                            }
+                        }
+
+                        bag.Params.Clear();
+                    };
+                }
+            }
+
+            void toLinear_ground_instruction_declaration()
+            {
+                lin = new Linear(bag.Linear, ast);
+                if (HasFinalBracketsBlock)
+                    lin.Op = "function";
+                else
+                    lin.Op = "declare";
+                enter = true;
+
+                bag.OnRepeteable = delegate (Bag b, OrderedAST oa)
+                {
+                    var lin = b.Linear;
+                    lin.Name = b.pullParams();
+                    lin.Return = b.pullParams() ?? lin.Return;
+                    lin.Attributes = b.Params; //todo for repeated instructions
+                    b.Params = new List<string>();
+                };
+
+                bag = bag.subBag();
+                bag.Linear = lin;
+
+                onEnd = delegate
+                {
+                    bag.OnRepeteable(bag, this);
+                };
+            }
+
+            void toLinear_ground_instruction_operator()
+            {
+                switch (Subject)
+                {
+                    case "=":
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = Subject;
+                        lin.Name = bag.pullParams(true);
+
+                        onEnd = delegate
+                        {
+                            lin.Attributes.Add(bag.pullParams());
+                        };
+
+                        break;
+
+                    case ".":
+
+                        bag.OnNextParamOnce = delegate
+                        {
+                            var p = bag.pullParams();
+                            bag.addParam(bag.pullParams() + "." + p);
+                        };
+
+                        break;
+
+                    default:
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = Subject;
+                        lin.Attributes.Add(bag.pullParams());
+                        setTempReturn();
+
+                        onEnd = delegate
+                        {
+                            lin.Attributes.Add(bag.pullParams());
+                        };
+
+                        break;
+                }
+            }
 
             #endregion
         }
