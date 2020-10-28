@@ -1,6 +1,6 @@
 import System.IO; 
 
-function main(){
+function main(ciao, miao=2){
 	Print("Hello world! Finally.");
 
 	// Altri obbiettivi
@@ -8,8 +8,6 @@ function main(){
 	// Operazioni
 	int ciao = 2;
 	int v1 = 3, v2 = 4;
-	ciao = (v1 + v2) - ciao;
+	//ciao = (v1 + v2) - ciao;
 	//ciao += 2;
-
-	
 }

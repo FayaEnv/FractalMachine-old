@@ -105,9 +105,9 @@ namespace FractalMachine.Code.Langs
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "inString" });
                 var trgAngularBrackets = statusDefault.Add(new Triggers.Trigger { Delimiter = "<", ActivateStatus = "inAngularBrackets" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
-                var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiter = ";" });
+                var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ",", ":" } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
                 var trgFastOperation = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
@@ -148,11 +148,15 @@ namespace FractalMachine.Code.Langs
 
                 /// Default
 
-                trgNewInstruction.OnTriggered = delegate
+                trgNewInstruction.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
                     /*var end = curAst.Instruction.NewChild(Line, Pos, AST.Type.Instruction);
                     end.aclass = "end";*/
-                    curAst.NewInstruction(Line, Pos);
+
+                    var ast = curAst.NewInstruction(Line, Pos);
+
+                    if (trigger.activatorDelimiter == ",")
+                        ast.subject = ",";
                 };
 
                 trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
@@ -412,6 +416,7 @@ namespace FractalMachine.Code.Langs
             internal OrderedAST parent;
             internal List<OrderedAST> codes = new List<OrderedAST>();
 
+            internal OrderedAST prev;
             internal int tempVarCount = 0, tempVar = -1;
 
             public OrderedAST(AST ast)
@@ -427,16 +432,22 @@ namespace FractalMachine.Code.Langs
 
             public void Revision()
             {
-                // cosa farci?
+                //Cosa farci?
             }
 
             void linkAst(AST ast)
             {
                 this.ast = ast;
 
+                OrderedAST previous = null;
                 foreach (var child in ast.children)
                 {
-                    codes.Add(new OrderedAST(child, this));
+                    var ch = new OrderedAST(child, this);
+
+                    ch.prev = previous;
+                    previous = ch;
+
+                    codes.Add(ch);
                 }
 
                 Revision();
@@ -612,6 +623,14 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsRepeatedInstruction
+            {
+                get
+                {
+                    return ast.type == AST.Type.Instruction && Subject == ",";
+                }
+            }
+
             internal string Subject
             {
                 get
@@ -649,6 +668,16 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            internal OrderedAST LastChild
+            {
+                get
+                {
+                    if (codes.Count > 0)
+                        return codes[codes.Count - 1];
+                    return null;
+                }
+            }
+
             #endregion
 
             #region ToLinear
@@ -675,25 +704,13 @@ namespace FractalMachine.Code.Langs
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
 
                 public OnCallback OnNextParamOnce;
-                public OnOperation Operation, OnNextParam;
+                public OnOperation OnRepeteable;
                 //public OnOperationInt setTempReturn;
 
                 internal bool disableStatementDecoder = false;
 
-                int linsStackPos = 0;
-                List<Linear> linsStack = new List<Linear>();
-
                 public Bag()
                 {
-                    ///
-                    /// Callbacks
-                    ///
-                    /*setTempReturn = delegate (int val)
-                    {
-                        lin.Return = "$" + val;
-                        addParam("$" + val);
-                    };*/
-
                 }
 
                 public enum Status
@@ -701,63 +718,6 @@ namespace FractalMachine.Code.Langs
                     Ground,
                     DeclarationParenthesis
                 }
-
-
-                #region Lin
-                /*
-                public Linear lin
-                {
-                    get
-                    {
-                        return _lin;
-                    }
-
-                    set
-                    {
-                        linsStack.Add(value);
-                        _lin = value;
-                    }
-                }
-
-                public void catchLin(Linear lin = null)
-                {
-                    if (lin == null)
-                        lin = _lin;
-
-                    for (int l = linsStack.Count - 1; l >= linsStackPos; l--)
-                    {
-                        var ll = linsStack[l];
-
-                        if (ll == lin)
-                            break;
-
-                        if (ll.Op != null)
-                            lin.Add(linsStack[l]);
-
-                        linsStack.RemoveAt(l);
-                    }
-                }
-
-                public void addLin(AST ast)
-                {
-                    lin = new Linear(ast);
-                    linsStackPos++;
-                }
-
-                public void backLin()
-                {
-                    linsStackPos--;
-
-                    if (linsStack[linsStackPos].Op == null)
-                        linsStack.RemoveAt(linsStackPos);
-
-                    if (linsStackPos > 0)
-                        _lin = linsStack[linsStackPos - 1];
-                    else
-                        _lin = null;
-                }
-                */
-                #endregion
 
 
                 #region Param
@@ -785,6 +745,7 @@ namespace FractalMachine.Code.Langs
                     b.Parent = this;
                     b.status = status;
                     b.Linear = Linear;
+                    b.OnRepeteable = OnRepeteable;
                     return b;
                 }
             }
@@ -894,6 +855,10 @@ namespace FractalMachine.Code.Langs
                 ///
                 /// Analyze AST
                 ///
+
+                ///
+                /// Attributes
+                ///
                 if (ast.type == AST.Type.Attribute)
                 {
                     if (ast.aclass == "string")
@@ -906,20 +871,50 @@ namespace FractalMachine.Code.Langs
                     bag.OnNextParamOnce?.Invoke();
                     bag.OnNextParamOnce = null;
 
-                    bag.OnNextParam?.Invoke(bag, this);
-
                     return;
                 }
 
                 if (bag.status == Bag.Status.Ground)
                 {
+                    ///
+                    /// Blocks
+                    ///
                     if (ast.type == AST.Type.Block)
                     {
                         onSquareBrackets();
 
                         if (Subject == "(")
                         {
-                            if (!parent.IsDeclaration)
+                            if (parent.IsDeclaration)
+                            {
+                                ///
+                                /// This is a good example of different status management
+                                ///
+                                bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                                var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
+                                l.Op = "parameters";
+
+                                bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
+                                {
+                                    var p = bag.pullParams();
+                                    if (p != null)
+                                    {
+                                        var lin = new Linear(l, oAst.ast);
+                                        lin.Op = "parameter";
+                                        lin.Name = p;
+                                        lin.List();
+
+                                        if (bag.Params.Count > 0)
+                                            lin.Return = bag.pullParams();
+                                    }
+                                };
+
+                                onEnd = delegate
+                                {
+                                    bag.OnRepeteable(bag, LastChild);
+                                };
+                            }
+                            else
                             {
                                 ///
                                 /// Here parameters are simply collected from bag.Paramas
@@ -943,39 +938,7 @@ namespace FractalMachine.Code.Langs
 
                                     setTempReturn();
                                 };
-                            }
-                            else
-                            {
-                                ///
-                                /// This is a good example of different status management
-                                ///
-                                bag = bag.subBag(Bag.Status.DeclarationParenthesis);
-                                var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
-                                l.Op = "parameters";
-
-                                bag.Operation = delegate (Bag bag, OrderedAST oAst)
-                                {
-                                    var p = bag.pullParams();
-                                    if (p != null)
-                                    {
-                                        var lin = new Linear(l, oAst.ast);
-                                        lin.Op = "parameter";
-                                        lin.Name = p;
-                                        lin.List();
-
-                                        if (bag.Params.Count > 0)
-                                        {
-                                            lin.Return = bag.pullParams();
-                                            //lin.Parameters.Add("type", lin.Return);
-                                        }
-                                    }
-                                };
-
-                                onEnd = delegate
-                                {
-                                    bag.Operation(bag, this);
-                                };
-                            }
+                            }                          
                         }
 
                         if (Subject == "{")
@@ -987,6 +950,9 @@ namespace FractalMachine.Code.Langs
                             // same speech for [ closoure
                         }
                     }
+                    ///
+                    /// Instructions
+                    ///
                     else
                     {
                         if (Subject == null && codes.Count == 0)
@@ -1001,14 +967,21 @@ namespace FractalMachine.Code.Langs
                                 lin.Op = "declare";
                             enter = true;
 
+                            bag.OnRepeteable = delegate (Bag b, OrderedAST oa)
+                            {
+                                var lin = b.Linear;
+                                lin.Name = b.pullParams();
+                                lin.Return = b.pullParams() ?? lin.Return;
+                                lin.Attributes = b.Params; //todo for repeated instructions
+                                b.Params = new List<string>();
+                            };
+
+                            bag = bag.subBag();
+                            bag.Linear = lin;
+
                             onEnd = delegate
                             {
-
-
-                                lin.Name = bag.pullParams();
-                                lin.Return = bag.pullParams();
-                                lin.Attributes = bag.Params;
-                                bag.Params = new List<string>();
+                                bag.OnRepeteable(bag, this);
                             };
                         }
                         else if (IsOperator)
@@ -1041,12 +1014,6 @@ namespace FractalMachine.Code.Langs
 
                                     break;
 
-                                case ",":
-                                    // Repeat previous operation
-                                    bag.Operation?.Invoke(bag, this);
-
-                                    break;
-
                                 default:
                                     lin = new Linear(bag.Linear, ast);
                                     lin.Op = Subject;
@@ -1062,8 +1029,20 @@ namespace FractalMachine.Code.Langs
                             }
 
                         }
-                        else
+                        else if (IsRepeatedInstruction)
                         {
+                            if (bag.OnRepeteable != null)
+                            {
+                                bag = bag.subBag();
+                                bag.Linear = bag.Linear.LastInstruction.Clone(ast);
+                                onEnd = delegate ()
+                                {
+                                    bag.OnRepeteable.Invoke(bag, this);
+                                };
+                            }
+                        }
+                        else
+                        {                              
                             onSquareBrackets();
 
                             ///
@@ -1131,20 +1110,19 @@ namespace FractalMachine.Code.Langs
                     if (IsOperator)
                     {
                         switch (Subject)
-                        {
-                            case ",":
-                                bag.Operation?.Invoke(bag, this);
-                                break;
-
+                        { 
                             case "=":
-
+                                bag.OnRepeteable?.Invoke(bag, this.prev);
                                 onEnd = delegate
                                 {
                                     bag.Linear.LastInstruction.Return = bag.pullParams();
                                 };
-
                                 break;
                         }
+                    }
+                    else if (IsRepeatedInstruction)
+                    {
+                        bag.OnRepeteable?.Invoke(bag, this.prev);
                     }
                 }
 

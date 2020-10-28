@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+using FractalMachine.Classes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -56,6 +57,21 @@ namespace FractalMachine.Code
             var lin = new Linear(ast);
             lin.parent = this;
             Settings[Name] = lin;
+            return lin;
+        }
+
+        public Linear Clone(AST ast)
+        {
+            Linear lin = new Linear(ast);
+            lin.parent = parent;
+            lin.Op = Op;
+            lin.Name = Name;
+            lin.Return = Return;
+            lin.Attributes = Attributes.Clone();
+
+            // Add automatically to parent
+            parent.Instructions.Add(lin);
+
             return lin;
         }
 

@@ -19,6 +19,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace FractalMachine.Classes
@@ -50,6 +51,11 @@ namespace FractalMachine.Classes
             }
 
             return default(T);
+        }
+
+        public static List<T> Clone<T>(this List<T> listToClone) 
+        {
+            return listToClone.Select(item => item).ToList();
         }
 
         #endregion
