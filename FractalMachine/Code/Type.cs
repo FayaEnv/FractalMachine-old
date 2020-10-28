@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 
+// think about it https://en.wikipedia.org/wiki/IEC_61131-3
 namespace FractalMachine.Code
 {
     public class Type
