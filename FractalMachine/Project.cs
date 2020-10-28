@@ -29,7 +29,9 @@ namespace FractalMachine
                 
                 directory = ProjectPath;
                 entryPoint = ProjectPath + "Main.light";
-                outName = ProjectPath + Path.GetFileName(ProjectPath) + env.exeFormat;
+
+                var spl = ProjectPath.Replace('\\','/').Split('/');
+                outName = spl[spl.Length-2];
 
                 if (!File.Exists(entryPoint))
                     throw new Exception("Unable to open project directory " + ProjectPath);
@@ -37,7 +39,7 @@ namespace FractalMachine
             else
             {
                 entryPoint = ProjectPath;
-                directory = Path.GetDirectoryName(ProjectPath);
+                directory = Path.GetDirectoryName(ProjectPath); //tocheck: ends with /?
                 outName = Path.GetFileNameWithoutExtension(entryPoint);
             }
         }
@@ -64,7 +66,7 @@ namespace FractalMachine
             // Compile
             var env = Ambiance.Environment.GetEnvironment;
 
-            var exeOutPath = directory+"/"+outName+env.exeFormat;
+            var exeOutPath = directory+outName+env.exeFormat;
 
             // Pay attention to the case of an updated library but not the entry point
             if (Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
