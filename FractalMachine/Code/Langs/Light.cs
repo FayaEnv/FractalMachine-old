@@ -826,6 +826,8 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            //tothink class Parameters : List<Attribute>
+
             public Linear ToLinear()
             {
                 var bag = new Bag();
