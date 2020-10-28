@@ -24,7 +24,8 @@ namespace FractalMachine
     {
         static public void Print(string str)
         {
-            Console.WriteLine(str);
+            if(Properties.Debugging)
+                Console.WriteLine(str);
         }
     }
 }

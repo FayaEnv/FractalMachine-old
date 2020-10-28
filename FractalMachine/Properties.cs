@@ -17,7 +17,7 @@
 using System;
 using System.Diagnostics;
 
-namespace FractalMachine.Code
+namespace FractalMachine
 {
     public static class Properties
     {

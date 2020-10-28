@@ -1,13 +1,17 @@
-import System.IO; 
+//import System.IO; 
 
 function main(ciao, miao=2){
-	Print("Hello world! Finally.");
+	//Print("Hello world! Finally.");
 
 	// Altri obbiettivi
 
 	// Operazioni
-	int ciao = 2;
-	int v1 = 3, v2 = 4;
+	//int ciao = 2;
+	//ciao = ciao + 2;
+	//int v1 = 3, v2 = 4; 
 	//ciao = (v1 + v2) - ciao;
-	//ciao += 2;
+	//ciao += 2; 
+
+	//Esperimento per potenziare la portata del parser
+	int [v0, v1] = 2;
 }

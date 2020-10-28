@@ -182,7 +182,7 @@ namespace FractalMachine.Code
                         break;
                 }
 
-                if(!afterIncludes && closesIncludes)
+                if(type == Types.Light && !afterIncludes && closesIncludes)
                 {
                     // Inser linear advisor
                     var lin = new Linear(instr.ast);

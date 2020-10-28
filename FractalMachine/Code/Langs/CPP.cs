@@ -32,6 +32,10 @@ namespace FractalMachine.Code.Langs
         {
             var text = System.IO.File.ReadAllText(FileName);
             var light = new CPP();
+
+            // Temporary replacing
+            text = text.Replace("::", ".");
+
             light.Parse(text);
             return light;
         }

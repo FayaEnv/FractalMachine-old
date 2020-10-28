@@ -427,12 +427,34 @@ namespace FractalMachine.Code.Langs
             public OrderedAST(AST ast, OrderedAST parent)
             {
                 this.parent = parent;
+                parent.codes.Add(this);
                 linkAst(ast);
             }
 
             public void Revision()
             {
-                //Cosa farci?
+                if (IsOperator)
+                {
+                    if(Subject != "=")
+                    {
+                        // is short operation
+                        if(codes.Count == 1 && LastCode.Subject == "=")
+                        {
+                            var lc = LastCode;
+                            codes = LastCode.codes;
+                            lc.codes = new List<OrderedAST>();
+                            new OrderedAST(parent.ast.children[0], lc);
+                            lc.codes.Add(this);                          
+                            parent.codes[parent.codes.Count - 1] = lc;
+                            // it's a little twisted
+                            // ex: test += 2
+                            // +.codes = 2
+                            // =.codes.Add(test)
+                            // =.codes.Add(+)
+                            // test last child (+) substituted with =
+                        }
+                    }
+                }
             }
 
             void linkAst(AST ast)
@@ -446,8 +468,6 @@ namespace FractalMachine.Code.Langs
 
                     ch.prev = previous;
                     previous = ch;
-
-                    codes.Add(ch);
                 }
 
                 Revision();
@@ -615,6 +635,14 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsMainBlock
+            {
+                get
+                {
+                    return IsBlockBrackets; //todo && not in operation
+                }
+            }
+
             public bool IsAssign
             {
                 get
@@ -668,16 +696,6 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            internal OrderedAST LastChild
-            {
-                get
-                {
-                    if (codes.Count > 0)
-                        return codes[codes.Count - 1];
-                    return null;
-                }
-            }
-
             #endregion
 
             #region ToLinear
@@ -698,7 +716,7 @@ namespace FractalMachine.Code.Langs
             class Bag
             {
                 public Status status;
-                public Linear Linear, _lin;
+                public Linear Linear;
                 public Bag Parent;
                 public List<string> Params = new List<string>();
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
@@ -770,6 +788,7 @@ namespace FractalMachine.Code.Langs
                 // Check for continuous
                 RevisionContinuousNamespace(lin);
                 RevisionContinuousModifiers(lin);
+                //todo RevisionInternalOperation for declare assignation
             }
 
             void RevisionContinuousNamespace(Linear lin)
@@ -911,7 +930,7 @@ namespace FractalMachine.Code.Langs
 
                                 onEnd = delegate
                                 {
-                                    bag.OnRepeteable(bag, LastChild);
+                                    bag.OnRepeteable(bag, LastCode);
                                 };
                             }
                             else
@@ -1042,7 +1061,9 @@ namespace FractalMachine.Code.Langs
                             }
                         }
                         else
-                        {                              
+                        {      
+                            /// This also means that it is an entry statement, so parameters could cleared at the end
+
                             onSquareBrackets();
 
                             ///
@@ -1052,7 +1073,7 @@ namespace FractalMachine.Code.Langs
                             {
                                 var pars = bag.Params;
 
-                                if (!bag.disableStatementDecoder && pars.Count > 0)
+                                if (!bag.disableStatementDecoder && pars.Count > 1)
                                 {
                                     lin = new Linear(bag.Linear, ast);
                                     lin.Op = pars.Pull(0);
@@ -1099,6 +1120,7 @@ namespace FractalMachine.Code.Langs
                                     }
                                 }
 
+                                bag.Params.Clear();
                             };
                         }
                     }
@@ -1139,7 +1161,11 @@ namespace FractalMachine.Code.Langs
                 foreach (var code in codes)
                 {
                     // todo: try catch for error checking(?)
-                    code.toLinear(bag);
+
+                    var sbag = bag;
+                    //if (IsMainBlock) sbag = bag.subBag();
+
+                    code.toLinear(sbag);
                 }
 
                 ///
