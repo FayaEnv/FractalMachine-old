@@ -13,5 +13,5 @@ function main(ciao, miao=2){
 	//ciao += 2; 
 
 	//Esperimento per potenziare la portata del parser
-	//int {v0, v1} = 2;
+	int {v0, v1} = 2;
 }

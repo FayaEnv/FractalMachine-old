@@ -30,6 +30,8 @@ namespace FractalMachine.Code.Langs
         public static string[] ContinuousStatements = new string[] { "namespace", "private", "public" };
         public static string[] Modifiers = new string[] { "private", "public", "protected" };
         public static string[] DeclarationOperations = new string[] { "declaration", "function" };
+        public static string[] CodeBlocks = new string[] { "if", "else" };
+        public static string[] CodeBlocksWithoutParameters = new string[] { "else" };
 
         public static Light OpenFile(string FileName)
         {
@@ -567,6 +569,24 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsBlockDeclaration
+            {
+                get
+                {
+                    var cc = codes.Count;
+                    if (cc < 2) return false;
+                    return ((IsDeclaration && codes[cc - 1].IsBlockBrackets) || CodeBlocks.Contains(codes[0].Subject)) && codes[cc - 2].IsBlockParenthesis;
+                }
+            }
+
+            public bool IsCodeBlock
+            {
+                get
+                {
+                    return CodeBlocksWithoutParameters.Contains(prev?.Subject ?? ""); // or a Contains could accept a null value?
+                }
+            }
+
             public int CountAttributes
             {
                 get
@@ -1002,11 +1022,20 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_brackets()
             {
-                bag = bag.subBag();
-                //todo for the future:
-                // if block has no precedent attributes, so it is an object declaration
-                // so, make a function specialized for "json" parsing that returns a "var"
-                // same speech for [ closoure
+                if (!parent.IsDeclaration && !IsCodeBlock)
+                {
+                    // Is a code accumulator
+                }
+                else
+                {
+                    bag = bag.subBag();
+                    //todo for the future:
+                    // if block has no precedent attributes, so it is an object declaration
+                    // so, make a function specialized for "json" parsing that returns a "var"
+                    // same speech for [ closoure
+                }
+
+
             }
 
             void toLinear_ground_block_parenthesis()
