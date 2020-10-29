@@ -418,7 +418,7 @@ namespace FractalMachine.Code.Langs
             internal OrderedAST parent;
             internal List<OrderedAST> codes = new List<OrderedAST>();
 
-            internal OrderedAST prev;
+            internal OrderedAST prev, next;
             internal int tempVarCount = 0, tempVar = -1;
 
             public OrderedAST(AST ast)
@@ -467,7 +467,7 @@ namespace FractalMachine.Code.Langs
                 foreach (var child in ast.children)
                 {
                     var ch = new OrderedAST(child, this);
-
+                    if(previous != null) previous.next = ch;
                     ch.prev = previous;
                     previous = ch;
                 }
@@ -506,6 +506,8 @@ namespace FractalMachine.Code.Langs
 
             #region Properties
 
+            #region Count
+
             public int CountAttributes
             {
                 get
@@ -521,6 +523,29 @@ namespace FractalMachine.Code.Langs
                     return i;
                 }
             }
+
+            public int CountAttributesOnRight
+            {
+                get
+                {
+                    int count = 0;
+                    var cur = Right;
+                    while(cur != null)
+                    {
+                        if (cur.IsAttribute)
+                            count++;
+
+                        if (parent.HasAccumulatedAttributes && cur == LastBlockBrackets)
+                            count++;
+
+                        cur = cur.Right;
+                    }
+
+                    return count;
+                }
+            }
+
+            #endregion
 
             #region Has
 
@@ -554,20 +579,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    var iSquareBrackets = IndexLastSquareBrackets;
-                    bool hasAccomulatedAttributes = iSquareBrackets >= 0;
-                    if (hasAccomulatedAttributes)
-                    {
-                        for (int c = iSquareBrackets; c < codes.Count; c++)
-                        {
-                            if (codes[c].IsAttribute)
-                            {
-                                hasAccomulatedAttributes = false;
-                                break;
-                            }
-                        }
-                    }
-                    return hasAccomulatedAttributes;
+                    return LastBlockBrackets?.IsAccumulator ?? false;
                 }
             }
 
@@ -579,13 +591,27 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    /*var pos = parent.codes.IndexOf(this);
-                    if (pos > 0)
-                        return parent.codes[pos - 1];
-                    else
-                        return null;*/
-
                     return prev;
+                }
+            }
+
+            internal OrderedAST Right
+            {
+                get
+                {
+                    return next;
+                }
+            }
+
+            public OrderedAST LastCode
+            {
+                get
+                {
+                    var cnt = codes.Count;
+                    if (cnt > 0)
+                        return codes[cnt - 1];
+
+                    return null;
                 }
             }
 
@@ -617,18 +643,6 @@ namespace FractalMachine.Code.Langs
 
             #endregion
 
-            public OrderedAST LastCode
-            {
-                get
-                {
-                    var cnt = codes.Count;
-                    if (cnt > 0)
-                        return codes[cnt - 1];
-
-                    return null;
-                }
-            }
-
             #region Is
 
             internal bool IsInFunctionParenthesis
@@ -644,6 +658,24 @@ namespace FractalMachine.Code.Langs
                     }
 
                     return a != null && a.HasFunction && parenthesis;
+                }
+            }
+
+            public bool IsAccumulator
+            {
+                get
+                {
+                    if (ast.type != AST.Type.Block)
+                        return false;
+
+                    foreach(var code in codes)
+                    {
+                        var lc = code.LastCode;
+                        if (lc.IsOperator && lc.Subject == ":") //Is JSON property
+                            return false;
+                    }
+
+                    return true;
                 }
             }
 
@@ -731,7 +763,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    return !IsOperator && (CountAttributes >= 2 || (CountAttributes >= 1 && HasAccumulatedAttributes)) && !Light.Statements.Contains(codes[0].Subject);
+                    return !IsOperator && (CountAttributes >= 2 || (CountAttributes >= 1 && HasAccumulatedAttributes)) && !Statements.Contains(codes[0].Subject);
                 }
             }
 
@@ -741,7 +773,7 @@ namespace FractalMachine.Code.Langs
                 {
                     var cc = codes.Count;
                     if (cc < 2) return false;
-                    return IsDeclaration && codes[cc - 1].IsBlockBrackets && (codes[cc - 2].IsBlockParenthesis || IsCodeBlockWithoutParameters);
+                    return codes[cc - 1].IsBlockBrackets && (codes[cc - 2].IsBlockParenthesis || IsCodeBlockWithoutParameters) && IsDeclaration;
                 }
             }
 
@@ -774,6 +806,36 @@ namespace FractalMachine.Code.Langs
                     }
 
                     return a;
+                }
+            }
+
+            internal OrderedAST LastAttribute
+            {
+                get
+                {
+                    var c = LastCode;
+                    while(c != null)
+                    {
+                        if (c.ast.type == AST.Type.Attribute)
+                            return c;
+                        c = c.Left;
+                    }
+                    return null;
+                }
+            }
+
+            internal OrderedAST LastBlockBrackets
+            {
+                get
+                {
+                    var c = LastCode;
+                    while (c != null)
+                    {
+                        if (c.IsBlockBrackets)
+                            return c;
+                        c = c.Left;
+                    }
+                    return null;
                 }
             }
 
@@ -1001,23 +1063,20 @@ namespace FractalMachine.Code.Langs
 
             Bag bag;
             Linear lin = null;
-            OnCallback onEnd = null, setTempReturn;
+            OnCallback onEnd = null;
             bool enter = false;
+
+            void setTempReturn()
+            {
+                lin.Return = Properties.InternalVariable + getTempVar();
+                bag.addParam(Properties.InternalVariable + getTempVar());
+            }
 
             void toLinear(Bag parentBag)
             {
                 bag = parentBag;
 
                 //if (outLin == null) outLin = new Linear(oAst.ast);
-
-                ///
-                /// Callbacks
-                ///
-                setTempReturn = delegate //todo move as function
-                {
-                    lin.Return = Properties.InternalVariable + getTempVar();
-                    bag.addParam(Properties.InternalVariable + getTempVar());
-                };
 
                 ///
                 /// Analyze AST
@@ -1142,34 +1201,36 @@ namespace FractalMachine.Code.Langs
 
                 onEnd = delegate
                 {
-                    if (parent.HasAccumulatedAttributes && parent.codes[parent.IndexLastSquareBrackets] == this)
+                    if (bag.Params.Count > 0)
                     {
-                        // Is accomulated attributes
-                        bag.Parent.Params.Add(new Parameter(bag.Params));
+                        // Is array call
+                        throw new Exception("todo");
                     }
                     else if (Left.ast.type == AST.Type.Attribute)
                     {
-                        //todo put Paramas into []
-                        if (bag.Params.Count > 0)
-                        {
-                            throw new Exception("todo");
-                        }
-
+                        // Is type definition
                         bag.addParam(bag.Params.Pull().StrValue + "[]");
-                    }
-                    else
-                    {
-
                     }
                 };
             }
 
             void toLinear_ground_block_brackets()
             {
-                if (!parent.IsDeclaration && !IsBlockDeclaration)
+                if (!parent.IsBlockDeclaration)
                 {
-                    // is JSON
-                    throw new Exception("json todo");
+                    if (IsAccumulator)
+                    {
+                        // Is accumulated attributes
+                        onEnd = delegate
+                        {
+                            bag.Parent.Params.Add(new Parameter(bag.Params));
+                        };
+                    }
+                    else
+                    {
+                        // is JSON
+                        throw new Exception("json todo");
+                    }
                 }
                 else
                 {
@@ -1237,6 +1298,9 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            /// <summary>
+            /// Work here
+            /// </summary>
             void toLinear_ground_instruction()
             {
                 if (Subject == null && codes.Count == 0)
@@ -1249,83 +1313,92 @@ namespace FractalMachine.Code.Langs
                 else if (IsOperator)
                 {
                     toLinear_ground_instruction_operator();
-
                 }
                 else if (IsRepeatedInstruction)
                 {
-                    if (bag.OnRepeteable != null)
-                    {
-                        bag = bag.subBag();
-                        bag.Linear = bag.Linear.LastInstruction.Clone(ast);
-                        onEnd = delegate ()
-                        {
-                            bag.OnRepeteable.Invoke(bag, this);
-                        };
-                    }
+                    toLinear_ground_repeatedInstruction();
                 }
                 else
                 {
-                    ///
-                    /// This means that it is an entry statement, so parameters could cleared at the end
-                    /// Statement decoder could cause a statement confusion
-                    ///
+                    toLinear_ground_instruction_standard();
+                }
+            }
 
-                    // toLinear_checkSquareBrackets(); // it make no sense here
-
-                    onEnd = delegate
+            void toLinear_ground_repeatedInstruction()
+            {
+                if (bag.OnRepeteable != null)
+                {
+                    bag = bag.subBag();
+                    bag.Linear = bag.Linear.LastInstruction.Clone(ast);
+                    onEnd = delegate ()
                     {
-                        var pars = bag.Params;
-
-                        if (!bag.disableStatementDecoder && pars.Count > 1)
-                        {
-                            lin = new Linear(bag.Linear, ast);
-                            lin.Op = bag.Params.Pull(0).StrValue;
-
-                            var statement = Statement.Get(lin.Op);
-
-                            switch (statement.Decoder)
-                            {
-                                case Statement.DecoderType.Normal:
-
-                                    while (pars.Count > 0)
-                                    {
-                                        var p = bag.Params.Pull(0).StrValue;
-                                        lin.Attributes.Add(p);
-                                        lin.Continuous = (p == ":");
-                                    }
-
-                                    if (lin.Continuous)
-                                        lin.Attributes.Pull();
-
-                                    if (lin.Op == "namespace")
-                                        lin.Name = lin.Attributes.Pull(0);
-
-                                    break;
-
-                                case Statement.DecoderType.WithParameters:
-
-                                    lin.Attributes.Add(bag.Params.Pull(0).StrValue);
-
-                                    //todo: handle types (?)
-                                    string prev = "";
-                                    int i = 0;
-                                    while (pars.Count > 0)
-                                    {
-                                        if (i % 2 == 1)
-                                            lin.Parameters.Add(prev, bag.Params.Pull(0).StrValue);
-                                        else
-                                            prev = bag.Params.Pull(0).StrValue;
-
-                                        i++;
-                                    }
-
-                                    break;
-                            }
-                        }
-
-                        bag.Params.Clear();
+                        bag.OnRepeteable.Invoke(bag, this);
                     };
                 }
+            }
+
+            void toLinear_ground_instruction_standard()
+            {
+                ///
+                /// This means that it is an entry statement, so parameters could cleared at the end
+                /// Statement decoder could cause a statement confusion
+                ///
+
+                // toLinear_checkSquareBrackets(); // it make no sense here
+
+                onEnd = delegate
+                {
+                    var pars = bag.Params;
+
+                    if (!bag.disableStatementDecoder && pars.Count > 1)
+                    {
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = bag.Params.Pull(0).StrValue;
+
+                        var statement = Statement.Get(lin.Op);
+
+                        switch (statement.Decoder)
+                        {
+                            case Statement.DecoderType.Normal:
+
+                                while (pars.Count > 0)
+                                {
+                                    var p = bag.Params.Pull(0).StrValue;
+                                    lin.Attributes.Add(p);
+                                    lin.Continuous = (p == ":");
+                                }
+
+                                if (lin.Continuous)
+                                    lin.Attributes.Pull();
+
+                                if (lin.Op == "namespace")
+                                    lin.Name = lin.Attributes.Pull(0);
+
+                                break;
+
+                            case Statement.DecoderType.WithParameters:
+
+                                lin.Attributes.Add(bag.Params.Pull(0).StrValue);
+
+                                //todo: handle types (?)
+                                string prev = "";
+                                int i = 0;
+                                while (pars.Count > 0)
+                                {
+                                    if (i % 2 == 1)
+                                        lin.Parameters.Add(prev, bag.Params.Pull(0).StrValue);
+                                    else
+                                        prev = bag.Params.Pull(0).StrValue;
+
+                                    i++;
+                                }
+
+                                break;
+                        }
+                    }
+
+                    bag.Params.Clear();
+                };
             }
 
             void toLinear_ground_instruction_declaration()
@@ -1441,7 +1514,7 @@ namespace FractalMachine.Code.Langs
         }
 
         /// <summary>
-        /// To rethink
+        /// To rethink. This is used for distinguish paridally the type of statements
         /// </summary>
         public class Statement
         {
@@ -1495,6 +1568,8 @@ namespace FractalMachine.Code.Langs
                     import.Decoder = DecoderType.WithParameters;
 
                     var include = Add("#include");
+
+                    var _namespace = Add("namespace");
                 }
             }
 
