@@ -506,35 +506,23 @@ namespace FractalMachine.Code.Langs
 
             #region Properties
 
-            internal bool IsInFunctionParenthesis
+            public int CountAttributes
             {
                 get
                 {
-                    bool parenthesis = false;
-                    var a = this;
-                    while (a != null && !a.HasFunction)
+                    int i = 0;
+
+                    foreach (var code in codes)
                     {
-                        parenthesis = a.IsBlockParenthesis || parenthesis;
-                        a = a.parent;
+                        if (code.ast.type == AST.Type.Attribute)
+                            i++;
                     }
 
-                    return a != null && a.HasFunction && parenthesis;
+                    return i;
                 }
             }
 
-            internal OrderedAST Left
-            {
-                get
-                {
-                    /*var pos = parent.codes.IndexOf(this);
-                    if (pos > 0)
-                        return parent.codes[pos - 1];
-                    else
-                        return null;*/
-
-                    return prev;
-                }
-            }
+            #region Has
 
             public bool HasFunction
             {
@@ -562,47 +550,72 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            public bool IsDeclaration
+            public bool HasAccumulatedAttributes
             {
                 get
                 {
-                    return !IsOperator && CountAttributes >= 2 && !Light.Statements.Contains(codes[0].Subject);
-                }
-            }
-
-            public bool IsBlockDeclaration
-            {
-                get
-                {
-                    var cc = codes.Count;
-                    if (cc < 2) return false;
-                    return IsDeclaration && codes[cc - 1].IsBlockBrackets && (codes[cc - 2].IsBlockParenthesis || IsCodeBlockWithoutParameters);
-                }
-            }
-
-            public bool IsCodeBlockWithoutParameters
-            {
-                get
-                {
-                    return CodeBlocksWithoutParameters.Contains(prev?.Subject ?? ""); // or a Contains could accept a null value?
-                }
-            }
-
-            public int CountAttributes
-            {
-                get
-                {
-                    int i = 0;
-
-                    foreach (var code in codes)
+                    var iSquareBrackets = IndexLastSquareBrackets;
+                    bool hasAccomulatedAttributes = iSquareBrackets >= 0;
+                    if (hasAccomulatedAttributes)
                     {
-                        if (code.ast.type == AST.Type.Attribute)
-                            i++;
+                        for (int c = iSquareBrackets; c < codes.Count; c++)
+                        {
+                            if (codes[c].IsAttribute)
+                            {
+                                hasAccomulatedAttributes = false;
+                                break;
+                            }
+                        }
                     }
-
-                    return i;
+                    return hasAccomulatedAttributes;
                 }
             }
+
+            #endregion
+
+            #region IndexNavigation
+
+            internal OrderedAST Left
+            {
+                get
+                {
+                    /*var pos = parent.codes.IndexOf(this);
+                    if (pos > 0)
+                        return parent.codes[pos - 1];
+                    else
+                        return null;*/
+
+                    return prev;
+                }
+            }
+
+            public int IndexLastBrackets
+            {
+                get
+                {
+                    for(int c=codes.Count-1; c>=0; c--)
+                    {
+                        if (codes[c].IsBlockBrackets)
+                            return c;
+                    }
+                    return -1;
+                }
+            }
+
+            public int IndexLastSquareBrackets
+            {
+                get
+                {
+                    for (int c = codes.Count - 1; c >= 0; c--)
+                    {
+                        if (codes[c].IsBlockSquareBrackets)
+                            return c;
+                    }
+                    return -1;
+                }
+            }
+
+            #endregion
 
             public OrderedAST LastCode
             {
@@ -613,6 +626,24 @@ namespace FractalMachine.Code.Langs
                         return codes[cnt - 1];
 
                     return null;
+                }
+            }
+
+            #region Is
+
+            internal bool IsInFunctionParenthesis
+            {
+                get
+                {
+                    bool parenthesis = false;
+                    var a = this;
+                    while (a != null && !a.HasFunction)
+                    {
+                        parenthesis = a.IsBlockParenthesis || parenthesis;
+                        a = a.parent;
+                    }
+
+                    return a != null && a.HasFunction && parenthesis;
                 }
             }
 
@@ -656,6 +687,14 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsBlockSquareBrackets
+            {
+                get
+                {
+                    return ast.type == AST.Type.Block && Subject == "[";
+                }
+            }
+
             public bool IsMainBlock
             {
                 get
@@ -679,6 +718,42 @@ namespace FractalMachine.Code.Langs
                     return ast.type == AST.Type.Instruction && Subject == ",";
                 }
             }
+
+            public bool IsAttribute
+            {
+                get
+                {
+                    return ast.type == AST.Type.Attribute;
+                }
+            }
+
+            public bool IsDeclaration
+            {
+                get
+                {
+                    return !IsOperator && (CountAttributes >= 2 || (CountAttributes >= 1 && HasAccumulatedAttributes)) && !Light.Statements.Contains(codes[0].Subject);
+                }
+            }
+
+            public bool IsBlockDeclaration
+            {
+                get
+                {
+                    var cc = codes.Count;
+                    if (cc < 2) return false;
+                    return IsDeclaration && codes[cc - 1].IsBlockBrackets && (codes[cc - 2].IsBlockParenthesis || IsCodeBlockWithoutParameters);
+                }
+            }
+
+            public bool IsCodeBlockWithoutParameters
+            {
+                get
+                {
+                    return CodeBlocksWithoutParameters.Contains(prev?.Subject ?? ""); // or a Contains could accept a null value?
+                }
+            }
+
+            #endregion
 
             internal string Subject
             {
@@ -734,12 +809,83 @@ namespace FractalMachine.Code.Langs
             delegate void OnOperation(Bag bag, OrderedAST ast);
             delegate void OnOperationInt(int val);
 
+            #region Parameters
+
+            public class Parameter
+            {
+                string strValue;
+                List<string> values;
+
+                public Parameter(string value)
+                {
+                    strValue = value;
+                }
+
+                public Parameter(List<string> values)
+                {
+                    this.values = values;
+                }
+
+                public Parameter(Parameters parameters)
+                {
+                    //inherit values
+                    values = parameters.ToStringList();
+                }
+
+                public string StrValue
+                {
+                    get
+                    {
+                        if (values != null)
+                            throw new Exception("oops");
+                        return strValue;
+                    }
+                }
+
+                public string[] Values
+                {
+                    get
+                    {
+                        if (!String.IsNullOrEmpty(strValue))
+                            return new string[] { strValue };
+                        return values.ToArray() ?? new string[] { };
+                    }
+                }
+            }
+
+            public class Parameters : List<Parameter>
+            {
+                public string[] ToStringArray()
+                {
+                    var strings = new string[Count];
+                    int s = 0;
+                    foreach(var par in this)
+                    {
+                        strings[s++] = par.StrValue;
+                    }
+                    return strings;
+                }
+
+                public List<string> ToStringList()
+                {
+                    var strings = new List<string>();
+                    foreach (var par in this)
+                    {
+                        strings.Add(par.StrValue);
+                    }
+                    return strings;
+                }
+   
+            }
+
+            #endregion
+
             class Bag
             {
                 public Status status;
                 public Linear Linear;
                 public Bag Parent;
-                public List<string> Params = new List<string>();
+                public Parameters Params = new Parameters();
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
 
                 public OnCallback OnNextParamOnce;
@@ -763,20 +909,9 @@ namespace FractalMachine.Code.Langs
                 #region Param
                 public void addParam(string p)
                 {
-                    Params.Add(p);
+                    Params.Add(new Parameter(p));
                 }
 
-                public string pullParams(bool withoutRemove = false)
-                {
-                    var c = Params.Count - 1;
-
-                    if (c < 0)
-                        return null;
-
-                    string s = Params[c];
-                    if (!withoutRemove) Params.RemoveAt(c);
-                    return s;
-                }
                 #endregion
 
                 public Bag subBag(Status status = Status.Ground)
@@ -789,44 +924,6 @@ namespace FractalMachine.Code.Langs
                     return b;
                 }
             }
-
-            class Attribute
-            {
-                string strValue;
-                List<string> values;
-
-                public Attribute(string value) 
-                {
-                    strValue = value;
-                }
-
-                public Attribute(List<string> values)
-                {
-                    this.values = values;
-                }
-
-                public string StrValue
-                {
-                    get
-                    {
-                        if (strValue != null)
-                            throw new Exception("oops");
-                        return strValue;
-                    }
-                }
-
-                public string[] Values
-                {
-                    get
-                    {
-                        if(!String.IsNullOrEmpty(strValue))
-                            return new string[] { strValue };
-                        return values.ToArray() ?? new string[] { };
-                    }
-                }
-            }
-
-            //tothink class Parameters : List<Attribute>
 
             public Linear ToLinear()
             {
@@ -916,7 +1013,7 @@ namespace FractalMachine.Code.Langs
                 ///
                 /// Callbacks
                 ///
-                setTempReturn = delegate
+                setTempReturn = delegate //todo move as function
                 {
                     lin.Return = Properties.InternalVariable + getTempVar();
                     bag.addParam(Properties.InternalVariable + getTempVar());
@@ -1002,7 +1099,7 @@ namespace FractalMachine.Code.Langs
                             bag.OnRepeteable?.Invoke(bag, this.prev);
                             onEnd = delegate
                             {
-                                bag.Linear.LastInstruction.Return = bag.pullParams();
+                                bag.Linear.LastInstruction.Return = bag.Params.Pull().StrValue;
                             };
                             break;
                     }
@@ -1043,22 +1140,26 @@ namespace FractalMachine.Code.Langs
             {
                 bag = bag.subBag(Bag.Status.DeclarationParenthesis);
 
-                /*bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
-                {
-                };*/
-
                 onEnd = delegate
                 {
-                    if (bag.Params.Count > 0)
+                    if (parent.HasAccumulatedAttributes && parent.codes[parent.IndexLastSquareBrackets] == this)
                     {
-                        //todo
+                        // Is accomulated attributes
+                        bag.Parent.Params.Add(new Parameter(bag.Params));
                     }
-
-                    if (Left.ast.type == AST.Type.Attribute)
+                    else if (Left.ast.type == AST.Type.Attribute)
                     {
-                        //todo: metodo temporaneo per dichiarare i tipi array
                         //todo put Paramas into []
-                        bag.addParam(bag.pullParams() + "[]");
+                        if (bag.Params.Count > 0)
+                        {
+                            throw new Exception("todo");
+                        }
+
+                        bag.addParam(bag.Params.Pull().StrValue + "[]");
+                    }
+                    else
+                    {
+
                     }
                 };
             }
@@ -1091,16 +1192,16 @@ namespace FractalMachine.Code.Langs
 
                     bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
                     {
-                        var p = bag.pullParams();
+                        var p = bag.Params.Pull();
                         if (p != null)
                         {
                             var lin = new Linear(l, oAst.ast);
                             lin.Op = "parameter";
-                            lin.Name = p;
+                            lin.Name = p.StrValue;
                             lin.List();
 
                             if (bag.Params.Count > 0)
-                                lin.Return = bag.pullParams();
+                                lin.Return = bag.Params.Pull().StrValue;
                         }
                     };
 
@@ -1116,7 +1217,7 @@ namespace FractalMachine.Code.Langs
                     ///
                     lin = new Linear(bag.Linear, ast);
                     lin.Op = "call";
-                    lin.Name = bag.pullParams();
+                    lin.Name = bag.Params.Pull().StrValue;
 
                     bag = bag.subBag();
                     bag.disableStatementDecoder = true;
@@ -1127,7 +1228,7 @@ namespace FractalMachine.Code.Langs
                         {
                             Linear lin = new Linear(bag.Linear, ast);
                             lin.Op = "push";
-                            lin.Name = bag.Params.Pull(0);
+                            lin.Name = bag.Params.Pull(0).StrValue;
                             lin.List();
                         }
 
@@ -1178,17 +1279,17 @@ namespace FractalMachine.Code.Langs
                         if (!bag.disableStatementDecoder && pars.Count > 1)
                         {
                             lin = new Linear(bag.Linear, ast);
-                            lin.Op = pars.Pull(0);
+                            lin.Op = bag.Params.Pull(0).StrValue;
 
-                            var instr = Instruction.Get(lin.Op);
+                            var statement = Statement.Get(lin.Op);
 
-                            switch (instr.Decoder)
+                            switch (statement.Decoder)
                             {
-                                case Instruction.DecoderType.Normal:
+                                case Statement.DecoderType.Normal:
 
                                     while (pars.Count > 0)
                                     {
-                                        var p = pars.Pull(0);
+                                        var p = bag.Params.Pull(0).StrValue;
                                         lin.Attributes.Add(p);
                                         lin.Continuous = (p == ":");
                                     }
@@ -1201,9 +1302,9 @@ namespace FractalMachine.Code.Langs
 
                                     break;
 
-                                case Instruction.DecoderType.WithParameters:
+                                case Statement.DecoderType.WithParameters:
 
-                                    lin.Attributes.Add(pars.Pull(0));
+                                    lin.Attributes.Add(bag.Params.Pull(0).StrValue);
 
                                     //todo: handle types (?)
                                     string prev = "";
@@ -1211,9 +1312,9 @@ namespace FractalMachine.Code.Langs
                                     while (pars.Count > 0)
                                     {
                                         if (i % 2 == 1)
-                                            lin.Parameters.Add(prev, pars.Pull(0));
+                                            lin.Parameters.Add(prev, bag.Params.Pull(0).StrValue);
                                         else
-                                            prev = pars.Pull(0);
+                                            prev = bag.Params.Pull(0).StrValue;
 
                                         i++;
                                     }
@@ -1228,35 +1329,58 @@ namespace FractalMachine.Code.Langs
             }
 
             void toLinear_ground_instruction_declaration()
-            {
-                lin = new Linear(bag.Linear, ast);
-
+            {              
                 bool isFunction = HasFinalBracketsBlock;
 
+                lin = new Linear(bag.Linear, ast);
+                bag = bag.subBag();
+                bag.Linear = lin;
+
                 if (isFunction)
-                    lin.Op = "function";
-                else
-                    lin.Op = "declare";
+                {
+                    lin.Op = "function";              
+                    bag.Linear = lin;
+                }
+
                 enter = true;
 
                 bag.OnRepeteable = delegate (Bag b, OrderedAST oa)
                 {
-                    var lin = b.Linear;
-                    lin.Name = b.pullParams();
-                    lin.Return = b.pullParams() ?? lin.Return;
-                    lin.Attributes = b.Params; //todo for repeated instructions
-                    b.Params = new List<string>();
-                };
+                    var names = b.Params.Pull().Values;
+                    var ret = b.Params.Pull()?.StrValue;
+                    var attr = b.Params.ToStringList();
+                    // b.Params = new Parameters();
 
-                if (isFunction)
-                {
-                    bag = bag.subBag();
-                    bag.Linear = lin;
-                }
+                    foreach (var name in names)
+                    {
+                        var lin = new Linear(bag.Parent.Linear, ast);
+                        lin.Op = "declare";
+                        lin.Name = name;
+                        lin.Return = ret ?? lin.Return;
+                        lin.Attributes = attr; //todo for repeated instructions
+                        lin.List();
+                    }
+
+                    // Add subsequent assign
+                    foreach(var l in lin.Instructions)
+                    {
+                        bag.Parent.Linear.Add(l);
+                    }
+
+                    lin = null;
+                };
 
                 onEnd = delegate
                 {
-                    bag.OnRepeteable(bag, this);
+                    if (isFunction)
+                    {
+                        lin.Op = "function";
+                        lin.Name = bag.Params.Pull()?.StrValue;
+                        lin.Return = bag.Params.Pull()?.StrValue ?? lin.Return;
+                        lin.Attributes = bag.Params.ToStringList(); //todo for repeated instructions
+                    }
+                    else
+                        bag.OnRepeteable?.Invoke(bag, this);
                 };
             }
 
@@ -1265,13 +1389,25 @@ namespace FractalMachine.Code.Langs
                 switch (Subject)
                 {
                     case "=":
-                        lin = new Linear(bag.Linear, ast);
-                        lin.Op = Subject;
-                        lin.Name = bag.pullParams(true);
+                        var names = bag.Params.Pull(-1, false);
+                        List<Linear> lins = new List<Linear>();
+
+                        foreach (var name in names.Values)
+                        {
+                            lin = new Linear(bag.Linear, ast);
+                            lin.Op = Subject;
+                            lin.Name = name;
+                            lin.List();
+                            lins.Add(lin);
+                        }
 
                         onEnd = delegate
                         {
-                            lin.Attributes.Add(bag.pullParams());
+                            var attr = bag.Params.Pull().StrValue;
+                            foreach (var lin in lins)
+                            {
+                                lin.Attributes.Add(attr);
+                            }
                         };
 
                         break;
@@ -1280,8 +1416,8 @@ namespace FractalMachine.Code.Langs
 
                         bag.OnNextParamOnce = delegate
                         {
-                            var p = bag.pullParams();
-                            bag.addParam(bag.pullParams() + "." + p);
+                            var p = bag.Params.Pull().StrValue;
+                            bag.addParam(bag.Params.Pull().StrValue + "." + p);
                         };
 
                         break;
@@ -1289,12 +1425,12 @@ namespace FractalMachine.Code.Langs
                     default:
                         lin = new Linear(bag.Linear, ast);
                         lin.Op = Subject;
-                        lin.Attributes.Add(bag.pullParams());
+                        lin.Attributes.Add(bag.Params.Pull().StrValue);
                         setTempReturn();
 
                         onEnd = delegate
                         {
-                            lin.Attributes.Add(bag.pullParams());
+                            lin.Attributes.Add(bag.Params.Pull().StrValue);
                         };
 
                         break;
@@ -1304,7 +1440,10 @@ namespace FractalMachine.Code.Langs
             #endregion
         }
 
-        public class Instruction
+        /// <summary>
+        /// To rethink
+        /// </summary>
+        public class Statement
         {
             #region Dynamic
             public string Name;
@@ -1320,38 +1459,43 @@ namespace FractalMachine.Code.Langs
 
             #region Static
 
-            public static Dictionary<string, Instruction> List;
+            public static Dictionary<string, Statement> List;
 
-            internal static Instruction Add(string Name)
+            internal static Statement Add(string Name)
             {
-                var ins = new Instruction();
+                var ins = new Statement();
                 ins.Name = Name;
                 List.Add(Name, ins);
                 return ins;
+            }
+
+
+
+            public static Statement Get(string Name)
+            {
+                init();
+
+                Statement o;
+                if (!List.TryGetValue(Name, out o))
+                    o = new Statement();
+
+                return o;
             }
 
             static void init()
             {
                 if (List == null)
                 {
-                    List = new Dictionary<string, Instruction>();
+                    List = new Dictionary<string, Statement>();
 
+                    ///
+                    /// List of possible statements
+                    ///
                     var import = Add("import");
                     import.Decoder = DecoderType.WithParameters;
 
                     var include = Add("#include");
                 }
-            }
-
-            public static Instruction Get(string Name)
-            {
-                init();
-
-                Instruction o;
-                if (!List.TryGetValue(Name, out o))
-                    o = new Instruction();
-
-                return o;
             }
 
             #endregion

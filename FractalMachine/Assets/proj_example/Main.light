@@ -6,7 +6,7 @@ function main(ciao, miao=2){
 	// Altri obbiettivi
 
 	// Operazioni
-	int ciao = 2;
+	//int ciao = 2;
 	//ciao = ciao + 2;
 	//int v1 = 3, v2 = 4; 
 	//ciao = (v1 + v2) - ciao;
