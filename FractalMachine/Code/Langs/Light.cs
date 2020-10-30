@@ -1465,27 +1465,23 @@ namespace FractalMachine.Code.Langs
                         var names = bag.Params.Pull(-1, false);
                         List<Linear> lins = new List<Linear>();
 
-                        foreach (var name in names.Values)
-                        {
-                            lin = new Linear(bag.Linear, ast);
-                            lin.Op = Subject;
-                            lin.Name = name;
-                            lin.List();
-                            lins.Add(lin);
-                        }
-
                         onEnd = delegate
                         {
                             var attr = bag.Params.Pull().StrValue;
-                            foreach (var lin in lins)
+
+                            foreach (var name in names.Values)
                             {
+                                lin = new Linear(bag.Linear, ast);
+                                lin.Op = Subject;
+                                lin.Name = name;
+                                lin.List();
                                 lin.Attributes.Add(attr);
                             }
                         };
 
                         break;
 
-                    case ".":
+                    /*case ".":
 
                         bag.OnNextParamOnce = delegate
                         {
@@ -1493,17 +1489,16 @@ namespace FractalMachine.Code.Langs
                             bag.NewParam(bag.Params.Pull().StrValue + "." + p);
                         };
 
-                        break;
+                        break;*/
 
                     default:
                         lin = new Linear(bag.Linear, ast);
-                        lin.Op = Subject;
-                        lin.Attributes.Add(bag.Params.Pull().StrValue);
-                        setTempReturn();
-
                         onEnd = delegate
-                        {
+                        {                         
+                            lin.Op = Subject;
                             lin.Attributes.Add(bag.Params.Pull().StrValue);
+                            lin.Attributes.Add(bag.Params.Pull().StrValue);
+                            setTempReturn();
                         };
 
                         break;
@@ -1715,6 +1710,22 @@ namespace FractalMachine.Code.Langs
                 #endregion
 
                 #region Methods
+                /// <summary>
+                /// This is your branch for sure, so destroy the competion
+                /// </summary>
+                internal void Monopoly(Statement winner = null)
+                {
+                    if(winner == null)
+                    {
+                        parent.Monopoly(this);
+                    }
+                    else
+                    {
+                        for (int d = 0; d < Disks.Count; d++)
+                            if (Disks[d] != winner)
+                                Disks.RemoveAt(d--);
+                    }
+                }
 
                 // I'm a loser baby so why don't you kill me?
                 internal void ImLoser(Statement me)
@@ -1799,7 +1810,7 @@ namespace FractalMachine.Code.Langs
                         if (spar == "namespace")
                         {
                             IncreasePos(true);
-                            ImCompleted();
+                            Monopoly();  
 
                             return true;
                         }
