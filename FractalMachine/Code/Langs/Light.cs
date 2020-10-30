@@ -165,6 +165,7 @@ namespace FractalMachine.Code.Langs
 
                 trgInsert.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
+                    appendBuffer = true;
                     strBuffer += trigger.activatorDelimiter;
                 };
 
@@ -318,18 +319,29 @@ namespace FractalMachine.Code.Langs
 
             #region BufferAndAst
 
+            // Fast switches flags
             bool newInstructionAtNewLine = false;
-
+            bool appendBuffer = false;
             AST eatBufferAndClear()
             {
-                //todo: check if strBuffer is text
+                //todo: check if strBuffer is text (few months later: boh(??))
                 if (!String.IsNullOrEmpty(strBuffer))
                 {
-                    //todo: Handle difference between Light and CPP (or create class apart)
-                    if (strBuffer == "#include") // For CPP
-                        newInstructionAtNewLine = true;
+                    AST ret;
+                    if (appendBuffer)
+                    {
+                        ret = curAst.AppendToLastAttribute(strBuffer);
+                        appendBuffer = false;
+                    }
+                    else
+                    {
+                        //todo: Handle difference between Light and CPP (or create class apart)
+                        if (strBuffer == "#include") // For CPP
+                            newInstructionAtNewLine = true;
 
-                    var ret = curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
+                        ret = curAst.InsertAttribute(Line, Pos - strBuffer.Length, strBuffer);
+                    }
+
                     clearBuffer();
                     return ret;
                 }
@@ -674,13 +686,14 @@ namespace FractalMachine.Code.Langs
                 {
                     //todo: there is another type of accumulator: the SquareBrackets accumulato
                     // could be found if it has an operator in front of it
-                    if (ast.type != AST.Type.Block)
+                    if (ast.type != AST.Type.Block && ast.subject != "(")
                         return false;
 
                     foreach(var code in codes)
                     {
                         var lc = code.LastCode;
-                        if (lc.IsOperator && lc.Subject == ":") //Is JSON property
+                        //todo study: in what cases lc == null?
+                        if (lc == null || lc.IsOperator && lc.Subject == ":") //Is JSON property
                             return false;
                     }
 

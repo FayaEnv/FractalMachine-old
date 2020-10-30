@@ -208,6 +208,14 @@ namespace FractalMachine.Code
             return child;
         }
 
+        internal AST AppendToLastAttribute(string value)
+        {
+            var ast = Instruction;
+            var child = ast.children.Pull(-1, false);
+            child.subject += value;
+            return child;
+        }
+
         #endregion
 
         public abstract class Amanuensis
@@ -257,7 +265,7 @@ namespace FractalMachine.Code
 
             internal void Triggered(Triggers.Trigger trigger)
             {
-                OnTriggered?.Invoke(trigger);
+                OnTriggered?.Invoke(trigger);   
                 CurrentStatus.OnTriggered?.Invoke(trigger);
                 trigger.OnTriggered?.Invoke(trigger);
 

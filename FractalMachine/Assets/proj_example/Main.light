@@ -1,6 +1,7 @@
-//import System.IO; 
 
-namespace miao:
+namespace miao.test:
+
+//import System.IO; 
 
 function main(ciao, miao=2){
 	//Print("Hello world! Finally.");
