@@ -749,14 +749,6 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            public bool IsMainBlock
-            {
-                get
-                {
-                    return IsBlockBrackets; //todo && not in operation
-                }
-            }
-
             public bool IsAssign
             {
                 get
@@ -815,6 +807,18 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsAttached //to previous attribute, with the exception for operators
+            {
+                get
+                {
+                    if (String.IsNullOrEmpty(Subject))
+                        return false;
+
+                    var ct = new CharType(Subject[0]);
+                    return !ct.IsAlphanumeric;
+                }
+            }
+
             #endregion
 
             internal string Subject
@@ -822,35 +826,6 @@ namespace FractalMachine.Code.Langs
                 get
                 {
                     return ast.subject;
-                }
-            }
-
-            internal OrderedAST TopFunction
-            {
-                get
-                {
-                    var a = this;
-                    while (a != null && !a.HasFunction)
-                    {
-                        a = a.parent;
-                    }
-
-                    return a;
-                }
-            }
-
-            internal OrderedAST LastAttribute
-            {
-                get
-                {
-                    var c = LastCode;
-                    while(c != null)
-                    {
-                        if (c.ast.type == AST.Type.Attribute)
-                            return c;
-                        c = c.Left;
-                    }
-                    return null;
                 }
             }
 
@@ -954,10 +929,22 @@ namespace FractalMachine.Code.Langs
                     this.bag = bag;
                 }
 
+                #region New
                 public void New (Parameter par)
                 {
                     bag.posNewParam = Count;
                     Add(par);                    
+                }
+                public void New(string par)
+                {
+                    New(new Parameter(par));
+                }
+                #endregion
+
+                public int FlagPos = 0;
+                public void FlagPosition()
+                {
+                    FlagPos = Count;
                 }
 
                 public string[] ToStringArray()
@@ -1019,7 +1006,8 @@ namespace FractalMachine.Code.Langs
                 {
                     Ground,
                     DeclarationParenthesis,
-                    JSON //todo
+                    JSON, //todo
+                    ReadAsIs
                 }
 
 
@@ -1168,6 +1156,9 @@ namespace FractalMachine.Code.Langs
                     case Bag.Status.DeclarationParenthesis:
                         toLinear_declarationParenthesis();
                         break;
+                    case Bag.Status.ReadAsIs:
+                        toLinear_readAsIs();
+                        break;
                 }
 
                 if (enter)
@@ -1218,6 +1209,12 @@ namespace FractalMachine.Code.Langs
 
                 bag.OnNextParamOnce?.Invoke();
                 bag.OnNextParamOnce = null;
+            }
+
+            void toLinear_readAsIs()
+            {
+                if (IsOperator)
+                    bag.Params.New(Subject);
             }
 
             void toLinear_declarationParenthesis()
@@ -1414,62 +1411,6 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            /*void toLinear_ground_instruction_declaration()
-            {              
-                bool isFunction = HasFinalBracketsBlock;
-
-                lin = new Linear(bag.Linear, ast);
-                bag = bag.subBag();
-                bag.Linear = lin;
-
-                if (isFunction)
-                {
-                    lin.Op = "function";              
-                    bag.Linear = lin;
-                }
-
-                enter = true;
-
-                bag.OnRepeteable = delegate (Bag b, OrderedAST oa)
-                {
-                    var names = b.Params.Pull().Values;
-                    var ret = b.Params.Pull()?.StrValue;
-                    var attr = b.Params.ToStringList();
-                    // b.Params = new Parameters();
-
-                    foreach (var name in names)
-                    {
-                        var lin = new Linear(bag.Parent.Linear, ast);
-                        lin.Op = "declare";
-                        lin.Name = name;
-                        lin.Return = ret ?? lin.Return;
-                        lin.Attributes = attr; //todo for repeated instructions
-                        lin.List();
-                    }
-
-                    // Add subsequent assign
-                    foreach(var l in lin.Instructions)
-                    {
-                        bag.Parent.Linear.Add(l);
-                    }
-
-                    lin = null;
-                };
-
-                onEnd = delegate
-                {
-                    if (isFunction)
-                    {
-                        lin.Op = "function";
-                        lin.Name = bag.Params.Pull()?.StrValue;
-                        lin.Return = bag.Params.Pull()?.StrValue ?? lin.Return;
-                        lin.Attributes = bag.Params.ToStringList(); //todo for repeated instructions
-                    }
-                    else
-                        bag.OnRepeteable?.Invoke(bag, this);
-                };
-            }*/
-
             void toLinear_ground_instruction_operator()
             {
                 switch (Subject)
@@ -1494,16 +1435,6 @@ namespace FractalMachine.Code.Langs
 
                         break;
 
-                    /*case ".":
-
-                        bag.OnNextParamOnce = delegate
-                        {
-                            var p = bag.Params.Pull().StrValue;
-                            bag.NewParam(bag.Params.Pull().StrValue + "." + p);
-                        };
-
-                        break;*/
-
                     default:
                         lin = new Linear(bag.Linear, ast);
                         onEnd = delegate
@@ -1526,60 +1457,6 @@ namespace FractalMachine.Code.Langs
                 ///
 
                 // toLinear_checkSquareBrackets(); // it make no sense here
-
-                /*onEnd = delegate
-                {
-                    var pars = bag.Params;
-
-                    if (!bag.disableStatementDecoder && pars.Count > 1)
-                    {
-                        lin = new Linear(bag.Linear, ast);
-                        lin.Op = bag.Params.Pull(0).StrValue;
-
-                        var statement = StatementOld.Get(lin.Op);
-
-                        switch (statement.Decoder)
-                        {
-                            case StatementOld.DecoderType.Normal:
-
-                                while (pars.Count > 0)
-                                {
-                                    var p = bag.Params.Pull(0).StrValue;
-                                    lin.Attributes.Add(p);
-                                    lin.Continuous = (p == ":");
-                                }
-
-                                if (lin.Continuous)
-                                    lin.Attributes.Pull();
-
-                                if (lin.Op == "namespace")
-                                    lin.Name = lin.Attributes.Pull(0);
-
-                                break;
-
-                            case StatementOld.DecoderType.WithParameters:
-
-                                lin.Attributes.Add(bag.Params.Pull(0).StrValue);
-
-                                //todo: handle types (?)
-                                string prev = "";
-                                int i = 0;
-                                while (pars.Count > 0)
-                                {
-                                    if (i % 2 == 1)
-                                        lin.Parameters.Add(prev, bag.Params.Pull(0).StrValue);
-                                    else
-                                        prev = bag.Params.Pull(0).StrValue;
-
-                                    i++;
-                                }
-
-                                break;
-                        }
-                    }
-
-                    bag.Params.Clear();
-                };*/
 
                 bag.statement = new Statement(this);
                 onSchedulerPostCode = bag.statement.OnPostCode;
@@ -1884,6 +1761,7 @@ namespace FractalMachine.Code.Langs
                     public class Parameter : Statement
                     {
                         string parameter;
+                        string value = "";
                         public Parameter()
                         {
                             Scheduler.Add(scheduler_0);
@@ -1894,13 +1772,17 @@ namespace FractalMachine.Code.Langs
                             if (!bag.HasNewParam)
                                 return false;
 
-                            var param = bag.Params.LastParam;
+                            var param = bag.Params.Pull();
                             var spar = param.StrValue;
 
                             if (Parameters.Contains(spar)) // spar or ast.Subject in this case have the same value
                             {
                                 parameter = spar;
-                                IncreasePos(true);
+                                IncreasePos();
+
+                                OrderedAST.bag = OrderedAST.bag.subBag(Bag.Status.ReadAsIs);
+                                OrderedAST.bag.Params.FlagPosition();
+
                                 return true;
                             }
 
@@ -1912,14 +1794,23 @@ namespace FractalMachine.Code.Langs
                             if (!bag.HasNewParam)
                                 return false;
 
-                            var param = bag.Params.LastParam;
-                            var spar = param.StrValue;
+                            while (bag.Params.FlagPos < bag.Params.Count)
+                            {
+                                var param = bag.Params.Pull(bag.Params.FlagPos);
+                                var spar = param.StrValue;
+                                value += spar;
+                            }
 
-                            var p = (Import)parent;
-                            p.lin.Parameters.Add(parameter, spar);
+                            if (!(ast.Right?.IsAttached ?? false))
+                            {
+                                IncreasePos();
+                                ImCompleted();
 
-                            IncreasePos(true);
-                            ImCompleted();
+                                var p = (Import)parent;
+                                p.lin.Parameters.Add(parameter, value);
+
+                                OrderedAST.bag = OrderedAST.bag.Parent;
+                            }
 
                             return true;
                         }

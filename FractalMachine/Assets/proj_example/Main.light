@@ -1,7 +1,7 @@
 
-import IO from git@github.com/Light-Org/FractalMachine.git;
+//import IO from git@github.com/Light-Org/FractalMachine.git;
 
-namespace miao.test:
+//namespace miao.test:
 
 //import System.IO; 
 
@@ -22,8 +22,8 @@ function main(ciao, miao=2){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	int ciao = 2;  
-	ciao = 3 + ciao;
+	//int ciao = 2;  
+	//ciao = 3 + ciao;
 	
 }
 
