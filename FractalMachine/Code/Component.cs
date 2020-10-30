@@ -131,7 +131,7 @@ namespace FractalMachine.Code
                 switch (instr.Op)
                 {
                     case "import":
-                        Import(instr.Attributes[0], instr.Parameters);
+                        Import(instr.Name, instr.Parameters);
                         break;
 
                     case "declare":

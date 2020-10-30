@@ -327,7 +327,7 @@ namespace FractalMachine.Code.Langs
 
                 public Import(Writer Parent, Linear lin, Component comp) : base(Parent, lin)
                 {
-                    string path = lin.Attributes[0].NoMark();
+                    string path = lin.Name.NoMark();
 
                     // Check for linking
 

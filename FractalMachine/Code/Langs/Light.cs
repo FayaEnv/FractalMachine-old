@@ -1475,7 +1475,7 @@ namespace FractalMachine.Code.Langs
                 switch (Subject)
                 {
                     case "=":
-                        var names = bag.Params.Pull(-1, false);
+                        var names = bag.Params.Pull(false);
                         List<Linear> lins = new List<Linear>();
 
                         onEnd = delegate
@@ -1595,6 +1595,8 @@ namespace FractalMachine.Code.Langs
                 List<Statement> Disks = new List<Statement>();
                 Statement completedStatement = null;
 
+                OnCallback OnRepeteable;
+
                 List<OnScheduler> Scheduler = new List<OnScheduler>();
                 int SchedulerPos = 0;
                 int AbsorbedParams = 0;
@@ -1605,6 +1607,7 @@ namespace FractalMachine.Code.Langs
                 {
                     parentOrderedAST = oast;
 
+                    AddDisk(new Import());
                     AddDisk(new Namespace());
                     AddDisk(new Retrieve());
                     AddDisk(new Declaration());
@@ -1615,7 +1618,18 @@ namespace FractalMachine.Code.Langs
                 internal void AddDisk(Statement disk)
                 {
                     disk.parent = this;
-                    Disks.Add(disk);
+
+                    // Don't add twice the same type
+                    bool alreadyExisting = false;
+                    foreach (var d in Disks)
+                        if (d.GetType() == disk.GetType())
+                            alreadyExisting = true;
+
+                    if (!alreadyExisting)
+                    {
+                        Disks.Add(disk);
+                        disk.OnRepeteable?.Invoke();
+                    }
                 }
 
                 
@@ -1643,16 +1657,19 @@ namespace FractalMachine.Code.Langs
                     {
                         if (imCompleted)
                         {
-                            if(!winnerCalled) Winner();
+                            if(!winnerCalled) LastSurvivor();
                             return true;
                         }
-                        parent?.ImLoser(this);
+                        else 
+                            parent?.ImLoser(this);
                     }
+
+                    OnRepeteable?.Invoke();
 
                     /*if (d == 1 && (completedStatement?.Disks.Count ?? 1) == 0 && !winnerCalled)
                         completedStatement.Winner();*/
 
-                    return false;
+                    return imCompleted || Disks.Count > 0;
                 }
 
                 #region Properties
@@ -1705,7 +1722,7 @@ namespace FractalMachine.Code.Langs
                 /// <summary>
                 /// Called when a statement is surely the requested statement
                 /// </summary>
-                internal virtual void Winner()
+                internal virtual void LastSurvivor()
                 {
 
                 }
@@ -1760,18 +1777,13 @@ namespace FractalMachine.Code.Langs
 
                         if (d == 0 && statement.imCompleted)
                         {
-                            statement.Winner();
+                            statement.LastSurvivor();
                             winnerCalled = true;
                         }
 
+                        OnRepeteable?.Invoke();
+
                         imCompleted = true;
-                    }
-                    else
-                    {
-                        // If it's clear, it clear other disks
-                        /*for (int d = 0; d < Disks.Count; d++)
-                            if (Disks[d] != statement) 
-                                Disks.RemoveAt(d--);*/
                     }
 
                     if (parent != null)
@@ -1802,6 +1814,121 @@ namespace FractalMachine.Code.Langs
 
                 #region Statements
 
+                // ie import IO from System
+                public class Import : Statement
+                {
+                    Linear lin;
+                    string Name;
+
+                    static string[] Parameters = new string[] { "from" };
+                    public Import()
+                    {
+                        OnRepeteable = delegate
+                        {
+                            AddDisk(new Parameter());
+                        };
+
+                        Scheduler.Add(scheduler_0);
+                        Scheduler.Add(scheduler_1);
+                    }
+                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    {
+                        if (!bag.HasNewParam)
+                            return false;
+
+                        var param = bag.Params.LastParam;
+                        var spar = param.StrValue;
+
+                        if (spar == "import")
+                        {
+                            IncreasePos(true);
+                            Monopoly();
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    bool scheduler_1(Bag bag, OrderedAST ast)
+                    {
+                        if (!bag.HasNewParam)
+                            return false;
+
+                        var param = bag.Params.LastParam;
+                        var spar = param.StrValue;
+
+                        Name = spar;
+
+                        IncreasePos(true);
+                        ImCompleted();
+
+                        lin = new Linear(bag.Linear, ast.ast);
+                        lin.Op = "import";
+                        lin.Name = Name;
+                        lin.List();
+
+                        return true;
+                    }
+
+                    internal override void LastSurvivor()
+                    {
+                        // throw new exception
+                    }
+
+                    #region Statements 
+
+                    /// <summary>
+                    /// This is an example of generic keyword handler
+                    /// </summary>
+                    public class Parameter : Statement
+                    {
+                        string parameter;
+                        public Parameter()
+                        {
+                            Scheduler.Add(scheduler_0);
+                            Scheduler.Add(scheduler_1);
+                        }
+                        bool scheduler_0(Bag bag, OrderedAST ast)
+                        {
+                            if (!bag.HasNewParam)
+                                return false;
+
+                            var param = bag.Params.LastParam;
+                            var spar = param.StrValue;
+
+                            if (Parameters.Contains(spar)) // spar or ast.Subject in this case have the same value
+                            {
+                                parameter = spar;
+                                IncreasePos(true);
+                                return true;
+                            }
+
+                            return false;
+                        }
+
+                        bool scheduler_1(Bag bag, OrderedAST ast)
+                        {
+                            if (!bag.HasNewParam)
+                                return false;
+
+                            var param = bag.Params.LastParam;
+                            var spar = param.StrValue;
+
+                            var p = (Import)parent;
+                            p.lin.Parameters.Add(parameter, spar);
+
+                            IncreasePos(true);
+                            ImCompleted();
+
+                            return true;
+                        }
+                    }
+
+                    #endregion
+                }
+
+                // ie namespace MyNamespace.Utils:
                 public class Namespace : Statement
                 {
                     Linear lin;

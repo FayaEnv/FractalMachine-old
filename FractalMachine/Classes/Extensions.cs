@@ -53,6 +53,12 @@ namespace FractalMachine.Classes
             return default(T);
         }
 
+        // Inverter parameters version of Pull
+        public static T Pull<T>(this List<T> obj, bool Remove, int Pos = -1)
+        {
+            return obj.Pull(Pos, Remove);
+        }
+
         public static List<T> Clone<T>(this List<T> listToClone) 
         {
             return listToClone.Select(item => item).ToList();

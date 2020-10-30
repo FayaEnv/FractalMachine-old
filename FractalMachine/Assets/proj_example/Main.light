@@ -1,4 +1,6 @@
 
+import IO from git@github.com/Light-Org/FractalMachine.git;
+
 namespace miao.test:
 
 //import System.IO; 
