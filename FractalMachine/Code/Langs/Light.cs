@@ -867,9 +867,9 @@ namespace FractalMachine.Code.Langs
                 |_|\___/|______|_|_| |_|\___|\__,_|_| 
             */
 
-            delegate void OnCallback();
-            delegate void OnOperation(Bag bag, OrderedAST ast);
-            delegate void OnOperationInt(int val);
+            internal delegate void OnCallback();
+            internal delegate void OnOperation(Bag bag, OrderedAST ast);
+            internal delegate void OnOperationInt(int val);
 
             #region Parameters
 
@@ -937,12 +937,21 @@ namespace FractalMachine.Code.Langs
                     }
                     return strings;
                 }
+
+                public Parameter LastParam
+                {
+                    get
+                    {
+                        if (Count == 0) return null;
+                        return this[Count - 1];
+                    }
+                }
    
             }
 
             #endregion
 
-            class Bag
+            internal class Bag
             {
                 public Status status;
                 public Linear Linear;
@@ -1063,7 +1072,9 @@ namespace FractalMachine.Code.Langs
 
             Bag bag;
             Linear lin = null;
+            Statement statement;
             OnCallback onEnd = null;
+            OnScheduler onSchedulerPostCode = null;
             bool enter = false;
 
             void setTempReturn()
@@ -1116,6 +1127,8 @@ namespace FractalMachine.Code.Langs
                     //if (IsMainBlock && !IsRepeatedInstruction) sbag = bag.subBag();
 
                     code.toLinear(sbag);
+
+                    onSchedulerPostCode?.Invoke(sbag, code);
                 }
 
                 ///
@@ -1221,6 +1234,7 @@ namespace FractalMachine.Code.Langs
                     if (IsAccumulator)
                     {
                         // Is accumulated attributes
+                        bag = bag.subBag(Bag.Status.DeclarationParenthesis);
                         onEnd = delegate
                         {
                             bag.Parent.Params.Add(new Parameter(bag.Params));
@@ -1306,11 +1320,11 @@ namespace FractalMachine.Code.Langs
                 if (Subject == null && codes.Count == 0)
                     return; // Is a dummy instruction
 
-                if (IsDeclaration)
+                /*if (IsDeclaration)
                 {
                     toLinear_ground_instruction_declaration();
                 }
-                else if (IsOperator)
+                else */if (IsOperator)
                 {
                     toLinear_ground_instruction_operator();
                 }
@@ -1320,7 +1334,7 @@ namespace FractalMachine.Code.Langs
                 }
                 else
                 {
-                    toLinear_ground_instruction_standard();
+                    toLinear_ground_instruction_default();
                 }
             }
 
@@ -1332,73 +1346,9 @@ namespace FractalMachine.Code.Langs
                     bag.Linear = bag.Linear.LastInstruction.Clone(ast);
                     onEnd = delegate ()
                     {
-                        bag.OnRepeteable.Invoke(bag, this);
+                        bag.OnRepeteable?.Invoke(bag, this);
                     };
                 }
-            }
-
-            void toLinear_ground_instruction_standard()
-            {
-                ///
-                /// This means that it is an entry statement, so parameters could cleared at the end
-                /// Statement decoder could cause a statement confusion
-                ///
-
-                // toLinear_checkSquareBrackets(); // it make no sense here
-
-                onEnd = delegate
-                {
-                    var pars = bag.Params;
-
-                    if (!bag.disableStatementDecoder && pars.Count > 1)
-                    {
-                        lin = new Linear(bag.Linear, ast);
-                        lin.Op = bag.Params.Pull(0).StrValue;
-
-                        var statement = Statement.Get(lin.Op);
-
-                        switch (statement.Decoder)
-                        {
-                            case Statement.DecoderType.Normal:
-
-                                while (pars.Count > 0)
-                                {
-                                    var p = bag.Params.Pull(0).StrValue;
-                                    lin.Attributes.Add(p);
-                                    lin.Continuous = (p == ":");
-                                }
-
-                                if (lin.Continuous)
-                                    lin.Attributes.Pull();
-
-                                if (lin.Op == "namespace")
-                                    lin.Name = lin.Attributes.Pull(0);
-
-                                break;
-
-                            case Statement.DecoderType.WithParameters:
-
-                                lin.Attributes.Add(bag.Params.Pull(0).StrValue);
-
-                                //todo: handle types (?)
-                                string prev = "";
-                                int i = 0;
-                                while (pars.Count > 0)
-                                {
-                                    if (i % 2 == 1)
-                                        lin.Parameters.Add(prev, bag.Params.Pull(0).StrValue);
-                                    else
-                                        prev = bag.Params.Pull(0).StrValue;
-
-                                    i++;
-                                }
-
-                                break;
-                        }
-                    }
-
-                    bag.Params.Clear();
-                };
             }
 
             void toLinear_ground_instruction_declaration()
@@ -1510,13 +1460,315 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            void toLinear_ground_instruction_default()
+            {
+                ///
+                /// This means that it is an entry statement, so parameters could cleared at the end
+                /// Statement decoder could cause a statement confusion
+                ///
+
+                // toLinear_checkSquareBrackets(); // it make no sense here
+
+                /*onEnd = delegate
+                {
+                    var pars = bag.Params;
+
+                    if (!bag.disableStatementDecoder && pars.Count > 1)
+                    {
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = bag.Params.Pull(0).StrValue;
+
+                        var statement = StatementOld.Get(lin.Op);
+
+                        switch (statement.Decoder)
+                        {
+                            case StatementOld.DecoderType.Normal:
+
+                                while (pars.Count > 0)
+                                {
+                                    var p = bag.Params.Pull(0).StrValue;
+                                    lin.Attributes.Add(p);
+                                    lin.Continuous = (p == ":");
+                                }
+
+                                if (lin.Continuous)
+                                    lin.Attributes.Pull();
+
+                                if (lin.Op == "namespace")
+                                    lin.Name = lin.Attributes.Pull(0);
+
+                                break;
+
+                            case StatementOld.DecoderType.WithParameters:
+
+                                lin.Attributes.Add(bag.Params.Pull(0).StrValue);
+
+                                //todo: handle types (?)
+                                string prev = "";
+                                int i = 0;
+                                while (pars.Count > 0)
+                                {
+                                    if (i % 2 == 1)
+                                        lin.Parameters.Add(prev, bag.Params.Pull(0).StrValue);
+                                    else
+                                        prev = bag.Params.Pull(0).StrValue;
+
+                                    i++;
+                                }
+
+                                break;
+                        }
+                    }
+
+                    bag.Params.Clear();
+                };*/
+
+                statement = new Statement(this);
+                onSchedulerPostCode = statement.OnPostCode;
+                onEnd = statement.OnEnd;
+            }
+
+            delegate bool OnScheduler(Bag bag, OrderedAST ast);
+            public class Statement // Classe usa e getta
+            {
+                Statement parent;
+                OrderedAST orderedAST;
+                List<Statement> Disks = new List<Statement>();
+
+                List<OnScheduler> Scheduler = new List<OnScheduler>();
+                int SchedulerPos = 0;
+                int AbsorbedParams = 0;
+                bool Completed = false;
+
+                public Statement(OrderedAST oast)
+                {
+                    orderedAST = oast;
+
+                    AddDisk(new Declaration());
+                }
+
+                private Statement() { }
+
+                internal void AddDisk(Statement disk)
+                {
+                    disk.parent = this;
+                    disk.orderedAST = orderedAST;
+                    Disks.Add(disk);
+                }
+
+                OrderedAST currentOrderedAST;
+                internal bool OnPostCode(Bag bag, OrderedAST orderedAST)
+                {
+                    currentOrderedAST = orderedAST;
+
+                    // order to be decided
+                    if (Scheduler.Count > SchedulerPos)
+                        return Scheduler[SchedulerPos].Invoke(bag, orderedAST);
+
+                    for (int d=0; d<Disks.Count; d++)
+                    {
+                        if(!Disks[d].OnPostCode(bag, orderedAST))
+                        {
+                            Disks.RemoveAt(d--);
+                        }
+                    }
+
+                    return false;
+                }
+
+                internal virtual void OnEnd()
+                {
+                    foreach (var disk in Disks)
+                        disk.OnEnd();
+                }
+
+                internal virtual bool YourTurn(OrderedAST currentOrderedAST)
+                {
+                    return true;
+                }
+
+                internal void IsCompleted(Statement statement = null)
+                {
+                    if (statement == null)
+                    {
+                        statement = this;
+                        for(var d=0; d<Disks.Count; d++)
+                        {
+                            if (!Disks[d].YourTurn(currentOrderedAST))
+                                Disks.RemoveAt(d);
+                        }
+
+                    }
+                    else
+                    {
+                        // If it's clear, it clear other disks
+                        /*for (int d = 0; d < Disks.Count; d++)
+                            if (Disks[d] != statement) 
+                                Disks.RemoveAt(d--);*/
+                    }
+
+                    if (parent != null)
+                        parent.IsCompleted(statement);
+                    
+                }
+
+                void PullAbsorbedParams()
+                {
+                    for (int p = 0; p < AbsorbedParams; p++) 
+                        orderedAST.bag.Params.Pull();
+                }
+
+                #region Statements
+
+                public class Declaration : Statement
+                {
+                    string Modifier;
+                    string Type;
+                    string[] Names; // names because declaration supports accumulators
+
+                    public Declaration()
+                    {
+                        AddDisk(new Function());
+
+                        Scheduler.Add(scheduler_0);
+                        Scheduler.Add(scheduler_1);
+                        Scheduler.Add(scheduler_2);
+                    }
+
+                    int scheduler = 0;
+
+                    // Modifiers
+                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    {
+                        var param = bag.Params.LastParam;
+                        var spar = param.StrValue;
+
+                        if (Light.Modifiers.Contains(spar))
+                            Modifier = spar;
+                        else // with an else if you could put differnt type of modifier without enforcing the order of entry
+                            return Scheduler[++SchedulerPos].Invoke(bag, ast);
+
+                        AbsorbedParams++;
+
+                        return true;
+                    }
+
+                    // Type
+                    bool scheduler_1(Bag bag, OrderedAST ast)
+                    {
+                        var param = bag.Params.LastParam;
+                        var spar = param.StrValue;
+
+                        Type = spar;
+                        SchedulerPos++;
+                        AbsorbedParams++;
+
+                        return true;
+                    }
+
+                    // Name
+                    bool scheduler_2(Bag bag, OrderedAST ast)
+                    {
+                        var param = bag.Params.LastParam;
+                        var spar = param.Values;
+
+                        Names = spar;
+                        SchedulerPos++;
+                        AbsorbedParams++;
+
+                        /// Completed!
+
+                        // Saves name param for next instruction
+                        if (ast.Right?.IsOperator ?? false)
+                        {
+                            var namesParam = bag.Params.Pull();
+                            AbsorbedParams--;
+                            PullAbsorbedParams();
+                            bag.Params.Add(namesParam);
+                        }
+
+                        bag = orderedAST.bag = orderedAST.bag.subBag();
+
+                        foreach (var Name in Names)
+                        {
+                            var lin = bag.Linear = new Linear(bag.Parent.Linear, orderedAST.ast);
+                            lin.Op = "declare";
+                            lin.Name = Name;
+                            lin.Return = Type ?? lin.Return;
+                            if (!String.IsNullOrEmpty(Modifier)) lin.Attributes.Add(Modifier);
+                            lin.List();
+                        }
+
+                        IsCompleted();
+
+                        return true;
+                    }
+
+                    internal override void OnEnd()
+                    {
+                        if (SchedulerPos > 2)
+                            orderedAST.bag = orderedAST.bag.Parent;
+                    }
+
+                    #region Statements
+
+                    public class Function : Statement
+                    {
+                        // A function simply has a BlockParenthesis and a Block
+                        public Function()
+                        {
+                            Scheduler.Add(scheduler_0);
+                            Scheduler.Add(scheduler_1);
+                        }
+
+                        internal bool YourTurn(OrderedAST currentOrderedAst)
+                        {
+                            if (currentOrderedAst.Right.IsBlockParenthesis)
+                            {
+
+                                return true;
+                            }
+
+                            return false;
+                        } 
+
+                        bool scheduler_0(Bag bag, OrderedAST ast)
+                        {
+                            if (ast.IsBlockParenthesis)
+                            {
+
+                            }
+
+                            return false;
+                        }
+                        bool scheduler_1(Bag bag, OrderedAST ast)
+                        {
+                            if (ast.IsBlockBrackets)
+                            {
+
+                            }
+
+                            return false;
+                        }
+
+
+                    }
+
+                    #endregion
+                }
+
+                #endregion
+            }
+
             #endregion
         }
+
+        
 
         /// <summary>
         /// To rethink. This is used for distinguish paridally the type of statements
         /// </summary>
-        public class Statement
+        public class StatementOld
         {
             #region Dynamic
             public string Name;
@@ -1532,11 +1784,11 @@ namespace FractalMachine.Code.Langs
 
             #region Static
 
-            public static Dictionary<string, Statement> List;
+            public static Dictionary<string, StatementOld> List;
 
-            internal static Statement Add(string Name)
+            internal static StatementOld Add(string Name)
             {
-                var ins = new Statement();
+                var ins = new StatementOld();
                 ins.Name = Name;
                 List.Add(Name, ins);
                 return ins;
@@ -1544,13 +1796,13 @@ namespace FractalMachine.Code.Langs
 
 
 
-            public static Statement Get(string Name)
+            public static StatementOld Get(string Name)
             {
                 init();
 
-                Statement o;
+                StatementOld o;
                 if (!List.TryGetValue(Name, out o))
-                    o = new Statement();
+                    o = new StatementOld();
 
                 return o;
             }
@@ -1559,7 +1811,7 @@ namespace FractalMachine.Code.Langs
             {
                 if (List == null)
                 {
-                    List = new Dictionary<string, Statement>();
+                    List = new Dictionary<string, StatementOld>();
 
                     ///
                     /// List of possible statements
