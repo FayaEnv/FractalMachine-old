@@ -665,6 +665,8 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
+                    //todo: there is another type of accumulator: the SquareBrackets accumulato
+                    // could be found if it has an operator in front of it
                     if (ast.type != AST.Type.Block)
                         return false;
 
@@ -785,6 +787,14 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsCallBlock
+            {
+                get
+                {
+                    return !IsAccumulator && ast.type == AST.Type.Block && ast.subject != "{";
+                }
+            }
+
             #endregion
 
             internal string Subject
@@ -873,7 +883,7 @@ namespace FractalMachine.Code.Langs
 
             #region Parameters
 
-            public class Parameter
+            internal class Parameter
             {
                 string strValue;
                 List<string> values;
@@ -915,8 +925,20 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            public class Parameters : List<Parameter>
+            internal class Parameters : List<Parameter>
             {
+                Bag bag;
+                public Parameters(Bag bag):base()
+                {
+                    // you soot me down, bag bag
+                }
+
+                public void New (Parameter par)
+                {
+                    Add(par);
+                    bag.HasNewParam = true;
+                }
+
                 public string[] ToStringArray()
                 {
                     var strings = new string[Count];
@@ -956,8 +978,9 @@ namespace FractalMachine.Code.Langs
                 public Status status;
                 public Linear Linear;
                 public Bag Parent;
-                public Parameters Params = new Parameters();
+                public Parameters Params;
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
+                public bool HasNewParam = false;
 
                 public OnCallback OnNextParamOnce;
                 public OnOperation OnRepeteable;
@@ -967,6 +990,7 @@ namespace FractalMachine.Code.Langs
 
                 public Bag()
                 {
+                    Params = new Parameters(this);
                 }
 
                 public enum Status
@@ -978,9 +1002,9 @@ namespace FractalMachine.Code.Langs
 
 
                 #region Param
-                public void addParam(string p)
+                public void NewParam(string p)
                 {
-                    Params.Add(new Parameter(p));
+                    Params.New(new Parameter(p));
                 }
 
                 #endregion
@@ -1080,7 +1104,7 @@ namespace FractalMachine.Code.Langs
             void setTempReturn()
             {
                 lin.Return = Properties.InternalVariable + getTempVar();
-                bag.addParam(Properties.InternalVariable + getTempVar());
+                bag.NewParam(Properties.InternalVariable + getTempVar());
             }
 
             void toLinear(Bag parentBag)
@@ -1125,6 +1149,7 @@ namespace FractalMachine.Code.Langs
 
                     var sbag = bag;
                     //if (IsMainBlock && !IsRepeatedInstruction) sbag = bag.subBag();
+                    sbag.HasNewParam = false;
 
                     code.toLinear(sbag);
 
@@ -1153,7 +1178,7 @@ namespace FractalMachine.Code.Langs
                 if (ast.aclass == "angularBracket")
                     ast.subject = Properties.AngularBracketsMark + Subject;
 
-                bag.addParam(Subject);
+                bag.NewParam(Subject);
 
                 bag.OnNextParamOnce?.Invoke();
                 bag.OnNextParamOnce = null;
@@ -1222,7 +1247,7 @@ namespace FractalMachine.Code.Langs
                     else if (Left.ast.type == AST.Type.Attribute)
                     {
                         // Is type definition
-                        bag.addParam(bag.Params.Pull().StrValue + "[]");
+                        bag.NewParam(bag.Params.Pull().StrValue + "[]");
                     }
                 };
             }
@@ -1237,7 +1262,7 @@ namespace FractalMachine.Code.Langs
                         bag = bag.subBag(Bag.Status.DeclarationParenthesis);
                         onEnd = delegate
                         {
-                            bag.Parent.Params.Add(new Parameter(bag.Params));
+                            bag.Parent.Params.New(new Parameter(bag.Params));
                         };
                     }
                     else
@@ -1256,6 +1281,8 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_parenthesis()
             {
+                var completed = statement.GetCompleted;
+
                 if (parent.IsDeclaration)
                 {
                     ///
@@ -1351,7 +1378,7 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            void toLinear_ground_instruction_declaration()
+            /*void toLinear_ground_instruction_declaration()
             {              
                 bool isFunction = HasFinalBracketsBlock;
 
@@ -1405,7 +1432,7 @@ namespace FractalMachine.Code.Langs
                     else
                         bag.OnRepeteable?.Invoke(bag, this);
                 };
-            }
+            }*/
 
             void toLinear_ground_instruction_operator()
             {
@@ -1440,7 +1467,7 @@ namespace FractalMachine.Code.Langs
                         bag.OnNextParamOnce = delegate
                         {
                             var p = bag.Params.Pull().StrValue;
-                            bag.addParam(bag.Params.Pull().StrValue + "." + p);
+                            bag.NewParam(bag.Params.Pull().StrValue + "." + p);
                         };
 
                         break;
@@ -1534,6 +1561,7 @@ namespace FractalMachine.Code.Langs
                 Statement parent;
                 OrderedAST orderedAST;
                 List<Statement> Disks = new List<Statement>();
+                Statement completed = null;
 
                 List<OnScheduler> Scheduler = new List<OnScheduler>();
                 int SchedulerPos = 0;
@@ -1582,6 +1610,19 @@ namespace FractalMachine.Code.Langs
                         disk.OnEnd();
                 }
 
+                public Statement GetCompleted
+                {
+                    get
+                    {
+                        return completed;
+                    }
+                }
+
+                /// <summary>
+                /// It is used for advise a statement that is his turn
+                /// </summary>
+                /// <param name="currentOrderedAST"></param>
+                /// <returns></returns>
                 internal virtual bool YourTurn(OrderedAST currentOrderedAST)
                 {
                     return true;
@@ -1609,6 +1650,8 @@ namespace FractalMachine.Code.Langs
 
                     if (parent != null)
                         parent.IsCompleted(statement);
+                    else
+                        completed = statement;
                     
                 }
 
@@ -1620,6 +1663,35 @@ namespace FractalMachine.Code.Langs
 
                 #region Statements
 
+                // ie: test [= 42 or ()]
+                public class Retrieve : Statement
+                {
+                    string Subject;
+                    public Retrieve()
+                    {
+                        Scheduler.Add(scheduler_0);
+                    }
+
+                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    {
+                        var param = bag.Params.LastParam;
+                        var spar = param.StrValue;
+
+                        Subject = spar;
+                        AbsorbedParams++;
+
+                        var right = ast.Right; // or wrong (lfmao che simpi)
+                        if (right == null || right.IsOperator || right.IsCallBlock)
+                        {
+                            IsCompleted();
+                            return true;
+                        }
+
+                        return false;
+                    }
+                }
+
+                // ie: public int test;
                 public class Declaration : Statement
                 {
                     string Modifier;
@@ -1684,7 +1756,7 @@ namespace FractalMachine.Code.Langs
                             var namesParam = bag.Params.Pull();
                             AbsorbedParams--;
                             PullAbsorbedParams();
-                            bag.Params.Add(namesParam);
+                            bag.Params.New(namesParam);
                         }
 
                         bag = orderedAST.bag = orderedAST.bag.subBag();
