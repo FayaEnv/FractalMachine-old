@@ -76,7 +76,7 @@ namespace FractalMachine
             {
                 var comp = context.ExtractComponent(entryPoint);
                 var output = comp.WriteToCpp();
-                 File.WriteAllText(cppOutPath, output);
+                File.WriteAllText(cppOutPath, output);
             }
 
             // Compile
