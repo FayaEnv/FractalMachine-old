@@ -930,7 +930,8 @@ namespace FractalMachine.Code.Langs
                 Bag bag;
                 public Parameters(Bag bag):base()
                 {
-                    // you soot me down, bag bag
+                    // you shot me down, bag bag
+                    this.bag = bag;
                 }
 
                 public void New (Parameter par)
@@ -981,6 +982,7 @@ namespace FractalMachine.Code.Langs
                 public Parameters Params;
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
                 public bool HasNewParam = false;
+                public Statement statement;
 
                 public OnCallback OnNextParamOnce;
                 public OnOperation OnRepeteable;
@@ -1015,6 +1017,7 @@ namespace FractalMachine.Code.Langs
                     b.Parent = this;
                     b.status = status;
                     b.Linear = Linear;
+                    b.statement = statement;
                     //b.OnRepeteable = OnRepeteable; //Repeteable should works at the same level
                     return b;
                 }
@@ -1095,8 +1098,7 @@ namespace FractalMachine.Code.Langs
             #endregion
 
             Bag bag;
-            Linear lin = null;
-            Statement statement;
+            Linear lin = null;  
             OnCallback onEnd = null;
             OnScheduler onSchedulerPostCode = null;
             bool enter = false;
@@ -1281,9 +1283,9 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_parenthesis()
             {
-                var completed = statement.GetCompleted;
+                var completedStatement = bag.statement.GetCompletedStatement;
 
-                if (parent.IsDeclaration)
+                if (completedStatement.Type == "Declaration")
                 {
                     ///
                     /// This is a good example of different status management
@@ -1550,28 +1552,30 @@ namespace FractalMachine.Code.Langs
                     bag.Params.Clear();
                 };*/
 
-                statement = new Statement(this);
-                onSchedulerPostCode = statement.OnPostCode;
-                onEnd = statement.OnEnd;
+                bag.statement = new Statement(this);
+                onSchedulerPostCode = bag.statement.OnPostCode;
+                onEnd = bag.statement.OnEnd;
             }
 
             delegate bool OnScheduler(Bag bag, OrderedAST ast);
             public class Statement // Classe usa e getta
             {
                 Statement parent;
-                OrderedAST orderedAST;
+                OrderedAST orderedAST, currentOrderedAST;
                 List<Statement> Disks = new List<Statement>();
-                Statement completed = null;
+                Statement completedStatement = null;
 
                 List<OnScheduler> Scheduler = new List<OnScheduler>();
                 int SchedulerPos = 0;
                 int AbsorbedParams = 0;
-                bool Completed = false;
+
+                bool imCompleted = false;
 
                 public Statement(OrderedAST oast)
                 {
                     orderedAST = oast;
 
+                    AddDisk(new Retrieve());
                     AddDisk(new Declaration());
                 }
 
@@ -1584,7 +1588,7 @@ namespace FractalMachine.Code.Langs
                     Disks.Add(disk);
                 }
 
-                OrderedAST currentOrderedAST;
+                
                 internal bool OnPostCode(Bag bag, OrderedAST orderedAST)
                 {
                     currentOrderedAST = orderedAST;
@@ -1593,7 +1597,8 @@ namespace FractalMachine.Code.Langs
                     if (Scheduler.Count > SchedulerPos)
                         return Scheduler[SchedulerPos].Invoke(bag, orderedAST);
 
-                    for (int d=0; d<Disks.Count; d++)
+                    int d = 0;
+                    for (; d<Disks.Count; d++)
                     {
                         if(!Disks[d].OnPostCode(bag, orderedAST))
                         {
@@ -1601,8 +1606,37 @@ namespace FractalMachine.Code.Langs
                         }
                     }
 
+                    if (d < 0)
+                    {
+                        if (imCompleted)
+                            completedStatement.Winner();
+                        else
+                            parent?.ImLoser(this);
+                    }
+
                     return false;
                 }
+
+                #region Properties
+                public Statement GetCompletedStatement
+                {
+                    get
+                    {
+                        return completedStatement;
+                    }
+                }
+
+                public string Type
+                {
+                    get
+                    {
+                        return this.GetType().FullName.Substring(typeof(Statement).FullName.Length + 1).Replace('+', '.');
+                    }
+                }
+
+                #endregion
+
+                #region Virtual
 
                 internal virtual void OnEnd()
                 {
@@ -1610,12 +1644,9 @@ namespace FractalMachine.Code.Langs
                         disk.OnEnd();
                 }
 
-                public Statement GetCompleted
+                internal virtual void Winner()
                 {
-                    get
-                    {
-                        return completed;
-                    }
+
                 }
 
                 /// <summary>
@@ -1626,6 +1657,16 @@ namespace FractalMachine.Code.Langs
                 internal virtual bool YourTurn(OrderedAST currentOrderedAST)
                 {
                     return true;
+                }
+
+                #endregion
+
+                #region Methods
+
+                // I'm a loser baby so why don't you kill me?
+                internal void ImLoser(Statement me)
+                {
+                    Disks.Remove(me);
                 }
 
                 internal void IsCompleted(Statement statement = null)
@@ -1639,6 +1680,7 @@ namespace FractalMachine.Code.Langs
                                 Disks.RemoveAt(d);
                         }
 
+                        imCompleted = true;
                     }
                     else
                     {
@@ -1651,9 +1693,11 @@ namespace FractalMachine.Code.Langs
                     if (parent != null)
                         parent.IsCompleted(statement);
                     else
-                        completed = statement;
+                        completedStatement = statement;
                     
                 }
+
+                #endregion
 
                 void PullAbsorbedParams()
                 {
@@ -1759,11 +1803,12 @@ namespace FractalMachine.Code.Langs
                             bag.Params.New(namesParam);
                         }
 
-                        bag = orderedAST.bag = orderedAST.bag.subBag();
+                        //bag = orderedAST.bag = orderedAST.bag.subBag();
+                        orderedAST.enter = true;
 
                         foreach (var Name in Names)
                         {
-                            var lin = bag.Linear = new Linear(bag.Parent.Linear, orderedAST.ast);
+                            var lin = bag.Linear = new Linear(bag.Linear, orderedAST.ast);
                             lin.Op = "declare";
                             lin.Name = Name;
                             lin.Return = Type ?? lin.Return;
@@ -1776,17 +1821,24 @@ namespace FractalMachine.Code.Langs
                         return true;
                     }
 
+                    internal override void Winner()
+                    {
+                        string read = "here";
+                    }
                     internal override void OnEnd()
                     {
-                        if (SchedulerPos > 2)
-                            orderedAST.bag = orderedAST.bag.Parent;
+                        //if (SchedulerPos > 2) orderedAST.bag = orderedAST.bag.Parent;
                     }
 
                     #region Statements
 
+                    /// <summary>
+                    /// The "static" converter in OrderedAst could afford the function without problems
+                    /// This class is used mostly for handle grammar errors
+                    /// </summary>
                     public class Function : Statement
                     {
-                        // A function simply has a BlockParenthesis and a Block
+                        // A function has simply a BlockParenthesis and a Block
                         public Function()
                         {
                             Scheduler.Add(scheduler_0);

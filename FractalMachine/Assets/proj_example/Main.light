@@ -1,6 +1,6 @@
 //import System.IO; 
 
-/*function main(ciao, miao=2){
+function main(ciao, miao=2){
 	//Print("Hello world! Finally.");
 
 	// Altri obbiettivi
@@ -13,13 +13,12 @@
 	//ciao += 2; 
 
 	//Esperimento per potenziare la portata del parser
-	int {v0, v1} = 2;
+	//int {v0, v1} = 2;
 	//int[] arr = array();
 	//arr[1] = 2;
-	int ciao ciao = 3
-	
-}*/
 
-function test(){
-	ciao = 2;
+	int ciao = 2; 
+	ciao = 3
+	
 }
+
