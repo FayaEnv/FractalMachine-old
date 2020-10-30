@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static FractalMachine.Code.AST;
 using FractalMachine.Classes;
+using System.Transactions;
 
 namespace FractalMachine.Code.Langs
 {
@@ -109,8 +110,9 @@ namespace FractalMachine.Code.Langs
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", ".", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
                 var trgFastOperation = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
+                var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
                 var trgCloseBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ")", "}", "]" } });
@@ -159,6 +161,11 @@ namespace FractalMachine.Code.Langs
 
                     if (trigger.activatorDelimiter == ",")
                         ast.subject = ",";
+                };
+
+                trgInsert.OnTriggered = delegate (Triggers.Trigger trigger)
+                {
+                    strBuffer += trigger.activatorDelimiter;
                 };
 
                 trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
@@ -936,8 +943,8 @@ namespace FractalMachine.Code.Langs
 
                 public void New (Parameter par)
                 {
-                    Add(par);
-                    bag.HasNewParam = true;
+                    bag.posNewParam = Count;
+                    Add(par);                    
                 }
 
                 public string[] ToStringArray()
@@ -981,7 +988,7 @@ namespace FractalMachine.Code.Langs
                 public Bag Parent;
                 public Parameters Params;
                 public Dictionary<string, string> Dict = new Dictionary<string, string>();
-                public bool HasNewParam = false;
+                internal int posNewParam = -1;
                 public Statement statement;
 
                 public OnCallback OnNextParamOnce;
@@ -1004,12 +1011,26 @@ namespace FractalMachine.Code.Langs
 
 
                 #region Param
+
+                public bool HasNewParam
+                {
+                    get
+                    {
+                        return posNewParam < Params.Count && posNewParam >= 0;
+                    }
+                }
+
                 public void NewParam(string p)
                 {
                     Params.New(new Parameter(p));
                 }
 
                 #endregion
+
+                public void EnterLastLinear()
+                {
+                    Linear = Linear.LastInstruction;
+                }
 
                 public Bag subBag(Status status = Status.Ground)
                 {
@@ -1151,7 +1172,7 @@ namespace FractalMachine.Code.Langs
 
                     var sbag = bag;
                     //if (IsMainBlock && !IsRepeatedInstruction) sbag = bag.subBag();
-                    sbag.HasNewParam = false;
+                    sbag.posNewParam = -1; // Reset new param
 
                     code.toLinear(sbag);
 
@@ -1561,7 +1582,8 @@ namespace FractalMachine.Code.Langs
             public class Statement // Classe usa e getta
             {
                 Statement parent;
-                OrderedAST orderedAST, currentOrderedAST;
+                OrderedAST parentOrderedAST, currentOrderedAST;
+                Bag currentBag;
                 List<Statement> Disks = new List<Statement>();
                 Statement completedStatement = null;
 
@@ -1569,11 +1591,11 @@ namespace FractalMachine.Code.Langs
                 int SchedulerPos = 0;
                 int AbsorbedParams = 0;
 
-                bool imCompleted = false;
+                bool imCompleted = false, winnerCalled = false;
 
                 public Statement(OrderedAST oast)
                 {
-                    orderedAST = oast;
+                    parentOrderedAST = oast;
 
                     AddDisk(new Retrieve());
                     AddDisk(new Declaration());
@@ -1584,13 +1606,13 @@ namespace FractalMachine.Code.Langs
                 internal void AddDisk(Statement disk)
                 {
                     disk.parent = this;
-                    disk.orderedAST = orderedAST;
                     Disks.Add(disk);
                 }
 
                 
                 internal bool OnPostCode(Bag bag, OrderedAST orderedAST)
                 {
+                    currentBag = bag;
                     currentOrderedAST = orderedAST;
 
                     // order to be decided
@@ -1600,24 +1622,44 @@ namespace FractalMachine.Code.Langs
                     int d = 0;
                     for (; d<Disks.Count; d++)
                     {
-                        if(!Disks[d].OnPostCode(bag, orderedAST))
+                        var disk = Disks[d];
+                        if (!Disks[d].OnPostCode(bag, orderedAST))
                         {
-                            Disks.RemoveAt(d--);
+                            if(d < Disks.Count && disk == Disks[d]) // else it was already removed
+                                Disks.RemoveAt(d--);
                         }
                     }
 
-                    if (d < 0)
+                    if (d == 0)
                     {
                         if (imCompleted)
-                            completedStatement.Winner();
-                        else
-                            parent?.ImLoser(this);
+                        {
+                            if(!winnerCalled) Winner();
+                            return true;
+                        }
+                        parent?.ImLoser(this);
                     }
+
+                    /*if (d == 1 && (completedStatement?.Disks.Count ?? 1) == 0 && !winnerCalled)
+                        completedStatement.Winner();*/
 
                     return false;
                 }
 
                 #region Properties
+
+                internal OrderedAST OrderedAST
+                {
+                    get
+                    {
+                        // Just a little tedious
+                        Statement par = this;
+                        while(par != null && par.parentOrderedAST == null)
+                            par = par.parent;
+                        return par?.parentOrderedAST;
+                    }
+                }
+
                 public Statement GetCompletedStatement
                 {
                     get
@@ -1641,7 +1683,8 @@ namespace FractalMachine.Code.Langs
                 internal virtual void OnEnd()
                 {
                     foreach (var disk in Disks)
-                        disk.OnEnd();
+                        if(disk.imCompleted) 
+                            disk.OnEnd();
                 }
 
                 internal virtual void Winner()
@@ -1669,15 +1712,22 @@ namespace FractalMachine.Code.Langs
                     Disks.Remove(me);
                 }
 
-                internal void IsCompleted(Statement statement = null)
+                internal void ImCompleted(Statement statement = null)
                 {
                     if (statement == null)
                     {
                         statement = this;
-                        for(var d=0; d<Disks.Count; d++)
+                        int d = 0;
+                        for(; d<Disks.Count; d++)
                         {
                             if (!Disks[d].YourTurn(currentOrderedAST))
-                                Disks.RemoveAt(d);
+                                Disks.RemoveAt(d--);
+                        }
+
+                        if (d == 0 && statement.imCompleted)
+                        {
+                            statement.Winner();
+                            winnerCalled = true;
                         }
 
                         imCompleted = true;
@@ -1691,7 +1741,7 @@ namespace FractalMachine.Code.Langs
                     }
 
                     if (parent != null)
-                        parent.IsCompleted(statement);
+                        parent.ImCompleted(statement);
                     else
                         completedStatement = statement;
                     
@@ -1702,10 +1752,34 @@ namespace FractalMachine.Code.Langs
                 void PullAbsorbedParams()
                 {
                     for (int p = 0; p < AbsorbedParams; p++) 
-                        orderedAST.bag.Params.Pull();
+                        OrderedAST.bag.Params.Pull();
                 }
 
                 #region Statements
+
+                public class Namespace : Statement
+                {
+                    string Namespace_;
+                    public Namespace()
+                    {
+                        Scheduler.Add(scheduler_0);
+                    }
+                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    {
+                        var param = bag.Params.LastParam;
+                        var spar = param.StrValue;
+
+                        if (spar == "namespace")
+                        {
+                            Namespace_ = spar;
+                            AbsorbedParams++;
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+                }
 
                 // ie: test [= 42 or ()]
                 public class Retrieve : Statement
@@ -1727,7 +1801,7 @@ namespace FractalMachine.Code.Langs
                         var right = ast.Right; // or wrong (lfmao che simpi)
                         if (right == null || right.IsOperator || right.IsCallBlock)
                         {
-                            IsCompleted();
+                            ImCompleted();
                             return true;
                         }
 
@@ -1751,11 +1825,12 @@ namespace FractalMachine.Code.Langs
                         Scheduler.Add(scheduler_2);
                     }
 
-                    int scheduler = 0;
-
                     // Modifiers
                     bool scheduler_0(Bag bag, OrderedAST ast)
                     {
+                        if (!bag.HasNewParam)
+                            return false;
+
                         var param = bag.Params.LastParam;
                         var spar = param.StrValue;
 
@@ -1772,6 +1847,9 @@ namespace FractalMachine.Code.Langs
                     // Type
                     bool scheduler_1(Bag bag, OrderedAST ast)
                     {
+                        if (!bag.HasNewParam)
+                            return false; 
+
                         var param = bag.Params.LastParam;
                         var spar = param.StrValue;
 
@@ -1785,6 +1863,9 @@ namespace FractalMachine.Code.Langs
                     // Name
                     bool scheduler_2(Bag bag, OrderedAST ast)
                     {
+                        if (!bag.HasNewParam)
+                            return false;
+
                         var param = bag.Params.LastParam;
                         var spar = param.Values;
 
@@ -1803,12 +1884,9 @@ namespace FractalMachine.Code.Langs
                             bag.Params.New(namesParam);
                         }
 
-                        //bag = orderedAST.bag = orderedAST.bag.subBag();
-                        orderedAST.enter = true;
-
                         foreach (var Name in Names)
                         {
-                            var lin = bag.Linear = new Linear(bag.Linear, orderedAST.ast);
+                            var lin = new Linear(bag.Linear, OrderedAST.ast);
                             lin.Op = "declare";
                             lin.Name = Name;
                             lin.Return = Type ?? lin.Return;
@@ -1816,18 +1894,18 @@ namespace FractalMachine.Code.Langs
                             lin.List();
                         }
 
-                        IsCompleted();
+                        ImCompleted();
 
                         return true;
                     }
 
                     internal override void Winner()
                     {
-                        string read = "here";
+                        // yeah! I'm the winner. 
                     }
                     internal override void OnEnd()
                     {
-                        //if (SchedulerPos > 2) orderedAST.bag = orderedAST.bag.Parent;
+                        currentBag.Params.Clear();
                     }
 
                     #region Statements
@@ -1845,33 +1923,39 @@ namespace FractalMachine.Code.Langs
                             Scheduler.Add(scheduler_1);
                         }
 
-                        internal bool YourTurn(OrderedAST currentOrderedAst)
+                        internal override bool YourTurn(OrderedAST currentOrderedAst)
                         {
-                            if (currentOrderedAst.Right.IsBlockParenthesis)
-                            {
+                            // stuff [...]
 
+                            // then look to the future
+                            if (currentOrderedAst.Right?.IsBlockParenthesis ?? false)
+                            {
+                                var oa = OrderedAST;
+                                oa.enter = true;
+                                oa.bag = oa.bag.subBag();
+                                oa.bag.EnterLastLinear();
+
+                                OrderedAST.enter = true;
                                 return true;
                             }
 
                             return false;
-                        } 
+                        }
 
+                        //todo: bland methods
                         bool scheduler_0(Bag bag, OrderedAST ast)
                         {
-                            if (ast.IsBlockParenthesis)
+                            if (ast.Right?.IsBlockBrackets ?? false)
                             {
-
+                                SchedulerPos++;
+                                return true;
                             }
 
                             return false;
                         }
                         bool scheduler_1(Bag bag, OrderedAST ast)
                         {
-                            if (ast.IsBlockBrackets)
-                            {
-
-                            }
-
+                            ImCompleted();
                             return false;
                         }
 

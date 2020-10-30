@@ -17,7 +17,7 @@ function main(ciao, miao=2){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	int ciao = 2; 
+	int ciao = 2;  
 	ciao = 3
 	
 }
