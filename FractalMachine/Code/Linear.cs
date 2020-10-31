@@ -56,6 +56,7 @@ namespace FractalMachine.Code
         {
             var lin = new Linear(ast);
             lin.parent = this;
+            lin.Op = Name;
             Settings[Name] = lin;
             return lin;
         }

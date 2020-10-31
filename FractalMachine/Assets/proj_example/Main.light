@@ -22,8 +22,9 @@ function main(){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	//int ciao = 2;  
-	//ciao = 3 + ciao;
+	if(ciao){
+
+	}
 
 }
 
