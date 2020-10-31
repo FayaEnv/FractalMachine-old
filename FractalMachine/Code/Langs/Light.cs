@@ -115,7 +115,7 @@ namespace FractalMachine.Code.Langs
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
                 var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
-                var trgFastOperation = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
+                var trgFastIncrement = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
                 var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
 
                 var trgOpenBlock = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "(", "{", "[" } });
@@ -191,11 +191,11 @@ namespace FractalMachine.Code.Langs
                     }
                 };
 
-                trgFastOperation.OnTriggered = delegate (Triggers.Trigger trigger)
+                trgFastIncrement.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
-                    var instr = curAst.Instruction.LastChild.NewInstruction(Line, Pos);
+                    var instr = curAst.Instruction.NewInstruction(Line, Pos);
                     instr.subject = trigger.activatorDelimiter;
-                    instr.aclass = "fastOperator";
+                    instr.aclass = "fastIncrement";
                 };
 
                 trgOpenBlock.OnTriggered = delegate (Triggers.Trigger trigger)
@@ -714,7 +714,15 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    return ast.aclass == "operator" || ast.aclass == "fastOperator";
+                    return ast.aclass == "operator" || IsFastIncrement;
+                }
+            }
+
+            public bool IsFastIncrement
+            {
+                get
+                {
+                    return ast.aclass == "fastIncrement";
                 }
             }
 
@@ -770,7 +778,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    return ast.type == AST.Type.Attribute;
+                    return ast.type == AST.Type.Attribute || IsAccumulator;
                 }
             }
 
@@ -827,6 +835,11 @@ namespace FractalMachine.Code.Langs
                 get
                 {
                     return ast.subject;
+                }
+
+                set
+                {
+                    ast.subject = value;
                 }
             }
 
@@ -993,7 +1006,7 @@ namespace FractalMachine.Code.Langs
             #endregion
 
             internal delegate void OnCallback();
-            internal delegate void OnOperation(Bag bag, OrderedAST ast);
+            internal delegate void OnOperation(OrderedAST ast);
             internal delegate bool OnScheduler(OrderedAST ast);
 
             internal class Bag
@@ -1145,7 +1158,7 @@ namespace FractalMachine.Code.Langs
             Linear lin = null;  
             OnCallback onEnd = null;
             OnScheduler onSchedulerPostCode = null;
-            OnOperation BeforeCodeAnalysis;
+            OnOperation onBeforeChildCycle;
 
             bool exitLinear = false;
 
@@ -1197,6 +1210,8 @@ namespace FractalMachine.Code.Langs
                     //if (IsMainBlock && !IsRepeatedInstruction) sbag = bag.subBag();
                     sbag.posNewParam = -1; // Reset new param
 
+                    onBeforeChildCycle?.Invoke(code);
+
                     code.toLinear(sbag);
 
                     onSchedulerPostCode?.Invoke(code);
@@ -1209,7 +1224,7 @@ namespace FractalMachine.Code.Langs
                 if (onEnd != null)
                     onEnd();
 
-                                if (exitLinear)
+                if (exitLinear)
                     bag.Linear = bag.Linear.parent;
 
                 if (lin != null)
@@ -1245,7 +1260,7 @@ namespace FractalMachine.Code.Langs
                     switch (Subject)
                     {
                         case "=":
-                            bag.OnRepeteable?.Invoke(bag, this.prev);
+                            bag.OnRepeteable?.Invoke(this.prev);
                             onEnd = delegate
                             {
                                 bag.Linear.LastInstruction.Return = bag.Params.Pull().StrValue;
@@ -1255,7 +1270,7 @@ namespace FractalMachine.Code.Langs
                 }
                 else if (IsRepeatedInstruction)
                 {
-                    bag.OnRepeteable?.Invoke(bag, this.prev);
+                    bag.OnRepeteable?.Invoke(this.prev);
                 }
             }
 
@@ -1357,8 +1372,9 @@ namespace FractalMachine.Code.Langs
                     bag = bag.subBag(Bag.Status.DeclarationParenthesis);
                     var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
 
-                    bag.OnRepeteable = delegate (Bag bag, OrderedAST oAst)
+                    bag.OnRepeteable = delegate (OrderedAST oAst)
                     {
+                        var bag = oAst.bag;
                         var p = bag.Params.Pull();
                         if (p != null)
                         {
@@ -1374,15 +1390,26 @@ namespace FractalMachine.Code.Langs
 
                     onEnd = delegate
                     {
-                        bag.OnRepeteable(bag, LastCode);
+                        bag.OnRepeteable(LastCode);
                     };
                 }
                 else if(completedStatement.Type == "Block")
                 {
                     bag = bag.subBag();
                     var l = bag.Linear = bag.Linear.SetSettings("parameter", ast);
-                    attachStatement();
-
+                    
+                    // Multiple instructions
+                    if (codes.Count > 1)
+                    {
+                        onBeforeChildCycle = delegate (OrderedAST oAst)
+                        {
+                            var subLin = bag.Linear = new Linear(l, oAst.ast);
+                            subLin.Op = "instruction";
+                            subLin.List();
+                            //attachStatement();
+                        };
+                    }
+                  
                     onEnd = delegate
                     {
                         var p = bag.Params.Pull();
@@ -1425,6 +1452,8 @@ namespace FractalMachine.Code.Langs
                 if (Subject == null && codes.Count == 0)
                     return; // Is a dummy instruction
 
+                attachStatement();
+
                 if (IsOperator)
                 {
                     toLinear_ground_instruction_operator();
@@ -1447,18 +1476,24 @@ namespace FractalMachine.Code.Langs
                     bag.Linear = bag.Linear.LastInstruction.Clone(ast);
                     onEnd = delegate ()
                     {
-                        bag.OnRepeteable?.Invoke(bag, this);
+                        bag.OnRepeteable?.Invoke(this);
                     };
                 }
             }
 
             void toLinear_ground_instruction_operator()
             {
+                if (IsFastIncrement)
+                {
+                    Subject = Subject[0].ToString();
+                    bag.NewParam("1");
+                }
+
                 switch (Subject)
                 {
                     case "=":
                         var names = bag.Params.Pull(false);
-                        attachStatement();
+                        //attachStatement();
 
                         onEnd = delegate
                         {
@@ -1499,7 +1534,7 @@ namespace FractalMachine.Code.Langs
 
                 // toLinear_checkSquareBrackets(); // it make no sense here
 
-                attachStatement();
+                //attachStatement();
             }
 
             void attachStatement()
@@ -2030,7 +2065,7 @@ namespace FractalMachine.Code.Langs
                     {
                         var bag = ast.bag;
 
-                        if (!bag.HasNewParam)
+                        if (!ast.IsAttribute)
                             return false;
 
                         Names = bag.Params.LastParam.Values;
