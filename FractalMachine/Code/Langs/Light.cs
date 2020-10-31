@@ -247,6 +247,7 @@ namespace FractalMachine.Code.Langs
 
                 isSymbol.OnSwitchChanged = delegate
                 {
+                    // isSymbol.Value = before switch
                     if (!isSymbol.Value)
                     {
                         eatBufferAndClear();
@@ -458,7 +459,7 @@ namespace FractalMachine.Code.Langs
                 {
                     if (Subject != "=")
                     {
-                        // is short operation
+                        // is short operation ie test += 2 => test = test + 2
                         if (codes.Count == 1 && LastCode.Subject == "=")
                         {
                             var lc = LastCode;
@@ -494,6 +495,7 @@ namespace FractalMachine.Code.Langs
                 Revision();
             }
 
+            #region TempVar
             internal int getTempNum()
             {
                 var num = tempVarCount;
@@ -516,12 +518,7 @@ namespace FractalMachine.Code.Langs
                 return tempVar;
             }
 
-            internal OrderedAST newClassCode(AST ast)
-            {
-                var cc = new OrderedAST(ast);
-                cc.parent = this;
-                return cc;
-            }
+            #endregion
 
             #region Properties
 
@@ -1205,7 +1202,7 @@ namespace FractalMachine.Code.Langs
                 if (ast.aclass == "angularBracket")
                     ast.subject = Properties.AngularBracketsMark + Subject;
 
-                bag.NewParam(Subject);
+                bag.NewParam(Subject); // == bag.Params.New(Subject)
 
                 bag.OnNextParamOnce?.Invoke();
                 bag.OnNextParamOnce = null;
@@ -2060,71 +2057,6 @@ namespace FractalMachine.Code.Langs
                 }
 
                 #endregion
-            }
-
-            #endregion
-        }
-
-        
-
-        /// <summary>
-        /// To rethink. This is used for distinguish paridally the type of statements
-        /// </summary>
-        public class StatementOld
-        {
-            #region Dynamic
-            public string Name;
-            public DecoderType Decoder = DecoderType.Normal;
-
-            #endregion
-
-            public enum DecoderType
-            {
-                Normal,
-                WithParameters
-            }
-
-            #region Static
-
-            public static Dictionary<string, StatementOld> List;
-
-            internal static StatementOld Add(string Name)
-            {
-                var ins = new StatementOld();
-                ins.Name = Name;
-                List.Add(Name, ins);
-                return ins;
-            }
-
-
-
-            public static StatementOld Get(string Name)
-            {
-                init();
-
-                StatementOld o;
-                if (!List.TryGetValue(Name, out o))
-                    o = new StatementOld();
-
-                return o;
-            }
-
-            static void init()
-            {
-                if (List == null)
-                {
-                    List = new Dictionary<string, StatementOld>();
-
-                    ///
-                    /// List of possible statements
-                    ///
-                    var import = Add("import");
-                    import.Decoder = DecoderType.WithParameters;
-
-                    var include = Add("#include");
-
-                    var _namespace = Add("namespace");
-                }
             }
 
             #endregion

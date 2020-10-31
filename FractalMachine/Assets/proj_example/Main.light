@@ -5,7 +5,7 @@
 
 //import System.IO; 
 
-function main(ciao, miao=2){
+function main(){
 	//Print("Hello world! Finally.");
 
 	// Altri obbiettivi
@@ -24,6 +24,6 @@ function main(ciao, miao=2){
 
 	//int ciao = 2;  
 	//ciao = 3 + ciao;
-	
+
 }
 
