@@ -115,6 +115,7 @@ namespace FractalMachine.Code.Langs
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
                 var trgOperator = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
+                var trgConjunction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "&&", "||" } });
                 var trgFastIncrement = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
                 var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
 
@@ -189,6 +190,14 @@ namespace FractalMachine.Code.Langs
                         child.aclass = "operator";
                         clearBuffer();
                     }
+                };
+
+                trgConjunction.OnTriggered = delegate (Triggers.Trigger trigger)
+                {
+                    var child = curAst.Instruction.NewChild(Line, Pos, AST.Type.Instruction);
+                    child.subject = trigger.activatorDelimiter;
+                    child.aclass = "conjunction";
+                    clearBuffer();
                 };
 
                 trgFastIncrement.OnTriggered = delegate (Triggers.Trigger trigger)
@@ -491,7 +500,7 @@ namespace FractalMachine.Code.Langs
                 foreach (var child in ast.children)
                 {
                     var ch = new OrderedAST(child, this);
-                    if(previous != null) previous.next = ch;
+                    if (previous != null) previous.next = ch;
                     ch.prev = previous;
                     previous = ch;
                 }
@@ -568,7 +577,7 @@ namespace FractalMachine.Code.Langs
                     if (ast.type != AST.Type.Block && ast.subject != "(")
                         return false;
 
-                    foreach(var code in codes)
+                    foreach (var code in codes)
                     {
                         var lc = code.LastCode;
                         //todo study: in what cases lc == null?
@@ -579,11 +588,13 @@ namespace FractalMachine.Code.Langs
                     return true;
                 }
             }
+
+            #region Operators
             public bool IsOperator
             {
                 get
                 {
-                    return ast.aclass == "operator" || IsFastIncrement;
+                    return ast.aclass == "operator" || IsFastIncrement || IsConjunction;
                 }
             }
 
@@ -594,6 +605,25 @@ namespace FractalMachine.Code.Langs
                     return ast.aclass == "fastIncrement";
                 }
             }
+
+            public bool IsConjunction
+            {
+                get
+                {
+                    return ast.aclass == "conjunction";
+                }
+            }
+
+            public int OperatorPriority
+            {
+                get
+                {
+                    if (IsConjunction) return 1;
+                    return 0;
+                }
+            }
+
+            #endregion
             public bool IsBlockParenthesis
             {
                 get
@@ -735,17 +765,17 @@ namespace FractalMachine.Code.Langs
                 public string Type;
 
                 Bag bag;
-                public Parameters(Bag bag):base()
+                public Parameters(Bag bag) : base()
                 {
                     // you shot me down, bag bag
                     this.bag = bag;
                 }
 
                 #region New
-                public void New (Parameter par)
+                public void New(Parameter par)
                 {
                     bag.posNewParam = Count;
-                    Add(par);                    
+                    Add(par);
                 }
                 public void New(string par)
                 {
@@ -763,7 +793,7 @@ namespace FractalMachine.Code.Langs
                 {
                     var strings = new string[Count];
                     int s = 0;
-                    foreach(var par in this)
+                    foreach (var par in this)
                     {
                         strings[s++] = par.StrValue;
                     }
@@ -788,7 +818,7 @@ namespace FractalMachine.Code.Langs
                         return this[Count - 1];
                     }
                 }
-   
+
             }
 
             #endregion
@@ -945,7 +975,7 @@ namespace FractalMachine.Code.Langs
 
             OnCallback onEnd = null;
             OnScheduler onSchedulerPostCode = null;
-            OnOperation onBeforeChildCycle;
+            OnOperation onBeforeChildCycle, onAfterChildCycle;
 
             bool exitLinear = false;
 
@@ -1010,8 +1040,8 @@ namespace FractalMachine.Code.Langs
                     sbag.posNewParam = -1; // Reset new param
 
                     onBeforeChildCycle?.Invoke(code);
-
                     code.toLinear(sbag);
+                    onAfterChildCycle?.Invoke(code);
 
                     onSchedulerPostCode?.Invoke(code);
                 }
@@ -1019,7 +1049,14 @@ namespace FractalMachine.Code.Langs
                 ///
                 /// Exit
                 ///
+                if(!endCalled)
+                    callEnd();
 
+            }
+
+            bool endCalled = false;
+            void callEnd()
+            {
                 if (onEnd != null)
                     onEnd();
 
@@ -1029,6 +1066,7 @@ namespace FractalMachine.Code.Langs
                 if (lin != null)
                     lin.List();
 
+                endCalled = true;
             }
 
             void toLinear_attribute()
@@ -1192,11 +1230,11 @@ namespace FractalMachine.Code.Langs
                         bag.OnRepeteable(LastCode);
                     };
                 }
-                else if(completedStatement.Type == "Block")
+                else if (completedStatement.Type == "Block")
                 {
                     bag = bag.subBag();
                     var l = bag.Linear = bag.Linear.SetSettings("parameter", ast);
-                    
+
                     // Multiple instructions
                     if (codes.Count > 1)
                     {
@@ -1208,7 +1246,7 @@ namespace FractalMachine.Code.Langs
                             //attachStatement();
                         };
                     }
-                  
+
                     onEnd = delegate
                     {
                         var p = bag.Params.Pull();
@@ -1256,12 +1294,11 @@ namespace FractalMachine.Code.Langs
                 if (IsOperator)
                     toLinear_ground_instruction_operator();
                 else if (IsRepeatedInstruction)
-                    toLinear_ground_repeatedInstruction();
+                    toLinear_ground_instruction_repeated();
                 else
                     toLinear_ground_instruction_default();
             }
-
-            void toLinear_ground_repeatedInstruction()
+            void toLinear_ground_instruction_repeated()
             {
                 if (bag.OnRepeteable != null)
                 {
@@ -1305,13 +1342,27 @@ namespace FractalMachine.Code.Langs
 
                     default:
                         lin = new Linear(parent.bag.Linear, ast);
+                        lin.Op = Subject;
+                        lin.Attributes.Add(bag.Params.Pull().StrValue);
+
                         onEnd = delegate
                         {                         
-                            lin.Op = Subject;
-                            lin.Attributes.Add(bag.Params.Pull().StrValue);
                             lin.Attributes.Add(bag.Params.Pull().StrValue);
                             setTempReturn();
                         };
+
+                        if (codes.Count == 2)
+                        {
+                            // ie operators have priority against conjunctions
+                            if (LastCode.IsConjunction && LastCode.OperatorPriority > OperatorPriority)
+                            {
+                                onAfterChildCycle = delegate(OrderedAST ast)
+                                {
+                                    callEnd();
+                                    onAfterChildCycle = null;
+                                };
+                            }
+                        }
 
                         break;
                 }

@@ -22,9 +22,7 @@ function main(){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	if(ciao && come){
-
-	}
+	var test = v1 == 3 && v2 == 2; 
 
 }
 
