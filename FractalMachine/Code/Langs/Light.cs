@@ -803,9 +803,7 @@ namespace FractalMachine.Code.Langs
                 public Linear Linear;
                 public Bag Parent;
                 public Parameters Params;
-                public Dictionary<string, string> Dict = new Dictionary<string, string>();
                 internal int posNewParam = -1;
-                public Statement statement;
 
                 public OnCallback OnNextParamOnce;
                 public OnOperation OnRepeteable;
@@ -855,7 +853,6 @@ namespace FractalMachine.Code.Langs
                     b.Parent = this;
                     b.status = status;
                     b.Linear = Linear;
-                    b.statement = statement;
                     //b.OnRepeteable = OnRepeteable; //Repeteable should works at the same level
                     return b;
                 }
@@ -943,12 +940,26 @@ namespace FractalMachine.Code.Langs
             #endregion
 
             Bag bag;
-            Linear lin = null;  
+            Linear lin = null;
+            Statement _statement;
+
             OnCallback onEnd = null;
             OnScheduler onSchedulerPostCode = null;
             OnOperation onBeforeChildCycle;
 
             bool exitLinear = false;
+
+            Statement firstStatement
+            {
+                get
+                {
+                    if (_statement != null)
+                        return _statement;
+                    if (parent != null)
+                        return parent.firstStatement;
+                    return null;
+                }
+            }
 
             void setTempReturn()
             {
@@ -1119,7 +1130,7 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_brackets()
             {
-                var completedStatement = bag.statement.GetCompletedStatement;
+                var completedStatement = firstStatement.GetCompletedStatement;
                 var csType = completedStatement.Type;
 
                 if (csType == "Declaration.Function" || csType == "Block")
@@ -1150,7 +1161,7 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_parenthesis()
             {
-                var completedStatement = bag.statement.GetCompletedStatement;
+                var completedStatement = firstStatement.GetCompletedStatement;
 
                 if (completedStatement.Type == "Declaration.Function")
                 {
@@ -1327,9 +1338,9 @@ namespace FractalMachine.Code.Langs
 
             void attachStatement()
             {
-                bag.statement = new Statement(this);
-                onSchedulerPostCode = bag.statement.OnPostCode;
-                onEnd = bag.statement.OnEnd;
+                _statement = new Statement(this);
+                onSchedulerPostCode = _statement.OnPostCode;
+                onEnd = _statement.OnEnd;
             }
 
             public class Statement // Classe usa e getta
