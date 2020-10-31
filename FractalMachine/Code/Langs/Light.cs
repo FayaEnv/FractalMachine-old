@@ -114,7 +114,7 @@ namespace FractalMachine.Code.Langs
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
+                var trgOperator = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
                 var trgFastIncrement = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
                 var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
 
@@ -173,7 +173,7 @@ namespace FractalMachine.Code.Langs
                     strBuffer += trigger.activatorDelimiter;
                 };
 
-                trgOperators.OnTriggered = delegate (Triggers.Trigger trigger)
+                trgOperator.OnTriggered = delegate (Triggers.Trigger trigger)
                 {
                     // Check for continuous statement
                     if (trigger.activatorDelimiter == ":" && Light.ContinuousStatements.Contains(curAst.Instruction.MainSubject))
@@ -1254,17 +1254,11 @@ namespace FractalMachine.Code.Langs
                 attachStatement();
 
                 if (IsOperator)
-                {
                     toLinear_ground_instruction_operator();
-                }
                 else if (IsRepeatedInstruction)
-                {
                     toLinear_ground_repeatedInstruction();
-                }
                 else
-                {
                     toLinear_ground_instruction_default();
-                }
             }
 
             void toLinear_ground_repeatedInstruction()
@@ -1279,7 +1273,6 @@ namespace FractalMachine.Code.Langs
                     };
                 }
             }
-
             void toLinear_ground_instruction_operator()
             {
                 if (IsFastIncrement)
@@ -1364,6 +1357,7 @@ namespace FractalMachine.Code.Langs
                     AddDisk(new Namespace());
                     AddDisk(new Declaration());
                     AddDisk(new Block());
+                    AddDisk(new Retrieve());
                 }
 
                 private Statement() { }
@@ -1553,7 +1547,33 @@ namespace FractalMachine.Code.Langs
                 #endregion
 
                 #region Statements
+                public class Retrieve : Statement
+                {
+                    public Retrieve()
+                    {
+                        Scheduler.Add(scheduler_0);
+                        Scheduler.Add(scheduler_1);
+                    }
 
+                    bool scheduler_0(OrderedAST ast)
+                    {
+                        if (ast.IsAttribute)
+                        {
+                            IncreasePos();
+                            ImCompleted = true;
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    bool scheduler_1(OrderedAST ast)
+                    {
+                        if (ast.IsAttribute)
+                            return false;
+                        return true;
+                    }
+                }
                 public class Block : Statement
                 {
                     string[] Blocks = new string[] { "if", "else", "for" };
