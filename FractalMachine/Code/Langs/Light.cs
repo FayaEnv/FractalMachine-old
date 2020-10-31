@@ -526,85 +526,6 @@ namespace FractalMachine.Code.Langs
 
             #region Properties
 
-            #region Count
-
-            public int CountAttributes
-            {
-                get
-                {
-                    int i = 0;
-
-                    foreach (var code in codes)
-                    {
-                        if (code.ast.type == AST.Type.Attribute)
-                            i++;
-                    }
-
-                    return i;
-                }
-            }
-
-            public int CountAttributesOnRight
-            {
-                get
-                {
-                    int count = 0;
-                    var cur = Right;
-                    while(cur != null)
-                    {
-                        if (cur.IsAttribute)
-                            count++;
-
-                        if (parent.HasAccumulatedAttributes && cur == LastBlockBrackets)
-                            count++;
-
-                        cur = cur.Right;
-                    }
-
-                    return count;
-                }
-            }
-
-            #endregion
-
-            #region Has
-
-            public bool HasFunction
-            {
-                get
-                {
-                    foreach (var code in codes)
-                    {
-                        if (code.IsBlockParenthesis)
-                            return true;
-                    }
-
-                    return false;
-                }
-            }
-
-            public bool HasFinalBracketsBlock
-            {
-                get
-                {
-                    var last = LastCode;
-                    if (last != null)
-                        return last.IsBlockBrackets;
-
-                    return false;
-                }
-            }
-
-            public bool HasAccumulatedAttributes
-            {
-                get
-                {
-                    return LastBlockBrackets?.IsAccumulator ?? false;
-                }
-            }
-
-            #endregion
-
             #region IndexNavigation
 
             internal OrderedAST Left
@@ -635,52 +556,9 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            public int IndexLastBrackets
-            {
-                get
-                {
-                    for(int c=codes.Count-1; c>=0; c--)
-                    {
-                        if (codes[c].IsBlockBrackets)
-                            return c;
-                    }
-                    return -1;
-                }
-            }
-
-            public int IndexLastSquareBrackets
-            {
-                get
-                {
-                    for (int c = codes.Count - 1; c >= 0; c--)
-                    {
-                        if (codes[c].IsBlockSquareBrackets)
-                            return c;
-                    }
-                    return -1;
-                }
-            }
-
             #endregion
 
             #region Is
-
-            internal bool IsInFunctionParenthesis
-            {
-                get
-                {
-                    bool parenthesis = false;
-                    var a = this;
-                    while (a != null && !a.HasFunction)
-                    {
-                        parenthesis = a.IsBlockParenthesis || parenthesis;
-                        a = a.parent;
-                    }
-
-                    return a != null && a.HasFunction && parenthesis;
-                }
-            }
-
             public bool IsAccumulator
             {
                 get
@@ -701,15 +579,6 @@ namespace FractalMachine.Code.Langs
                     return true;
                 }
             }
-
-            public bool IsInstructionsContainer
-            {
-                get
-                {
-                    return parent == null || IsBlockBrackets;
-                }
-            }
-
             public bool IsOperator
             {
                 get
@@ -725,15 +594,6 @@ namespace FractalMachine.Code.Langs
                     return ast.aclass == "fastIncrement";
                 }
             }
-
-            public bool IsInstructionFree
-            {
-                get
-                {
-                    return ast.type == AST.Type.Instruction && String.IsNullOrEmpty(ast.aclass);
-                }
-            }
-
             public bool IsBlockParenthesis
             {
                 get
@@ -758,14 +618,6 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            public bool IsAssign
-            {
-                get
-                {
-                    return IsOperator && Subject == "=";
-                }
-            }
-
             public bool IsRepeatedInstruction
             {
                 get
@@ -781,41 +633,6 @@ namespace FractalMachine.Code.Langs
                     return ast.type == AST.Type.Attribute || IsAccumulator;
                 }
             }
-
-            public bool IsDeclaration
-            {
-                get
-                {
-                    return !IsOperator && (CountAttributes >= 2 || (CountAttributes >= 1 && HasAccumulatedAttributes)) && !Statements.Contains(codes[0].Subject);
-                }
-            }
-
-            public bool IsBlockDeclaration
-            {
-                get
-                {
-                    var cc = codes.Count;
-                    if (cc < 2) return false;
-                    return codes[cc - 1].IsBlockBrackets && (codes[cc - 2].IsBlockParenthesis || IsCodeBlockWithoutParameters) && IsDeclaration;
-                }
-            }
-
-            public bool IsCodeBlockWithoutParameters
-            {
-                get
-                {
-                    return CodeBlocksWithoutParameters.Contains(prev?.Subject ?? ""); // or a Contains could accept a null value?
-                }
-            }
-
-            public bool IsCallBlock
-            {
-                get
-                {
-                    return !IsAccumulator && ast.type == AST.Type.Block && ast.subject != "{";
-                }
-            }
-
             public bool IsAttached //to previous attribute, with the exception for operators
             {
                 get
@@ -843,35 +660,6 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            internal OrderedAST LastBlockBrackets
-            {
-                get
-                {
-                    var c = LastCode;
-                    while (c != null)
-                    {
-                        if (c.IsBlockBrackets)
-                            return c;
-                        c = c.Left;
-                    }
-                    return null;
-                }
-            }
-
-            internal OrderedAST TopOfSeries
-            {
-                get
-                {
-                    var subj = Subject;
-                    var oa = parent;
-                    while (oa.Subject == subj)
-                    {
-                        oa = oa.parent;
-                    }
-
-                    return oa;
-                }
-            }
 
             #endregion
 
