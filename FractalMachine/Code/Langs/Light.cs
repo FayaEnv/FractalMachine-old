@@ -103,6 +103,9 @@ namespace FractalMachine.Code.Langs
                 /// Define triggers
                 ///
 
+                // Good practice:
+                // - put first triggers with multiple characters, in order of character length
+
                 /// Default
                 var statusDefault = statusSwitcher.Define("default");
 
@@ -111,7 +114,7 @@ namespace FractalMachine.Code.Langs
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
+                var trgOperators = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
                 var trgFastOperation = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
                 var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
 
@@ -870,9 +873,6 @@ namespace FractalMachine.Code.Langs
                 |_|\___/|______|_|_| |_|\___|\__,_|_| 
             */
 
-            internal delegate void OnCallback();
-            internal delegate void OnOperation(Bag bag, OrderedAST ast);
-            internal delegate void OnOperationInt(int val);
 
             #region Parameters
 
@@ -991,6 +991,10 @@ namespace FractalMachine.Code.Langs
             }
 
             #endregion
+
+            internal delegate void OnCallback();
+            internal delegate void OnOperation(Bag bag, OrderedAST ast);
+            internal delegate bool OnScheduler(OrderedAST ast);
 
             internal class Bag
             {
@@ -1141,6 +1145,9 @@ namespace FractalMachine.Code.Langs
             Linear lin = null;  
             OnCallback onEnd = null;
             OnScheduler onSchedulerPostCode = null;
+            OnOperation BeforeCodeAnalysis;
+
+            bool exitLinear = false;
 
             void setTempReturn()
             {
@@ -1192,7 +1199,7 @@ namespace FractalMachine.Code.Langs
 
                     code.toLinear(sbag);
 
-                    onSchedulerPostCode?.Invoke(sbag, code);
+                    onSchedulerPostCode?.Invoke(code);
                 }
 
                 ///
@@ -1201,6 +1208,9 @@ namespace FractalMachine.Code.Langs
 
                 if (onEnd != null)
                     onEnd();
+
+                                if (exitLinear)
+                    bag.Linear = bag.Linear.parent;
 
                 if (lin != null)
                     lin.List();
@@ -1307,8 +1317,9 @@ namespace FractalMachine.Code.Langs
             void toLinear_ground_block_brackets()
             {
                 var completedStatement = bag.statement.GetCompletedStatement;
+                var csType = completedStatement.Type;
 
-                if(completedStatement.Type == "Declaration.Function")
+                if (csType == "Declaration.Function" || csType == "Block")
                 {
                     bag = bag.subBag();
                 }
@@ -1368,8 +1379,9 @@ namespace FractalMachine.Code.Langs
                 }
                 else if(completedStatement.Type == "Block")
                 {
-                    bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                    bag = bag.subBag();
                     var l = bag.Linear = bag.Linear.SetSettings("parameter", ast);
+                    attachStatement();
 
                     onEnd = delegate
                     {
@@ -1497,12 +1509,11 @@ namespace FractalMachine.Code.Langs
                 onEnd = bag.statement.OnEnd;
             }
 
-            delegate bool OnScheduler(Bag bag, OrderedAST ast);
             public class Statement // Classe usa e getta
             {
                 Statement parent;
-                OrderedAST parentOrderedAST, currentOrderedAST;
-                Bag currentBag;
+                OrderedAST parentOrderedAST, curderedAST;
+                Bag curBag;
                 List<Statement> Disks = new List<Statement>();
 
                 OnCallback OnRepeteable;
@@ -1539,14 +1550,14 @@ namespace FractalMachine.Code.Langs
                         disk.OnRepeteable?.Invoke();
                     }
                 }              
-                internal bool OnPostCode(Bag bag, OrderedAST orderedAST)
+                internal bool OnPostCode( OrderedAST orderedAST)
                 {
-                    currentBag = bag;
-                    currentOrderedAST = orderedAST;
+                    curBag = orderedAST.bag;
+                    curderedAST = orderedAST;
 
                     if (Scheduler.Count > SchedulerPos)
                     {
-                        var res = Scheduler[SchedulerPos].Invoke(bag, orderedAST);
+                        var res = Scheduler[SchedulerPos].Invoke(orderedAST);
                         if (res && Scheduler.Count <= SchedulerPos) CheckDisksTurn();
                         return res;
                     }
@@ -1555,7 +1566,7 @@ namespace FractalMachine.Code.Langs
                     for (; d<Disks.Count; d++)
                     {
                         var disk = Disks[d];
-                        if (!Disks[d].OnPostCode(bag, orderedAST))
+                        if (!Disks[d].OnPostCode(orderedAST))
                         {
                             Disks.RemoveAt(d--);
                             if(d == 0 && ImCompleted)
@@ -1667,7 +1678,7 @@ namespace FractalMachine.Code.Langs
                 {
                     for(int d=0; d<Disks.Count; d++)
                     {
-                        if (!Disks[d].YourTurn(currentOrderedAST))
+                        if (!Disks[d].YourTurn(curderedAST))
                             Disks.RemoveAt(d--);
                     }
                 }
@@ -1711,7 +1722,7 @@ namespace FractalMachine.Code.Langs
 
                 public class Block : Statement
                 {
-                    string[] Blocks = new string[] { "if", "else" };
+                    string[] Blocks = new string[] { "if", "else", "for" };
                     //string[] BlocksWithParameters = new string[] { "if" };
                     //string[] BlocksWithoutParameters = new string[] { "else" };
 
@@ -1722,8 +1733,10 @@ namespace FractalMachine.Code.Langs
                     }
                     
                     // Name
-                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    bool scheduler_0(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1773,8 +1786,10 @@ namespace FractalMachine.Code.Langs
                         Scheduler.Add(scheduler_0);
                         Scheduler.Add(scheduler_1);
                     }
-                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    bool scheduler_0(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1791,8 +1806,10 @@ namespace FractalMachine.Code.Langs
                         return false;
                     }
 
-                    bool scheduler_1(Bag bag, OrderedAST ast)
+                    bool scheduler_1(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1829,8 +1846,10 @@ namespace FractalMachine.Code.Langs
                             Scheduler.Add(scheduler_0);
                             Scheduler.Add(scheduler_1);
                         }
-                        bool scheduler_0(Bag bag, OrderedAST ast)
+                        bool scheduler_0(OrderedAST ast)
                         {
+                            var bag = ast.bag;
+
                             if (!bag.HasNewParam)
                                 return false;
 
@@ -1850,8 +1869,10 @@ namespace FractalMachine.Code.Langs
                             return false;
                         }
 
-                        bool scheduler_1(Bag bag, OrderedAST ast)
+                        bool scheduler_1(OrderedAST ast)
                         {
+                            var bag = ast.bag;
+
                             if (!bag.HasNewParam)
                                 return false;
 
@@ -1889,8 +1910,10 @@ namespace FractalMachine.Code.Langs
                         Scheduler.Add(scheduler_1);
                         Scheduler.Add(scheduler_2);
                     }
-                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    bool scheduler_0( OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1907,8 +1930,10 @@ namespace FractalMachine.Code.Langs
                         return false;
                     }
 
-                    bool scheduler_1(Bag bag, OrderedAST ast)
+                    bool scheduler_1(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1927,7 +1952,7 @@ namespace FractalMachine.Code.Langs
                         return true;
                     }
 
-                    bool scheduler_2(Bag bag, OrderedAST ast)
+                    bool scheduler_2(OrderedAST ast)
                     {
                         if(ast.Subject == ":")
                         {
@@ -1958,8 +1983,10 @@ namespace FractalMachine.Code.Langs
                     }
 
                     // Modifiers
-                    bool scheduler_0(Bag bag, OrderedAST ast)
+                    bool scheduler_0(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1968,7 +1995,7 @@ namespace FractalMachine.Code.Langs
                         if (Light.Modifiers.Contains(spar))
                             Modifier = spar;
                         else // with an else if you could put differnt type of modifier without enforcing the order of entry
-                            return Scheduler[++SchedulerPos].Invoke(bag, ast);
+                            return Scheduler[++SchedulerPos].Invoke(ast);
 
                         AbsorbedParams++;
 
@@ -1976,8 +2003,10 @@ namespace FractalMachine.Code.Langs
                     }
 
                     // Type
-                    bool scheduler_1(Bag bag, OrderedAST ast)
+                    bool scheduler_1(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -1990,15 +2019,17 @@ namespace FractalMachine.Code.Langs
                         if (DeclType == "function" && ast.Right.IsBlockParenthesis)
                         {
                             bag.NewParam("%anonymous");
-                            Scheduler[SchedulerPos](bag, ast);
+                            Scheduler[SchedulerPos](ast);
                         }
 
                         return true;
                     }
 
                     // Name
-                    bool scheduler_2(Bag bag, OrderedAST ast)
+                    bool scheduler_2(OrderedAST ast)
                     {
+                        var bag = ast.bag;
+
                         if (!bag.HasNewParam)
                             return false;
 
@@ -2013,7 +2044,6 @@ namespace FractalMachine.Code.Langs
                         {
                             var namesParam = bag.Params.Pull();
                             AbsorbedParams--;
-                            PullAbsorbedParams();
                             bag.Params.New(namesParam);
                         }
 
@@ -2039,6 +2069,7 @@ namespace FractalMachine.Code.Langs
                     public class Function : Statement
                     {
                         Declaration decl;
+                        bool isDefaultType = false;
 
                         // A function has simply a BlockParenthesis and a Block
                         public Function()
@@ -2052,15 +2083,23 @@ namespace FractalMachine.Code.Langs
 
                             switch (decl.Type)
                             {
-                                case "function":
-                                    if (!currentOrderedAst.Right?.IsBlockParenthesis ?? true)
-                                        return false;
-                                    break;
-
                                 case "class":
                                     if (!currentOrderedAst.Right?.IsBlockBrackets ?? true)
                                         return false;
+
                                     SchedulerPos++; // it jumps parameters
+                                    isDefaultType = true;
+
+                                    break;
+
+                                default:
+                                    // by default is a function (if has parenthesis)
+                                    if (!currentOrderedAst.Right?.IsBlockParenthesis ?? true)
+                                        return false;
+
+                                    if (decl.Type == "function")
+                                        isDefaultType = true;
+
                                     break;
                             }
 
@@ -2071,7 +2110,7 @@ namespace FractalMachine.Code.Langs
                             return true;
                         }
 
-                        bool scheduler_0(Bag bag, OrderedAST ast)
+                        bool scheduler_0(OrderedAST ast)
                         {
                             if (ast.Right?.IsBlockBrackets ?? false)
                             {
@@ -2081,14 +2120,24 @@ namespace FractalMachine.Code.Langs
 
                             return false;
                         }
-                        bool scheduler_1(Bag bag, OrderedAST ast)
+                        bool scheduler_1(OrderedAST ast)
                         {
 
                             var decl = (Declaration)parent;
                             var name = decl.Names[0];
 
                             var lin = decl.lin;
-                            lin.Op = decl.DeclType;
+                            if (isDefaultType)
+                            {
+                                lin.Op = decl.DeclType;
+                            }
+                            else
+                            {
+                                lin.Op = "function";
+                                lin.Return = decl.DeclType;
+                            }
+
+                            lin.Return = decl.DeclType;
 
                             if (name == "%anonymous")
                                 lin.Name = name = Properties.InternalVariable + OrderedAST.getTempVar();
