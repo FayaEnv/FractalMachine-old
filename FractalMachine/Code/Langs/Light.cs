@@ -1152,35 +1152,34 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_squareBrackets()
             {
-                bag = bag.subBag(Bag.Status.DeclarationParenthesis);
-
-                onEnd = delegate
+                if (Left == null)
                 {
-                    bag.Params.Name = "accumulated";
-                    bag.Params.Type = "[]";
-                    bag.Parent.Params.New(new Parameter(bag.Params));
+                    lin = new Linear(bag.Linear, ast);
+                    lin.Op = "declare";
+                    lin.Name = setTempReturn();
+                    lin.Return = "[]";
 
-                    /*if (IsAccumulator)
+                    // It is alone, so it is a JSON block
+                    var assignTo = bag.Params.Pull();
+                    bag = bag.subBag();
+              
+
+                    onEnd = delegate
                     {
-                        // Are accumulated attributes
-                        bag.Params.Name = "accumulated";
+                        var param = bag.Params;
+                        string read = "";
+                    };
+                }
+                else
+                {
+                    bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+
+                    onEnd = delegate
+                    {
                         bag.Params.Type = "[]";
                         bag.Parent.Params.New(new Parameter(bag.Params));
-                    }
-                    else
-                    {
-                        if (bag.Params.Count > 0)
-                        {
-                            // Is array call
-                            throw new Exception("todo");
-                        }
-                        else if (Left.ast.type == AST.Type.Attribute)
-                        {
-                            // Is type definition
-                            bag.NewParam(bag.Params.Pull().StrValue + "[]");
-                        }
-                    }*/
-                };
+                    };
+                }
             }
 
             bool isJsonObject;
@@ -1289,10 +1288,14 @@ namespace FractalMachine.Code.Langs
                     {
                         for (int l = bag.Params.Count - 1; l >= 0; l--)
                         {
-                            Linear lin = new Linear(bag.Linear, ast);
-                            lin.Op = "push";
-                            lin.Name = bag.Params.Pull(0).StrValue;
-                            lin.List();
+                            var val = bag.Params.Pull(0).StrValue;
+                            lin.Attributes.Add(val);
+
+                            // Deprecated(?)
+                            Linear li = new Linear(bag.Linear, ast);
+                            li.Op = "push";
+                            li.Name = val;
+                            li.List();
                         }
 
                         bag = bag.Parent;
