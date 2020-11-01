@@ -732,7 +732,13 @@ namespace FractalMachine.Code.Langs
                     get
                     {
                         if (values != null)
-                            throw new Exception("oops");
+                        {
+                            if (values.Count == 1)
+                                return values[0];
+
+                            throw new Exception("This parameter contains more values (is accumulated)");
+                        }
+
                         return strValue;
                     }
                 }
@@ -984,10 +990,12 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            void setTempReturn()
+            string setTempReturn()
             {
-                lin.Return = Properties.InternalVariable + getTempVar();
-                bag.NewParam(lin.Return);
+                var ret = Properties.InternalVariable + getTempVar();
+                if(lin!=null) lin.Return = ret;
+                bag.NewParam(ret);
+                return ret;
             }
 
             void toLinear(Bag parentBag)
@@ -1139,7 +1147,11 @@ namespace FractalMachine.Code.Langs
 
                 onEnd = delegate
                 {
-                    if (IsAccumulator)
+                    bag.Params.Name = "accumulated";
+                    bag.Params.Type = "[]";
+                    bag.Parent.Params.New(new Parameter(bag.Params));
+
+                    /*if (IsAccumulator)
                     {
                         // Are accumulated attributes
                         bag.Params.Name = "accumulated";
@@ -1158,7 +1170,7 @@ namespace FractalMachine.Code.Langs
                             // Is type definition
                             bag.NewParam(bag.Params.Pull().StrValue + "[]");
                         }
-                    }
+                    }*/
                 };
             }
 
@@ -1639,6 +1651,35 @@ namespace FractalMachine.Code.Langs
 
                     bool scheduler_1(OrderedAST ast)
                     {
+                        var bag = OrderedAST.bag;
+
+                        // Is array call
+                        if (ast.IsBlockSquareBrackets)
+                        {
+                            var values = bag.Params.Pull(false).Values;
+                            IncreaseParams();
+
+                            int p = 0;
+                            foreach(var val in values)
+                            {
+                                var plin = new Linear(bag.Linear, ast.codes[p++].ast);
+                                plin.Op = "push";
+                                plin.Name = val;
+                                plin.List();                                
+                            }
+
+                            var lin = new Linear(bag.Linear, ast.ast);
+                            lin.Op = "call";
+                            lin.Type = "[]";
+                            lin.Name = bag.Params.Pull(false, -2).StrValue;
+                            lin.Return = OrderedAST.setTempReturn();
+                            lin.List();
+
+                            IncreaseParams();
+
+                            return true;
+                        }
+
                         if (ast.IsAttribute)
                             return false;
                         return true;
@@ -1659,7 +1700,7 @@ namespace FractalMachine.Code.Langs
                     // Name
                     bool scheduler_0(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1712,7 +1753,7 @@ namespace FractalMachine.Code.Langs
                     }
                     bool scheduler_0(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1732,7 +1773,7 @@ namespace FractalMachine.Code.Langs
 
                     bool scheduler_1(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1836,7 +1877,7 @@ namespace FractalMachine.Code.Langs
                     }
                     bool scheduler_0( OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1856,7 +1897,7 @@ namespace FractalMachine.Code.Langs
 
                     bool scheduler_1(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1909,7 +1950,7 @@ namespace FractalMachine.Code.Langs
                     // Modifiers
                     bool scheduler_0(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1929,7 +1970,7 @@ namespace FractalMachine.Code.Langs
                     // Type
                     bool scheduler_1(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
 
                         if (!bag.HasNewParam)
                             return false;
@@ -1952,7 +1993,21 @@ namespace FractalMachine.Code.Langs
                     // Name
                     bool scheduler_2(OrderedAST ast)
                     {
-                        var bag = ast.bag;
+                        var bag = OrderedAST.bag;
+
+                        // Type array definition
+                        if (ast.IsBlockSquareBrackets)
+                        {
+                            var values = bag.Params.Pull(false).Values;
+
+                            if (values.Length == 0)
+                                DeclType += "[]";
+                            else
+                                return false; // for the moment parameters are not excepted in type declaration
+
+                            IncreaseParams();
+                            return true;
+                        }
 
                         if (!ast.IsAttribute)
                             return false;
@@ -2054,7 +2109,6 @@ namespace FractalMachine.Code.Langs
                         }
                         bool scheduler_1(OrderedAST ast)
                         {
-
                             var decl = (Declaration)parent;
                             var name = decl.Names[0];
 

@@ -32,9 +32,10 @@ namespace FractalMachine.Code
         public Dictionary<string, Linear> Settings = new Dictionary<string, Linear>();
         public Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
-        public string Op;
-        public string Name;
         public List<string> Attributes = new List<string>();
+        public string Op;
+        public string Type;
+        public string Name;
         public string Return;
 
         public bool Continuous = false;
