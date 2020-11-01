@@ -1056,12 +1056,12 @@ namespace FractalMachine.Code.Langs
             }
 
             OnCallback onEnd = null;
-            List<OnCallback> ends = new List<OnCallback>();
+            List<OnCallback> preEnds = new List<OnCallback>(), postEnds = new List<OnCallback>();
             bool relaxDontListIt = false;
             bool endCalled = false;
             void callEnd()
             {
-                foreach (var end in ends)
+                foreach (var end in preEnds)
                     end();
 
                 if (onEnd != null)
@@ -1069,6 +1069,9 @@ namespace FractalMachine.Code.Langs
 
                 if (!relaxDontListIt && lin != null)
                     lin.List();
+
+                foreach (var end in postEnds)
+                    end();
 
                 endCalled = true;
             }
@@ -1301,7 +1304,7 @@ namespace FractalMachine.Code.Langs
                         lin.Name = bag.Params.Pull().StrValue;
                     };
 
-                    parent.ends.Add(delegate
+                    parent.preEnds.Add(delegate
                     {
                         lin.Return = bag.Params.Pull(false).StrValue;
                         lin.List();
@@ -1344,6 +1347,7 @@ namespace FractalMachine.Code.Langs
                 switch (Subject)
                 {
                     case "=":
+                        // Don't pull because the name could be used by previous instruction
                         var names = bag.Params.Pull(false);
                         //attachStatement();
 
@@ -1411,10 +1415,11 @@ namespace FractalMachine.Code.Langs
                     _statement = new Statement(this);
 
                 onSchedulerPostCode = _statement.OnPostCode;
-                onEnd = _statement.OnEnd;
+                postEnds.Add(_statement._onPostEnd);               
             }
 
-            public class Statement // Classe usa e getta
+            // Classe usa e getta
+            public class Statement 
             {
                 Statement parent;
                 OrderedAST parentOrderedAST, curderedAST;
@@ -1425,8 +1430,8 @@ namespace FractalMachine.Code.Langs
 
                 List<OnScheduler> Scheduler = new List<OnScheduler>();
                 int SchedulerPos = 0;
-                int AbsorbedParams = 0;               
 
+                bool killed = false;
                 public Statement(OrderedAST oast)
                 {
                     parentOrderedAST = oast;
@@ -1474,9 +1479,9 @@ namespace FractalMachine.Code.Langs
                         var disk = Disks[d];
                         if (!Disks[d].OnPostCode(orderedAST))
                         {
+                            Disks[d].killed = true;
                             Disks.RemoveAt(d--);
-                            if(d == 0 && ImCompleted)
-                                LastSurvivor();
+                            //if(d == 0 && ImCompleted)LastSurvivor();
                         }
                     }
 
@@ -1496,7 +1501,7 @@ namespace FractalMachine.Code.Langs
                             if (d.ImCompleted)
                                 return true;
 
-                        return _imCompleted || SchedulerPos >= Scheduler.Count;
+                        return !killed && (_imCompleted || SchedulerPos >= Scheduler.Count);
                     }
 
                     set
@@ -1546,27 +1551,6 @@ namespace FractalMachine.Code.Langs
                 #region Virtual
 
                 /// <summary>
-                /// Called at the end of OrderedAst initiator
-                /// </summary>
-                internal virtual void OnEnd()
-                {
-                    if (ImCompleted)
-                        PullAbsorbedParams();
-
-                    foreach (var disk in Disks)
-                        if(disk.ImCompleted) 
-                            disk.OnEnd();
-                }
-
-                /// <summary>
-                /// Called when a statement is surely the requested statement
-                /// </summary>
-                internal virtual void LastSurvivor()
-                {
-
-                }
-
-                /// <summary>
                 /// It is used for advise a statement that is his turn
                 /// </summary>
                 /// <param name="currentOrderedAST"></param>
@@ -1579,7 +1563,43 @@ namespace FractalMachine.Code.Langs
                 #endregion
 
                 #region Methods
+                internal void _onPostEnd()
+                {
+                    foreach (var disk in Disks)
+                        if (disk.ImCompleted)
+                            disk._onPostEnd();
 
+                    PullAbsorbedParams();
+                }
+
+                #region Params
+                // Not particularly efficient
+                List<Parameter> pulledParameters = new List<Parameter>();
+                internal Parameter Pull(int Pos=-1, bool Remove = true)
+                {
+                    if (!Remove)
+                        return OrderedAST.bag.Params.Pull(Pos, false);
+
+                    Parameter par;
+                    while (pulledParameters.Contains(par = OrderedAST.bag.Params.Pull(Pos, false)) && par != null)
+                        Pos += Pos < 0 ? -1 : 1;
+
+                    if(par != null)
+                        pulledParameters.Add(par);
+
+                    return par;
+                }
+
+                internal void ReversePull(Parameter ToReverse = null)
+                {
+                    if (ToReverse == null)
+                        ToReverse = pulledParameters.Pull();
+                    else
+                        pulledParameters.Remove(ToReverse);
+
+                    OrderedAST.bag.Params.Add(ToReverse);
+                }
+                #endregion
                 internal void CheckDisksTurn()
                 {
                     for(int d=0; d<Disks.Count; d++)
@@ -1607,19 +1627,13 @@ namespace FractalMachine.Code.Langs
                 }
                 void PullAbsorbedParams()
                 {
-                    for (int p = 0; p < AbsorbedParams; p++)
-                        OrderedAST.bag.Params.Pull();
+                    foreach (var par in pulledParameters)
+                        OrderedAST.bag.Params.Remove(par);
                 }
 
-                void IncreasePos(bool increaseParams = false)
+                void NextScheduler()
                 {
                     SchedulerPos++;
-                    if (increaseParams) IncreaseParams();
-                }
-
-                void IncreaseParams()
-                {
-                    AbsorbedParams++;
                 }
 
                 #endregion
@@ -1641,7 +1655,7 @@ namespace FractalMachine.Code.Langs
 
                         if (ast.IsAttribute)
                         {
-                            IncreasePos();
+                            NextScheduler();
                             ImCompleted = true;
                             return true;
                         }
@@ -1649,6 +1663,7 @@ namespace FractalMachine.Code.Langs
                         return false;
                     }
 
+                    OnCallback onArrayCall;
                     bool scheduler_1(OrderedAST ast)
                     {
                         var bag = OrderedAST.bag;
@@ -1656,32 +1671,37 @@ namespace FractalMachine.Code.Langs
                         // Is array call
                         if (ast.IsBlockSquareBrackets)
                         {
-                            var values = bag.Params.Pull(false).Values;
-                            IncreaseParams();
+                            var values = Pull().Values;
+                            var name = Pull().StrValue;
 
-                            int p = 0;
-                            foreach(var val in values)
+                            OrderedAST.preEnds.Add(delegate ()
                             {
-                                var plin = new Linear(bag.Linear, ast.codes[p++].ast);
-                                plin.Op = "push";
-                                plin.Name = val;
-                                plin.List();                                
-                            }
+                                if (!killed)
+                                {
+                                    int p = 0;
+                                    foreach (var val in values)
+                                    {
+                                        var plin = new Linear(bag.Linear, ast.codes[p++].ast);
+                                        plin.Op = "push";
+                                        plin.Name = val;
+                                        plin.List();
+                                    }
 
-                            var lin = new Linear(bag.Linear, ast.ast);
-                            lin.Op = "call";
-                            lin.Type = "[]";
-                            lin.Name = bag.Params.Pull(false, -2).StrValue;
-                            lin.Return = OrderedAST.setTempReturn();
-                            lin.List();
-
-                            IncreaseParams();
+                                    var lin = new Linear(bag.Linear, ast.ast);
+                                    lin.Op = "call";
+                                    lin.Type = "[]";
+                                    lin.Name = bag.Params.Pull(false, -2).StrValue;
+                                    lin.Return = OrderedAST.setTempReturn();
+                                    lin.List();
+                                }
+                            });
 
                             return true;
                         }
 
                         if (ast.IsAttribute)
                             return false;
+
                         return true;
                     }
                 }
@@ -1713,7 +1733,7 @@ namespace FractalMachine.Code.Langs
                       
                         if (isBlock)
                         {
-                            IncreasePos();
+                            NextScheduler();
                             Monopoly();
 
                             var lin = new Linear(OrderedAST.bag.Linear, OrderedAST.ast);
@@ -1723,14 +1743,14 @@ namespace FractalMachine.Code.Langs
 
                             var b = OrderedAST.bag = OrderedAST.bag.subBag();
                             b.Linear = lin;
+
+                            OrderedAST.preEnds.Add(delegate
+                            {
+                                OrderedAST.bag = OrderedAST.bag.Parent;
+                            });
                         }
 
                         return isBlock;
-                    }
-
-                    internal override void OnEnd()
-                    {
-                        OrderedAST.bag = OrderedAST.bag.Parent;
                     }
                 }
 
@@ -1758,11 +1778,11 @@ namespace FractalMachine.Code.Langs
                         if (!bag.HasNewParam)
                             return false;
 
-                        var spar = bag.Params.LastParam.StrValue;
+                        var spar = Pull().StrValue;
 
                         if (spar == "import")
                         {
-                            IncreasePos(true);
+                            NextScheduler();
                             Monopoly();
 
                             return true;
@@ -1778,11 +1798,11 @@ namespace FractalMachine.Code.Langs
                         if (!bag.HasNewParam)
                             return false;
 
-                        var spar = bag.Params.LastParam.StrValue;
+                        var spar = Pull().StrValue;
 
                         Name = spar;
 
-                        IncreasePos(true);
+                        NextScheduler();
 
                         lin = new Linear(bag.Linear, ast.ast);
                         lin.Op = "import";
@@ -1790,11 +1810,6 @@ namespace FractalMachine.Code.Langs
                         lin.List();
 
                         return true;
-                    }
-
-                    internal override void LastSurvivor()
-                    {
-                        // throw new exception
                     }
 
                     #region Statements 
@@ -1818,12 +1833,12 @@ namespace FractalMachine.Code.Langs
                             if (!bag.HasNewParam)
                                 return false;
 
-                            var spar = bag.Params.LastParam.StrValue;
+                            var spar = Pull().StrValue;
 
                             if (Parameters.Contains(spar)) // spar or ast.Subject in this case have the same value
                             {
                                 parameter = spar;
-                                IncreasePos();
+                                NextScheduler();
 
                                 OrderedAST.bag = OrderedAST.bag.subBag(Bag.Status.ReadAsIs);
                                 OrderedAST.bag.Params.RecordFlagPosition();
@@ -1849,7 +1864,7 @@ namespace FractalMachine.Code.Langs
 
                             if (!(ast.Right?.IsAttached ?? false))
                             {
-                                IncreasePos();
+                                NextScheduler();
 
                                 var p = (Import)parent;
                                 p.lin.Parameters.Add(parameter, value);
@@ -1882,11 +1897,11 @@ namespace FractalMachine.Code.Langs
                         if (!bag.HasNewParam)
                             return false;
 
-                        var spar = bag.Params.LastParam.StrValue;
+                        var spar = Pull().StrValue;
 
                         if (spar == "namespace")
                         {
-                            IncreasePos(true);
+                            NextScheduler();
                             Monopoly();  
 
                             return true;
@@ -1902,12 +1917,12 @@ namespace FractalMachine.Code.Langs
                         if (!bag.HasNewParam)
                             return false;
 
-                        var spar = bag.Params.LastParam.StrValue;
+                        var spar = Pull().StrValue;
 
                         Name = spar;
 
                         ImCompleted = true;
-                        IncreasePos(true);
+                        NextScheduler();
 
                         lin = new Linear(bag.Linear, ast.ast);
                         lin.Op = "namespace";
@@ -1922,7 +1937,7 @@ namespace FractalMachine.Code.Langs
                         if(ast.Subject == ":")
                         {
                             lin.Continuous = true;
-                            IncreasePos(true);
+                            NextScheduler();
                             return true;
                         }
 
@@ -1955,14 +1970,17 @@ namespace FractalMachine.Code.Langs
                         if (!bag.HasNewParam)
                             return false;
 
-                        var spar = bag.Params.LastParam.StrValue;
+                        var spar = Pull().StrValue;
 
                         if (Light.Modifiers.Contains(spar))
+                        {
                             Modifier = spar;
+                        }
                         else // with an else if you could put differnt type of modifier without enforcing the order of entry
+                        {
+                            ReversePull();
                             return Scheduler[++SchedulerPos].Invoke(ast);
-
-                        AbsorbedParams++;
+                        }
 
                         return true;
                     }
@@ -1975,10 +1993,10 @@ namespace FractalMachine.Code.Langs
                         if (!bag.HasNewParam)
                             return false;
 
-                        var spar = bag.Params.LastParam.StrValue;
+                        var spar = Pull().StrValue;
 
                         DeclType = spar;              
-                        IncreasePos(true);
+                        NextScheduler();
 
                         // Is anonymous function
                         if (DeclType == "function" && ast.Right.IsBlockParenthesis)
@@ -1998,14 +2016,13 @@ namespace FractalMachine.Code.Langs
                         // Type array definition
                         if (ast.IsBlockSquareBrackets)
                         {
-                            var values = bag.Params.Pull(false).Values;
+                            var values = Pull().Values;
 
                             if (values.Length == 0)
                                 DeclType += "[]";
                             else
                                 return false; // for the moment parameters are not excepted in type declaration
 
-                            IncreaseParams();
                             return true;
                         }
 
@@ -2022,15 +2039,13 @@ namespace FractalMachine.Code.Langs
 
                         Names = bag.Params.LastParam.Values;
 
-                        IncreasePos(true);
-
                         /// Completed!
+                        NextScheduler();
 
                         // Saves name param for next instruction
                         if (ast.Right?.IsOperator ?? false)
                         {
-                            var namesParam = bag.Params.Pull();
-                            AbsorbedParams--;
+                            var namesParam = Pull();
                             bag.Params.New(namesParam);
                         }
 
@@ -2101,7 +2116,7 @@ namespace FractalMachine.Code.Langs
                         {
                             if (ast.Right?.IsBlockBrackets ?? false)
                             {
-                                IncreasePos();
+                                NextScheduler();
                                 return true;
                             }
 

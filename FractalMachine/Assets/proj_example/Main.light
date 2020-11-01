@@ -22,7 +22,7 @@ function main(){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	int[] ciao;
-	int[] come;
+	int[] come = ciao;
+	int stai = come[2];
 }
 

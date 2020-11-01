@@ -45,6 +45,8 @@ namespace FractalMachine.Classes
                 if (Pos < 0)
                     p = c + Pos;
 
+                if (p < 0 || p >= c) return default(T);
+
                 var s = obj[p];
                 if (Remove) obj.RemoveAt(p);
                 return s;

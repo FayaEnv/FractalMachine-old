@@ -159,21 +159,15 @@ namespace FractalMachine.Code
                             int j = 0;
                             while (_linear[i + j].Op != "call") j++;
                             var call = _linear.Instructions[i + j];
-                            if (call.Type == null)
-                            {
-                                var function = Solve(call.Name).Linear;
-                                callParameters = function.Settings["parameters"];
-                                pushNum = 0;
-                            }
+                            var function = Solve(call.Name).Linear;
+                            callParameters = function.Settings["parameters"];
+                            pushNum = 0;
                         }
 
                         // Check parameter
-                        if (callParameters != null)
-                        {
-                            var par = callParameters[pushNum];
-                            CheckType(instr.Name, par.Return, i);
-                            pushNum++;
-                        }
+                        var par = callParameters[pushNum];
+                        CheckType(instr.Name, par.Return, i);
+                        pushNum++;
                         
                         break;
 
