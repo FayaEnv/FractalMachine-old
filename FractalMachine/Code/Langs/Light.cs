@@ -1154,20 +1154,30 @@ namespace FractalMachine.Code.Langs
             {
                 if (Left == null)
                 {
+                    // It is alone, so it is a JSON block
                     lin = new Linear(bag.Linear, ast);
                     lin.Op = "declare";
                     lin.Name = setTempReturn();
                     lin.Return = "[]";
-
-                    // It is alone, so it is a JSON block
-                    var assignTo = bag.Params.Pull();
-                    bag = bag.subBag();
-              
+                    lin.List();
+                    
+                    bag = bag.subBag();           
 
                     onEnd = delegate
                     {
-                        var param = bag.Params;
-                        string read = "";
+                        int i = 0;
+                        foreach(var code in codes)
+                        {
+                            var res = bag.Params.Pull(0).StrValue;
+
+                            var li = new Linear(bag.Linear, code.ast);
+                            li.Op = "call";
+                            li.Type = "[]";
+                            li.Name = lin.Name;
+                            li.Attributes.Add(i++.ToString());
+                            li.Attributes.Add(res);
+                            li.List();
+                        }
                     };
                 }
                 else
