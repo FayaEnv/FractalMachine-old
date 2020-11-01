@@ -1318,12 +1318,7 @@ namespace FractalMachine.Code.Langs
             {
                 if (bag.OnRepeteable != null)
                 {
-                    bag = bag.subBag();
-                    bag.Linear = bag.Linear.LastInstruction.Clone(ast);
-                    onEnd = delegate ()
-                    {
-                        bag.OnRepeteable?.Invoke(this);
-                    };
+                    bag.OnRepeteable?.Invoke(this);
                 }
             }
             void toLinear_ground_instruction_operator()
@@ -1396,9 +1391,13 @@ namespace FractalMachine.Code.Langs
                 //attachStatement();
             }
 
-            void attachStatement()
+            void attachStatement(Statement statement = null)
             {
-                _statement = new Statement(this);
+                if (statement != null)
+                    _statement = statement;
+                else
+                    _statement = new Statement(this);
+
                 onSchedulerPostCode = _statement.OnPostCode;
                 onEnd = _statement.OnEnd;
             }
@@ -1958,6 +1957,14 @@ namespace FractalMachine.Code.Langs
                         if (!ast.IsAttribute)
                             return false;
 
+                        // This instruction supports repeated instructions (ie int var1, var2)
+                        OrderedAST.bag.OnRepeteable = delegate(OrderedAST ast)
+                        {
+                            // so attach this statement to repeated function
+                            ast.attachStatement(this);
+                            SchedulerPos = 2;
+                        };
+
                         Names = bag.Params.LastParam.Values;
 
                         IncreasePos(true);
@@ -1981,7 +1988,7 @@ namespace FractalMachine.Code.Langs
                             if (!String.IsNullOrEmpty(Modifier)) lin.Attributes.Add(Modifier);
                             lin.List();
                         }
-
+                        
                         return true;
                     }
 

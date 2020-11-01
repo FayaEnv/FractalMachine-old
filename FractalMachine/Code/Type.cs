@@ -52,46 +52,46 @@ namespace FractalMachine.Code
             var _char = AddType("char");
             _char._bytes = 1;
             _char._signed = true;
-            _char._attributeType = AttributeType.String | AttributeType.Number;
+            _char._attributeType = AttributeType.String | AttributeType.Integer;
 
             /// uchar
             var _uchar = AddType("uchar");
             _uchar._bytes = 1;
-            _uchar._attributeType = AttributeType.String | AttributeType.Number;
+            _uchar._attributeType = AttributeType.String | AttributeType.Integer;
 
             /// short
             var _short = AddType("short");
             _short._bytes = 2;
             _short._signed = true;
-            _short._attributeType = AttributeType.Number;
+            _short._attributeType = AttributeType.Integer;
 
             /// ushort
             var _ushort = AddType("ushort");
             _ushort._bytes = 2;
-            _ushort._attributeType = AttributeType.Number;
+            _ushort._attributeType = AttributeType.Integer;
 
             /// int
             var _int = AddType("int");
             _int._bytes = 4;
             _int._signed = true;
-            _int._attributeType = AttributeType.Number;
+            _int._attributeType = AttributeType.Integer;
             SetAsDefault(_int);
 
             /// uint
             var _uint = AddType("uint");
             _uint._bytes = 4;
-            _uint._attributeType = AttributeType.Number;
+            _uint._attributeType = AttributeType.Integer;
 
             /// long
             var _long = AddType("long");
             _long._bytes = 8;
             _long._signed = true;
-            _long._attributeType = AttributeType.Number;
+            _long._attributeType = AttributeType.Integer;
 
             /// ulong
             var _ulong = AddType("ulong");
             _ulong._bytes = 8;
-            _ulong._attributeType = AttributeType.Number;
+            _ulong._attributeType = AttributeType.Integer;
 
             /// float
             var _float = AddType("float");
@@ -140,7 +140,7 @@ namespace FractalMachine.Code
 
         public enum AttributeType
         {
-            Number,
+            Integer,
             Float,
             Double,
             String,
@@ -156,7 +156,7 @@ namespace FractalMachine.Code
             }
             else if (Char.IsDigit(Name[0]))
             {
-                var numb = AttributeType.Number;
+                var numb = AttributeType.Integer;
 
                 for (int c = 0; c < Name.Length; c++)
                 {
@@ -182,7 +182,7 @@ namespace FractalMachine.Code
 
             switch (attrType)
             {
-                case AttributeType.Number:
+                case AttributeType.Integer:
                     return Types["int"];
                 case AttributeType.Float:
                     return Types["float"];

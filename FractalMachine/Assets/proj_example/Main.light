@@ -24,7 +24,7 @@ function main(){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	test = (miao)ciao(); 
+	var v0=1/2, v2=2;
 
 }
 
