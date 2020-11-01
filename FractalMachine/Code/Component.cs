@@ -167,8 +167,6 @@ namespace FractalMachine.Code
                         // Check parameter
                         var par = callParameters[pushNum];
                         CheckType(instr.Name, par.Return, i);
-
-                        string read = "";
                         
                         pushNum++;
 

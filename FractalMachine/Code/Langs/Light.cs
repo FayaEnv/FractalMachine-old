@@ -142,9 +142,6 @@ namespace FractalMachine.Code.Langs
                 var statusInComment = statusSwitcher.Define("inComment");
                 var trgExitComment = statusInComment.Add(new Triggers.Trigger { Delimiter = "*/", ActivateStatus = "default" });
 
-                /// Vars
-                var autocloseBlocks = new string[] { "if", "else", "while" };
-
                 ///
                 /// Delegates
                 ///
@@ -231,7 +228,7 @@ namespace FractalMachine.Code.Langs
                     if (!correct)
                         throw new Exception("Closing " + ast.subject + " block with " + del + " on line " + Line);
 
-                    if (del == "}" && autocloseBlocks.Contains(ast.MainSubject))
+                    if (del == "}")
                     {
                         trgNewInstruction.Trig();
                     }
@@ -973,12 +970,8 @@ namespace FractalMachine.Code.Langs
             Linear lin = null;
             Statement _statement;
 
-            OnCallback onEnd = null;
             OnScheduler onSchedulerPostCode = null;
             OnOperation onBeforeChildCycle, onAfterChildCycle;
-
-            bool exitLinear = false;
-
             Statement firstStatement
             {
                 get
@@ -994,7 +987,7 @@ namespace FractalMachine.Code.Langs
             void setTempReturn()
             {
                 lin.Return = Properties.InternalVariable + getTempVar();
-                bag.NewParam(Properties.InternalVariable + getTempVar());
+                bag.NewParam(lin.Return);
             }
 
             void toLinear(Bag parentBag)
@@ -1054,16 +1047,19 @@ namespace FractalMachine.Code.Langs
 
             }
 
+            OnCallback onEnd = null;
+            List<OnCallback> ends = new List<OnCallback>();
+            bool relaxDontListIt = false;
             bool endCalled = false;
             void callEnd()
             {
+                foreach (var end in ends)
+                    end();
+
                 if (onEnd != null)
                     onEnd();
 
-                if (exitLinear)
-                    bag.Linear = bag.Linear.parent;
-
-                if (lin != null)
+                if (!relaxDontListIt && lin != null)
                     lin.List();
 
                 endCalled = true;
@@ -1200,8 +1196,9 @@ namespace FractalMachine.Code.Langs
             void toLinear_ground_block_parenthesis()
             {
                 var completedStatement = firstStatement.GetCompletedStatement;
+                var csType = completedStatement.Type;
 
-                if (completedStatement.Type == "Declaration.Function")
+                if (csType == "Declaration.Function")
                 {
                     ///
                     /// This is a good example of different status management
@@ -1230,7 +1227,7 @@ namespace FractalMachine.Code.Langs
                         bag.OnRepeteable(LastCode);
                     };
                 }
-                else if (completedStatement.Type == "Block")
+                else if (csType == "Block")
                 {
                     bag = bag.subBag();
                     var l = bag.Linear = bag.Linear.SetSettings("parameter", ast);
@@ -1254,7 +1251,7 @@ namespace FractalMachine.Code.Langs
                     };
 
                 }
-                else
+                else if(csType == "Retrieve")
                 {
                     ///
                     /// Here parameters are simply collected from bag.Paramas
@@ -1264,7 +1261,6 @@ namespace FractalMachine.Code.Langs
                     lin.Name = bag.Params.Pull().StrValue;
 
                     bag = bag.subBag();
-                    bag.disableStatementDecoder = true;
 
                     onEnd = delegate
                     {
@@ -1276,8 +1272,28 @@ namespace FractalMachine.Code.Langs
                             lin.List();
                         }
 
+                        bag = bag.Parent;
                         setTempReturn();
                     };
+                }
+                else
+                {
+                    //it's a cast
+                    lin = new Linear(bag.Linear, ast);
+                    lin.Op = "cast";
+
+                    relaxDontListIt = true;
+
+                    onEnd = delegate
+                    {
+                        lin.Name = bag.Params.Pull().StrValue;
+                    };
+
+                    parent.ends.Add(delegate
+                    {
+                        lin.Return = bag.Params.Pull(false).StrValue;
+                        lin.List();
+                    });
                 }
             }
 
@@ -1608,6 +1624,10 @@ namespace FractalMachine.Code.Langs
 
                     bool scheduler_0(OrderedAST ast)
                     {
+                        // Cast exception
+                        if (ast.IsBlockParenthesis)
+                            return true;
+
                         if (ast.IsAttribute)
                         {
                             IncreasePos();

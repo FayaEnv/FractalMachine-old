@@ -5,6 +5,8 @@
 
 //import System.IO; 
 
+function ciao(){}
+
 function main(){
 	//Print("Hello world! Finally.");
 
@@ -22,7 +24,7 @@ function main(){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	var test = v1 == 3 && v2 == 2; 
+	test = (miao)ciao(); 
 
 }
 
