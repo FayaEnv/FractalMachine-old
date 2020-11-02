@@ -676,6 +676,14 @@ namespace FractalMachine.Code.Langs
                     return ast.type == AST.Type.Attribute || IsAssignAccumulator;
                 }
             }
+
+            public bool IsDotAttribute
+            {
+                get
+                {
+                    return ast.type == AST.Type.Attribute && Subject.Length > 0 && Subject[0] == '.';
+                }
+            }
             public bool IsAttached //to previous attribute, with the exception for operators
             {
                 get
@@ -830,6 +838,8 @@ namespace FractalMachine.Code.Langs
                 #region New
                 public void New(Parameter par)
                 {
+                    if (par == null)
+                        return; // for debug purposes
                     if(bag != null) bag.posNewParam = Count;
                     Add(par);
                 }
@@ -1149,7 +1159,7 @@ namespace FractalMachine.Code.Langs
                 bool append = false;
                 if(bag.status == Bag.Status.Ground)
                 {
-                    if (Subject.StartsWith("."))
+                    if (IsDotAttribute)
                     {
                         append = true;
                     }
@@ -1426,7 +1436,7 @@ namespace FractalMachine.Code.Langs
                             setTempReturn();
                         };
                     }
-                    else if(Right.IsAttribute)
+                    else if(Right.IsAttribute && !Right.IsDotAttribute && codes.Count==1 && LastCode.IsAttribute)
                     {
                         //it's a cast
                         lin = new Linear(bag.Linear, ast);
@@ -1506,11 +1516,9 @@ namespace FractalMachine.Code.Langs
             }
             void toLinear_ground_instruction_operator_assign()
             {
-                var completedStatement = parent.firstStatement.GetCompletedStatement;
-                var csType = completedStatement.Type;
-
                 // Don't pull because the name could be used by previous instruction
-                var names = bag.Params.Pull().AsAccumulator;
+                var pull = bag.Params.Pull();
+                var names = pull.AsAccumulator;
                 //attachStatement();
 
                 onEnd = delegate
@@ -2176,10 +2184,9 @@ namespace FractalMachine.Code.Langs
                         NextScheduler();
 
                         // Saves name param for next instruction
-                        if (ast.Right?.IsOperator ?? false)
+                        if (ast.Right?.IsOperator ?? false && false) //tothink
                         {
-                            var namesParam = Pull();
-                            bag.Params.New(namesParam);
+                            bag.Params.New(parNames);
                         }
 
                         foreach (var Name in Names)

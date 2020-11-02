@@ -1,0 +1,6 @@
+import System.IO;
+
+function main(){
+	var test = 2;
+	var ciao = test+3;
+}
