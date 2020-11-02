@@ -22,6 +22,11 @@ function main(){
 	//int[] arr = array();
 	//arr[1] = 2;
 
-	int ciao[2+1] = 2;
+	var ciao;
+	ciao[1] = 2;
+	ciao[1][2] = 3;
+	miao[0] = ciao[1];
+
+	//tothink i++.ToString();
 }
 
