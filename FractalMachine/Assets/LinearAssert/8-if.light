@@ -1,0 +1,10 @@
+
+if(test < 2){
+	Print("test < 2");
+}
+else {
+	Print("not");
+}
+
+if(test)
+	Print("short if");

@@ -114,7 +114,7 @@ namespace FractalMachine.Code.Langs
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperator = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&&", "||", "&", "|", ":" } });
+                var trgOperator = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&", "|", ":", "?" } });
                 var trgConjunction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "&&", "||" } });
                 var trgFastIncrement = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
                 var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
@@ -445,7 +445,7 @@ namespace FractalMachine.Code.Langs
         public class OrderedAST : AST.OrderedAST
         {
             internal AST ast;
-            internal OrderedAST parent;
+            internal OrderedAST Parent;
             internal List<OrderedAST> codes = new List<OrderedAST>();
 
             internal OrderedAST prev, next;
@@ -457,7 +457,7 @@ namespace FractalMachine.Code.Langs
 
             public OrderedAST(AST ast, OrderedAST parent)
             {
-                this.parent = parent;
+                this.Parent = parent;
                 linkAst(ast);
             }
 
@@ -473,9 +473,9 @@ namespace FractalMachine.Code.Langs
                             var lc = LastCode;
                             codes = LastCode.codes;
                             lc.codes = new List<OrderedAST>();
-                            new OrderedAST(parent.ast.children[0], lc);
+                            new OrderedAST(Parent.ast.children[0], lc);
                             lc.codes.Add(this);
-                            parent.codes[parent.codes.Count - 1] = lc;
+                            Parent.codes[Parent.codes.Count - 1] = lc;
                             // it's a little twisted
                             // ex: test += 2
                             // +.codes = 2
@@ -513,7 +513,7 @@ namespace FractalMachine.Code.Langs
             internal int getTempNum()
             {
                 var num = tempVarCount;
-                var par = parent;
+                var par = Parent;
 
                 //todo: improve this checking using linears (are more reliable, in particular for JSON)
                 if (!IsBlockContainer)
@@ -522,7 +522,7 @@ namespace FractalMachine.Code.Langs
                 while (par != null)
                 {
                     num += par.tempVarCount;
-                    par = par.parent;
+                    par = par.Parent;
                 }
 
                 tempVarCount++;
@@ -613,7 +613,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    return parent == null || (IsBlockBrackets && !isJsonObject);
+                    return Parent == null || (IsBlockBrackets && !isJsonObject);
                 }
             }
 
@@ -729,7 +729,7 @@ namespace FractalMachine.Code.Langs
             {
                 get
                 {
-                    return (Right?.IsAssign ?? false) || (parent?.parent?.IsAssignAccumulator ?? false);
+                    return (Right?.IsAssign ?? false) || (Parent?.Parent?.IsAssignAccumulator ?? false);
                 }
             }
 
@@ -1086,8 +1086,8 @@ namespace FractalMachine.Code.Langs
                 {
                     if (_statement != null)
                         return _statement;
-                    if (parent != null)
-                        return parent.firstStatement;
+                    if (Parent != null)
+                        return Parent.firstStatement;
                     return null;
                 }
             }
@@ -1245,6 +1245,7 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            #region toLinear_ground_block
             void toLinear_ground_block()
             {
                 if (Subject == "[")
@@ -1514,7 +1515,7 @@ namespace FractalMachine.Code.Langs
                             lin.Name = bag.Params.Pull().StrValue;
                         };
 
-                        parent.onPreEnds.Add(delegate
+                        Parent.onPreEnds.Add(delegate
                         {
                             lin.Return = bag.Params.Pull(false).StrValue;
                             lin.List();
@@ -1523,9 +1524,9 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            /// <summary>
-            /// Work here
-            /// </summary>
+            #endregion
+
+            #region toLinear_ground_instruction
             void toLinear_ground_instruction()
             {
                 attachStatement();
@@ -1535,6 +1536,40 @@ namespace FractalMachine.Code.Langs
                 else
                     toLinear_ground_instruction_default();
             }
+
+            #region assignIf
+            bool isAssignIf = true;
+            bool inAssignIf
+            {
+                get
+                {
+                    if (isAssignIf)
+                        return true;
+
+                    if (Parent != null)
+                        return Parent.inAssignIf;
+
+                    return false;
+                }
+            }
+            #endregion
+
+            #region cascadeExecution
+
+            bool preventCascadeExecution = false;
+            public void cascadeExecution()
+            {
+                if(Parent != null)
+                {
+                    if (!Parent.preventCascadeExecution && Parent.ast.type == AST.Type.Instruction)
+                    {
+                        Parent.callEnd();
+                        Parent.cascadeExecution();
+                    }
+                }
+            }
+
+            #endregion
             void toLinear_ground_instruction_operator()
             {
                 if (IsFastIncrement)
@@ -1553,17 +1588,44 @@ namespace FractalMachine.Code.Langs
                         // Use cases:
                         // 1. JSON Object: { key: value }
                         // 2. Function call test(key1: value, key2: value)
+                        // 3. Short if operator x ? y : z
+                        cascadeExecution();
+
+                        break;
+
+                    case "?":
+                        // assignIf
+                        isAssignIf = true;
+                        preventCascadeExecution = true;
+
+                        if (!(Left?.Parent != null)) //todo EndsWith(":")
+                            throw new Exception("Marcello, what is it?");
+
+                        Left.Parent.callEnd(); // Execute calculation
+                        var condition = bag.Params.Pull().StrValue;
+
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = "assignIf";
+                        lin.Name = condition;
+
+                        onEnd = delegate
+                        {
+                            lin.Attributes.Add(bag.Params.Pull(-2).StrValue);
+                            lin.Attributes.Add(bag.Params.Pull(-1).StrValue);
+                            setTempReturn();
+                        };
+
                         break;
 
                     default:
-                        lin = new Linear(parent.bag.Linear, ast);
+                        lin = new Linear(Parent.bag.Linear, ast);
                         lin.Op = Subject;
                         lin.Attributes.Add(bag.Params.Pull().StrValue);
-                        setTempReturn();
 
                         onEnd = delegate
                         {
                             lin.Attributes.Add(bag.Params.Pull().StrValue);
+                            setTempReturn();
                         };
 
                         if (codes.Count == 2)
@@ -1597,7 +1659,7 @@ namespace FractalMachine.Code.Langs
                     {
                         if (parName.isArray)
                         {
-                            lin = new Linear(parent.bag.Linear, ast);
+                            lin = new Linear(Parent.bag.Linear, ast);
                             lin.Op = "call";
                             lin.Name = parName.StrValue;
                             lin.List();
@@ -1609,7 +1671,7 @@ namespace FractalMachine.Code.Langs
                         }
                         else
                         {
-                            lin = new Linear(parent.bag.Linear, ast);
+                            lin = new Linear(Parent.bag.Linear, ast);
                             lin.Op = Subject;
                             lin.Name = parName.StrValue;
                             lin.List();
@@ -1630,6 +1692,8 @@ namespace FractalMachine.Code.Langs
 
                 //attachStatement();
             }
+
+            #endregion
 
             void attachStatement(Statement statement = null)
             {
@@ -1940,8 +2004,8 @@ namespace FractalMachine.Code.Langs
                             Monopoly();
 
                             var lin = new Linear(OrderedAST.bag.Linear, OrderedAST.ast);
-                            lin.Op = "block";
-                            lin.Name = Name;
+                            lin.Op = Name;
+                            lin.Type = "block";                            
                             lin.List();
 
                             var b = OrderedAST.bag = OrderedAST.bag.subBag();

@@ -1,0 +1,21 @@
+| 0. 
+==| Instructions:
+====| 0. declare
+======| Name: ciao
+======| Return: var
+====| 1. <
+======| Return: £0
+======| Attributes: test  |  2  |  
+====| 2. +
+======| Return: £1
+======| Attributes: $$*°ok  |  2  |  
+====| 3. +
+======| Return: £2
+======| Attributes: $$*°not  |  1  |  
+====| 4. assignIf
+======| Name: £0
+======| Return: £3
+======| Attributes: £1  |  £2  |  
+====| 5. =
+======| Name: ciao
+======| Attributes: £3  |  

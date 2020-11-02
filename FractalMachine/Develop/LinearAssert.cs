@@ -26,7 +26,7 @@ namespace FractalMachine.Develop
             {
                 if (file.Extension == ".light")
                 {
-                    if(file.Name == "7-json-object.light" || true) // Debug purposes
+                    if(file.Name == "9-short-if.light" || true) // Debug purposes
                         elaborateFile(file.FullName);
                 }
             }

@@ -1,0 +1,30 @@
+| 0. 
+==| Instructions:
+====| 0. if
+======| Type: block
+======| Settings:
+========|parameter
+========| 0. parameter
+==========| Name: £0
+==========| Instructions:
+============| 0. <
+==============| Return: £0
+==============| Attributes: test  |  2  |  
+======| Instructions:
+========| 0. call
+==========| Name: Print
+==========| Return: £1
+==========| Attributes: $$*°test < 2  |  
+====| 1. else
+======| Type: block
+======| Instructions:
+========| 0. call
+==========| Name: Print
+==========| Return: £1
+==========| Attributes: $$*°not  |  
+====| 2. if
+======| Type: block
+======| Settings:
+========|parameter
+========| 0. parameter
+==========| Name: $$*°short if

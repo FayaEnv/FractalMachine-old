@@ -1,0 +1,2 @@
+
+var ciao = test < 2 ? "ok" +2: "not"+1;
