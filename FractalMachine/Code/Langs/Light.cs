@@ -618,7 +618,7 @@ namespace FractalMachine.Code.Langs
                     if (ast.type != AST.Type.Block || ast.subject == "[")
                         return false;
 
-                    if (!Left?.IsAssign ?? false) 
+                    if (!(Left?.IsAssign ?? false)) 
                         return false;
 
                     foreach (var code in codes)
@@ -2322,7 +2322,7 @@ namespace FractalMachine.Code.Langs
                     {
                         var bag = OrderedAST.bag;
 
-                        if (!bag.HasNewParam)
+                        if (!ast.IsAttribute)
                             return false;
 
                         var spar = Pull().StrValue;
