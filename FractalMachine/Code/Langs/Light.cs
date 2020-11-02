@@ -582,6 +582,30 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public OrderedAST RightBlockParenthesis
+            {
+                get
+                {
+                    if (IsBlockParenthesis)
+                        return this;
+                    if (Right == null)
+                        return null;
+                    return Right.RightBlockParenthesis;
+                }
+            }
+
+            public OrderedAST RightBlockBrackets
+            {
+                get
+                {
+                    if (IsBlockBrackets)
+                        return this;
+                    if (Right == null)
+                        return null;
+                    return Right.RightBlockBrackets;
+                }
+            }
+
             #endregion
 
             #region Is
@@ -756,6 +780,26 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+
+            #endregion
+
+            #region Methods
+
+            void NewInstructionFromChild(OrderedAST child)
+            {
+                var instrAst = new AST(child.ast, child.ast.line, child.ast.pos, AST.Type.Instruction);
+                var oAst = new OrderedAST(instrAst, this);
+
+                var index = codes.IndexOf(child);
+                while(index<codes.Count)
+                {
+                    oAst.codes.Add(codes[index]);
+                    codes[index].Parent = oAst;
+                    codes.RemoveAt(index);
+                }
+
+                codes.Add(oAst);
+            }
 
             #endregion
 
@@ -1138,8 +1182,10 @@ namespace FractalMachine.Code.Langs
                 /// Child analyzing
                 ///
 
-                foreach (var code in codes)
+                for(int c=0; c<codes.Count; c++)
                 {
+                    var code = codes[c];
+
                     // todo: try catch for error checking(?)
 
                     var sbag = bag;
@@ -1468,8 +1514,8 @@ namespace FractalMachine.Code.Langs
                                 var subLin = bag.Linear = new Linear(l, oAst.ast);
                                 subLin.Op = "instruction";
                                 subLin.List();
-                            //attachStatement();
-                        };
+                                //attachStatement();
+                            };
                         }
 
                         onEnd = delegate
@@ -2002,7 +2048,25 @@ namespace FractalMachine.Code.Langs
                         {
                             NextScheduler();
                             Monopoly();
+                            
+                            // Parameters checking
+                            var parenthesis = ast.Right;
+                            var brackets = parenthesis?.Right;
 
+                            if (!parenthesis.IsBlockParenthesis)
+                            {
+                                brackets = parenthesis;
+                                parenthesis = null;
+                            }
+
+                            if (!brackets.IsBlockBrackets)
+                                brackets = null;
+
+                            // Check if it's a short block
+                            if (brackets == null) //is short block
+                                OrderedAST.NewInstructionFromChild((parenthesis ?? ast).Right);
+
+                            // Create linear
                             var lin = new Linear(OrderedAST.bag.Linear, OrderedAST.ast);
                             lin.Op = Name;
                             lin.Type = "block";                            
@@ -2235,7 +2299,7 @@ namespace FractalMachine.Code.Langs
                     {
                         var bag = OrderedAST.bag;
 
-                        if (!bag.HasNewParam)
+                        if (!ast.IsAttribute)
                             return false;
 
                         var spar = Pull().StrValue;
