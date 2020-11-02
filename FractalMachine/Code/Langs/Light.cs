@@ -521,7 +521,7 @@ namespace FractalMachine.Code.Langs
                     num += par.tempVarCount;
                     par = par.parent;
                 }
-                
+
                 tempVarCount++;
                 return num;
             }
@@ -576,7 +576,7 @@ namespace FractalMachine.Code.Langs
                 {
                     //todo: there is another type of accumulator: the SquareBrackets accumulato
                     // could be found if it has an operator in front of it
-                    if (ast.type != AST.Type.Block || ast.subject == "(")
+                    if (ast.type != AST.Type.Block || ast.subject == "[")
                         return false;
 
                     foreach (var code in codes)
@@ -597,6 +597,14 @@ namespace FractalMachine.Code.Langs
                 get
                 {
                     return ast.aclass == "operator" || IsFastIncrement || IsConjunction;
+                }
+            }
+
+            public bool IsAssign
+            {
+                get
+                {
+                    return ast.aclass == "operator" && ast.subject == "=";
                 }
             }
 
@@ -994,7 +1002,7 @@ namespace FractalMachine.Code.Langs
             string setTempReturn()
             {
                 var ret = Properties.InternalVariable + getTempVar();
-                if(lin!=null) lin.Return = ret;
+                if (lin != null) lin.Return = ret;
                 bag.NewParam(ret);
                 return ret;
             }
@@ -1002,7 +1010,7 @@ namespace FractalMachine.Code.Langs
             void toLinear(Bag parentBag)
             {
                 bag = parentBag;
-                
+
                 ///
                 /// Analyze AST
                 ///
@@ -1059,7 +1067,7 @@ namespace FractalMachine.Code.Langs
                 ///
                 /// Exit
                 ///
-                if(!endCalled)
+                if (!endCalled)
                     callEnd();
 
             }
@@ -1103,8 +1111,6 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_declarationParenthesis()
             {
-                //toLinear_checkSquareBrackets();
-
                 if (IsOperator)
                 {
                     switch (Subject)
@@ -1117,10 +1123,6 @@ namespace FractalMachine.Code.Langs
                             };
                             break;
                     }
-                }
-                else if (IsRepeatedInstruction)
-                {
-                    bag.OnRepeteable?.Invoke(this.prev);
                 }
             }
 
@@ -1154,19 +1156,21 @@ namespace FractalMachine.Code.Langs
             {
                 if (Left == null)
                 {
-                    // It is alone, so it is a JSON block
+                    ///
+                    /// It is alone, so it is a JSON block
+                    /// 
                     lin = new Linear(bag.Linear, ast);
                     lin.Op = "declare";
                     lin.Name = setTempReturn();
                     lin.Return = "[]";
                     lin.List();
-                    
-                    bag = bag.subBag();           
+
+                    bag = bag.subBag();
 
                     onEnd = delegate
                     {
                         int i = 0;
-                        foreach(var code in codes)
+                        foreach (var code in codes)
                         {
                             var res = bag.Params.Pull(0).StrValue;
 
@@ -1182,13 +1186,22 @@ namespace FractalMachine.Code.Langs
                 }
                 else
                 {
-                    bag = bag.subBag(Bag.Status.DeclarationParenthesis);
-
-                    onEnd = delegate
+                    if (Right?.IsAssign ?? false)
                     {
+                        // dilemma
+                    }
+                    else
+                    {
+                        ///
+                        /// Pointers
+                        ///
+                        bag = bag.subBag();
                         bag.Params.Type = "[]";
-                        bag.Parent.Params.New(new Parameter(bag.Params));
-                    };
+                        onEnd = delegate
+                        {
+                            bag.Parent.Params.New(new Parameter(bag.Params));
+                        };
+                    }
                 }
             }
 
@@ -1227,109 +1240,134 @@ namespace FractalMachine.Code.Langs
 
             void toLinear_ground_block_parenthesis()
             {
-                var completedStatement = firstStatement.GetCompletedStatement;
-                var csType = completedStatement.Type;
-
-                if (csType == "Declaration.Function")
+                if (Right?.IsAssign ?? false)
                 {
                     ///
-                    /// This is a good example of different status management
+                    /// Accumulator
                     ///
                     bag = bag.subBag(Bag.Status.DeclarationParenthesis);
-                    var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
 
-                    bag.OnRepeteable = delegate (OrderedAST oAst)
+                    var mainParams = new Parameters(bag);
+                    mainParams.Type = "()=";
+
+                    bag.OnRepeteable = delegate
                     {
-                        var bag = oAst.bag;
-                        var p = bag.Params.Pull();
-                        if (p != null)
-                        {
-                            var lin = new Linear(l, oAst.ast);
-                            lin.Op = "parameter";
-                            lin.Name = p.StrValue;
-                            lin.List();
-
-                            if (bag.Params.Count > 0)
-                                lin.Return = bag.Params.Pull().StrValue;
-                        }
+                        mainParams.New(new Parameter(bag.Params));
+                        bag.Params = new Parameters(bag);
                     };
 
                     onEnd = delegate
                     {
-                        bag.OnRepeteable(LastCode);
-                    };
-                }
-                else if (csType == "Block")
-                {
-                    bag = bag.subBag();
-                    var l = bag.Linear = bag.Linear.SetSettings("parameter", ast);
-
-                    // Multiple instructions
-                    if (codes.Count > 1)
-                    {
-                        onBeforeChildCycle = delegate (OrderedAST oAst)
-                        {
-                            var subLin = bag.Linear = new Linear(l, oAst.ast);
-                            subLin.Op = "instruction";
-                            subLin.List();
-                            //attachStatement();
-                        };
-                    }
-
-                    onEnd = delegate
-                    {
-                        var p = bag.Params.Pull();
-                        l.Name = p.StrValue;
-                    };
-
-                }
-                else if(csType == "Retrieve")
-                {
-                    ///
-                    /// Here parameters are simply collected from bag.Paramas
-                    ///
-                    lin = new Linear(bag.Linear, ast);
-                    lin.Op = "call";
-                    lin.Name = bag.Params.Pull().StrValue;
-
-                    bag = bag.subBag();
-
-                    onEnd = delegate
-                    {
-                        for (int l = bag.Params.Count - 1; l >= 0; l--)
-                        {
-                            var val = bag.Params.Pull(0).StrValue;
-                            lin.Attributes.Add(val);
-
-                            // Deprecated(?)
-                            Linear li = new Linear(bag.Linear, ast);
-                            li.Op = "push";
-                            li.Name = val;
-                            li.List();
-                        }
-
-                        bag = bag.Parent;
-                        setTempReturn();
+                        bag.OnRepeteable(null);
+                        bag.Parent.Params.New(new Parameter(mainParams));
                     };
                 }
                 else
                 {
-                    //it's a cast
-                    lin = new Linear(bag.Linear, ast);
-                    lin.Op = "cast";
+                    var completedStatement = firstStatement.GetCompletedStatement;
+                    var csType = completedStatement.Type;
 
-                    relaxDontListIt = true;
-
-                    onEnd = delegate
+                    if (csType == "Declaration.Function")
                     {
+                        ///
+                        /// This is a good example of different status management
+                        ///
+                        bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                        var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
+
+                        bag.OnRepeteable = delegate (OrderedAST oAst)
+                        {
+                            var bag = oAst.bag;
+                            var p = bag.Params.Pull();
+                            if (p != null)
+                            {
+                                var lin = new Linear(l, oAst.ast);
+                                lin.Op = "parameter";
+                                lin.Name = p.StrValue;
+                                lin.List();
+
+                                if (bag.Params.Count > 0)
+                                    lin.Return = bag.Params.Pull().StrValue;
+                            }
+                        };
+
+                        onEnd = delegate
+                        {
+                            bag.OnRepeteable(LastCode);
+                        };
+                    }
+                    else if (csType == "Block")
+                    {
+                        bag = bag.subBag();
+                        var l = bag.Linear = bag.Linear.SetSettings("parameter", ast);
+
+                        // Multiple instructions
+                        if (codes.Count > 1)
+                        {
+                            onBeforeChildCycle = delegate (OrderedAST oAst)
+                            {
+                                var subLin = bag.Linear = new Linear(l, oAst.ast);
+                                subLin.Op = "instruction";
+                                subLin.List();
+                            //attachStatement();
+                        };
+                        }
+
+                        onEnd = delegate
+                        {
+                            var p = bag.Params.Pull();
+                            l.Name = p.StrValue;
+                        };
+
+                    }
+                    else if (csType == "Retrieve")
+                    {
+                        ///
+                        /// Here parameters are simply collected from bag.Paramas
+                        ///
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = "call";
                         lin.Name = bag.Params.Pull().StrValue;
-                    };
 
-                    parent.onPreEnds.Add(delegate
+                        bag = bag.subBag();
+
+                        onEnd = delegate
+                        {
+                            for (int l = bag.Params.Count - 1; l >= 0; l--)
+                            {
+                                var val = bag.Params.Pull(0).StrValue;
+                                lin.Attributes.Add(val);
+
+                            // Deprecated(?)
+                            Linear li = new Linear(bag.Linear, ast);
+                                li.Op = "push";
+                                li.Name = val;
+                                li.List();
+                            }
+
+                            bag = bag.Parent;
+                            setTempReturn();
+                        };
+                    }
+                    else
                     {
-                        lin.Return = bag.Params.Pull(false).StrValue;
-                        lin.List();
-                    });
+                        //it's a cast
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = "cast";
+
+                        relaxDontListIt = true;
+
+                        onEnd = delegate
+                        {
+                            lin.Name = bag.Params.Pull().StrValue;
+                        };
+
+                        parent.onPreEnds.Add(delegate
+                        {
+                            lin.Return = bag.Params.Pull(false).StrValue;
+                            lin.List();
+                        });
+                    }
                 }
             }
 
@@ -1359,24 +1397,7 @@ namespace FractalMachine.Code.Langs
                 switch (Subject)
                 {
                     case "=":
-                        // Don't pull because the name could be used by previous instruction
-                        var names = bag.Params.Pull(false);
-                        //attachStatement();
-
-                        onEnd = delegate
-                        {
-                            var attr = bag.Params.Pull().StrValue;
-
-                            foreach (var name in names.Values)
-                            {
-                                lin = new Linear(parent.bag.Linear, ast);
-                                lin.Op = Subject;
-                                lin.Name = name;
-                                lin.List();
-                                lin.Attributes.Add(attr);
-                            }
-                        };
-
+                        toLinear_ground_instruction_operator_assign();
                         break;
 
                     default:
@@ -1385,7 +1406,7 @@ namespace FractalMachine.Code.Langs
                         lin.Attributes.Add(bag.Params.Pull().StrValue);
 
                         onEnd = delegate
-                        {                         
+                        {
                             lin.Attributes.Add(bag.Params.Pull().StrValue);
                             setTempReturn();
                         };
@@ -1395,7 +1416,7 @@ namespace FractalMachine.Code.Langs
                             // ie operators have priority against conjunctions
                             if (LastCode.IsConjunction && LastCode.OperatorPriority > OperatorPriority)
                             {
-                                onAfterChildCycle = delegate(OrderedAST ast)
+                                onAfterChildCycle = delegate (OrderedAST ast)
                                 {
                                     callEnd();
                                     onAfterChildCycle = null;
@@ -1405,6 +1426,29 @@ namespace FractalMachine.Code.Langs
 
                         break;
                 }
+            }
+            void toLinear_ground_instruction_operator_assign()
+            {
+                var completedStatement = parent.firstStatement.GetCompletedStatement;
+                var csType = completedStatement.Type;
+
+                // Don't pull because the name could be used by previous instruction
+                var names = bag.Params.Pull(false);
+                //attachStatement();
+
+                onEnd = delegate
+                {
+                    var attr = bag.Params.Pull().StrValue;
+
+                    foreach (var name in names.Values)
+                    {
+                        lin = new Linear(parent.bag.Linear, ast);
+                        lin.Op = Subject;
+                        lin.Name = name;
+                        lin.List();
+                        lin.Attributes.Add(attr);
+                    }
+                };
             }
 
             void toLinear_ground_instruction_default()
@@ -1457,50 +1501,7 @@ namespace FractalMachine.Code.Langs
 
                 private Statement() { }
 
-                internal void AddDisk(Statement disk)
-                {
-                    disk.parent = this;
-
-                    // Don't add twice the same type
-                    bool alreadyExisting = false;
-                    foreach (var d in Disks)
-                        if (d.GetType() == disk.GetType())
-                            alreadyExisting = true;
-
-                    if (!alreadyExisting)
-                    {
-                        Disks.Add(disk);
-                        disk.OnRepeteable?.Invoke();
-                    }
-                }              
-                internal bool OnPostCode( OrderedAST orderedAST)
-                {
-                    curBag = orderedAST.bag;
-                    curderedAST = orderedAST;
-
-                    if (Scheduler.Count > SchedulerPos)
-                    {
-                        var res = Scheduler[SchedulerPos].Invoke(orderedAST);
-                        if (res && Scheduler.Count <= SchedulerPos) CheckDisksTurn();
-                        return res;
-                    }
-
-                    int d = 0;
-                    for (; d<Disks.Count; d++)
-                    {
-                        var disk = Disks[d];
-                        if (!Disks[d].OnPostCode(orderedAST))
-                        {
-                            Disks[d].killed = true;
-                            Disks.RemoveAt(d--);
-                            //if(d == 0 && ImCompleted)LastSurvivor();
-                        }
-                    }
-
-                    OnRepeteable?.Invoke();
-
-                    return ImCompleted || Disks.Count > 0;
-                }
+                
 
                 #region Properties
 
@@ -1575,6 +1576,50 @@ namespace FractalMachine.Code.Langs
                 #endregion
 
                 #region Methods
+                internal void AddDisk(Statement disk)
+                {
+                    disk.parent = this;
+
+                    // Don't add twice the same type
+                    bool alreadyExisting = false;
+                    foreach (var d in Disks)
+                        if (d.GetType() == disk.GetType())
+                            alreadyExisting = true;
+
+                    if (!alreadyExisting)
+                    {
+                        Disks.Add(disk);
+                        disk.OnRepeteable?.Invoke();
+                    }
+                }
+                internal bool OnPostCode(OrderedAST orderedAST)
+                {
+                    curBag = orderedAST.bag;
+                    curderedAST = orderedAST;
+
+                    if (Scheduler.Count > SchedulerPos)
+                    {
+                        var res = Scheduler[SchedulerPos].Invoke(orderedAST);
+                        if (res && Scheduler.Count <= SchedulerPos) CheckDisksTurn();
+                        return res;
+                    }
+
+                    int d = 0;
+                    for (; d < Disks.Count; d++)
+                    {
+                        var disk = Disks[d];
+                        if (!Disks[d].OnPostCode(orderedAST))
+                        {
+                            Disks[d].killed = true;
+                            Disks.RemoveAt(d--);
+                            //if(d == 0 && ImCompleted)LastSurvivor();
+                        }
+                    }
+
+                    OnRepeteable?.Invoke();
+
+                    return ImCompleted || Disks.Count > 0;
+                }
                 internal void _onPostEnd()
                 {
                     foreach (var disk in Disks)
@@ -1655,6 +1700,7 @@ namespace FractalMachine.Code.Langs
                 #region Statements
                 public class Retrieve : Statement
                 {
+                    bool ArrayCall = false;
                     public Retrieve()
                     {
                         Scheduler.Add(scheduler_0);
@@ -1687,25 +1733,30 @@ namespace FractalMachine.Code.Langs
                             var values = Pull().Values;
                             var name = Pull().StrValue;
 
+                            ArrayCall = true;
+
                             OrderedAST.onPreEnds.Add(delegate ()
                             {
                                 if (!killed)
                                 {
-                                    int p = 0;
-                                    foreach (var val in values)
-                                    {
-                                        var plin = new Linear(bag.Linear, ast.codes[p++].ast);
-                                        plin.Op = "push";
-                                        plin.Name = val;
-                                        plin.List();
-                                    }
-
                                     var lin = new Linear(bag.Linear, ast.ast);
                                     lin.Op = "call";
                                     lin.Type = "[]";
                                     lin.Name = bag.Params.Pull(false, -2).StrValue;
                                     lin.Return = OrderedAST.setTempReturn();
                                     lin.List();
+
+                                    int p = 0;
+                                    foreach (var val in values)
+                                    {
+                                        lin.Attributes.Add(val);
+
+                                        // Deprecated
+                                        var plin = new Linear(bag.Linear, ast.codes[p++].ast);
+                                        plin.Op = "push";
+                                        plin.Name = val;
+                                        plin.List();
+                                    }
                                 }
                             });
 
