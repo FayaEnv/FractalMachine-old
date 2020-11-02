@@ -1,0 +1,23 @@
+| 0. 
+==| Instructions:
+====| 0. declare
+======| Name: json
+======| Return: var
+====| 1. call
+======| Name: {}
+======| Return: £0
+====| 2. call
+======| Type: {}
+======| Name: £0
+======| Attributes: ciao  |  $$*°hi  |  
+====| 3. call
+======| Type: {}
+======| Name: £0
+======| Attributes: come  |  $$*°how  |  
+====| 4. call
+======| Type: {}
+======| Name: £0
+======| Attributes: stai  |  $$*°are you  |  
+====| 5. =
+======| Name: json
+======| Attributes: £0  |  

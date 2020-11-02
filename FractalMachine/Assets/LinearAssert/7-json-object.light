@@ -1,0 +1,6 @@
+
+var json = {
+	ciao: "hi",
+	come: "how",
+	stai: "are you"
+};

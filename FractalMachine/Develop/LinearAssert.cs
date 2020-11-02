@@ -26,7 +26,8 @@ namespace FractalMachine.Develop
             {
                 if (file.Extension == ".light")
                 {
-                    elaborateFile(file.FullName);
+                    if(file.Name == "7-json-object.light" || true) // Debug purposes
+                        elaborateFile(file.FullName);
                 }
             }
         }
@@ -36,12 +37,12 @@ namespace FractalMachine.Develop
             var script = Light.OpenFile(fn);
             var linear = script.GetLinear();
             string res = ExplodeLinear(linear);
-            res = "leggi";
+            File.WriteAllText(fn + ".linear.txt", res);
         }
 
         delegate void Space(int level);
 
-        string ExplodeLinear(Linear lin, int level=0, int number=-1)
+        string ExplodeLinear(Linear lin, int level=0, int number=0)
         {
             string ret = "";
 
@@ -86,7 +87,7 @@ namespace FractalMachine.Develop
             {
                 int i = 0;
                 spaces(level + 1);
-                ret += "\n Settings:\r\n";
+                ret += " Settings:\r\n";
                 foreach (var sett in lin.Settings)
                 {
                     spaces(level+2);
@@ -99,7 +100,7 @@ namespace FractalMachine.Develop
             {
                 int i = 0;
                 spaces(level+1);
-                ret += "\n Instructions:\r\n";
+                ret += " Instructions:\r\n";
                 foreach(var instr in lin.Instructions)
                 {
                     ret += ExplodeLinear(instr, level + 2, i++);
@@ -107,8 +108,8 @@ namespace FractalMachine.Develop
 
             }
 
-            spaces(level);
-            ret += " END\n";
+            //spaces(level);
+            //ret += " END\n";
 
             return ret;
         }

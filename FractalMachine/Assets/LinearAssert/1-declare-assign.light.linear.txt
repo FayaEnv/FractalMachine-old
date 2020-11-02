@@ -1,0 +1,14 @@
+| 0. 
+==| Instructions:
+====| 0. declare
+======| Name: v0
+======| Return: int
+====| 1. declare
+======| Name: v1
+======| Return: var
+====| 2. =
+======| Name: v1
+======| Attributes: 2  |  
+====| 3. =
+======| Name: v0
+======| Attributes: 3  |  

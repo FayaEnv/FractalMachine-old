@@ -1,0 +1,5 @@
+
+int v0 = 2;
+int v1 = 3;
+int sum = v0 + v1;
+int more = v0 * (v1+1)

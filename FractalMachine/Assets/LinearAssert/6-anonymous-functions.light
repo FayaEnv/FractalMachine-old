@@ -1,0 +1,6 @@
+
+var fun = function(){
+	Print("ciao!");
+}
+
+fun();

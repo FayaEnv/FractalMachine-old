@@ -458,7 +458,6 @@ namespace FractalMachine.Code.Langs
             public OrderedAST(AST ast, OrderedAST parent)
             {
                 this.parent = parent;
-                parent.codes.Add(this);
                 linkAst(ast);
             }
 
@@ -496,9 +495,13 @@ namespace FractalMachine.Code.Langs
                 foreach (var child in ast.children)
                 {
                     var ch = new OrderedAST(child, this);
-                    if (previous != null) previous.next = ch;
-                    ch.prev = previous;
-                    previous = ch;
+                    if (!ch.IsDummyInstruction)
+                    {
+                        codes.Add(ch);
+                        if (previous != null) previous.next = ch;
+                        ch.prev = previous;
+                        previous = ch;
+                    }
                 }
 
                 Revision();
@@ -513,7 +516,7 @@ namespace FractalMachine.Code.Langs
                 var par = parent;
 
                 //todo: improve this checking using linears (are more reliable, in particular for JSON)
-                if (!IsBlockBrackets || isJsonObject)
+                if (!IsBlockContainer)
                     return par.getTempNum();
 
                 while (par != null)
@@ -567,6 +570,18 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public OrderedAST FirstCode
+            {
+                get
+                {
+                    var cnt = codes.Count;
+                    if (cnt > 0)
+                        return codes[0];
+
+                    return null;
+                }
+            }
+
             #endregion
 
             #region Is
@@ -591,6 +606,14 @@ namespace FractalMachine.Code.Langs
                     }
 
                     return true;
+                }
+            }
+
+            public bool IsBlockContainer
+            {
+                get
+                {
+                    return parent == null || (IsBlockBrackets && !isJsonObject);
                 }
             }
 
@@ -661,11 +684,17 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            bool _forceRepeat = false;
             public bool IsRepeatedInstruction
             {
                 get
                 {
-                    return ast.type == AST.Type.Instruction && Subject == ",";
+                    return _forceRepeat || ast.type == AST.Type.Instruction && Subject == ",";
+                }
+
+                set //todo: l'ho fatto ma forse è inutile
+                {
+                    _forceRepeat = value;
                 }
             }
 
@@ -701,6 +730,14 @@ namespace FractalMachine.Code.Langs
                 get
                 {
                     return (Right?.IsAssign ?? false) || (parent?.parent?.IsAssignAccumulator ?? false);
+                }
+            }
+
+            public bool IsDummyInstruction
+            {
+                get
+                {
+                    return ast.type == AST.Type.Instruction && Subject == null && codes.Count == 0;
                 }
             }
 
@@ -901,7 +938,7 @@ namespace FractalMachine.Code.Langs
                 public Parameters Params;
                 internal int posNewParam = -1;
 
-                public OnOperation OnRepeteable;
+                public OnOperation OnRepeatable;
 
                 public Bag()
                 {
@@ -1080,8 +1117,8 @@ namespace FractalMachine.Code.Langs
 
                 if (IsRepeatedInstruction)
                 {
-                    if (bag.OnRepeteable != null)
-                        bag.OnRepeteable?.Invoke(this);
+                    if (bag.OnRepeatable != null)
+                        bag.OnRepeatable?.Invoke(this);
                 }
 
                 switch (bag.status)
@@ -1116,7 +1153,7 @@ namespace FractalMachine.Code.Langs
                     onSchedulerPostCode?.Invoke(code);
 
                     // if block clear params 
-                    if (IsBlockBrackets)
+                    if (IsBlockContainer)
                         bag.Params.Clear();
                 }
 
@@ -1184,7 +1221,7 @@ namespace FractalMachine.Code.Langs
                     switch (Subject)
                     {
                         case "=":
-                            bag.OnRepeteable?.Invoke(this.prev);
+                            bag.OnRepeatable?.Invoke(this.prev);
                             onEnd = delegate
                             {
                                 bag.Linear.LastInstruction.Return = bag.Params.Pull().StrValue;
@@ -1228,9 +1265,9 @@ namespace FractalMachine.Code.Langs
                     /// It is alone, so it is a JSON block
                     /// 
                     lin = new Linear(bag.Linear, ast);
-                    lin.Op = "declare";
-                    lin.Name = setTempReturn();
-                    lin.Return = "[]";
+                    lin.Op = "call";
+                    lin.Name = "[]";
+                    lin.Return = setTempReturn();
                     lin.List();
 
                     bag = bag.subBag();
@@ -1245,7 +1282,7 @@ namespace FractalMachine.Code.Langs
                             var li = new Linear(bag.Linear, code.ast);
                             li.Op = "call";
                             li.Type = "[]";
-                            li.Name = lin.Name;
+                            li.Name = lin.Return;
                             li.Attributes.Add(i++.ToString());
                             li.Attributes.Add(res);
                             li.List();
@@ -1325,7 +1362,34 @@ namespace FractalMachine.Code.Langs
                     {
                         // is JSON
                         isJsonObject = true;
-                        throw new Exception("json todo");
+
+                        lin = new Linear(bag.Linear, ast);
+                        lin.Op = "call";
+                        lin.Name = "{}";
+                        lin.Return = setTempReturn();
+                        lin.List();
+
+                        bag = bag.subBag();
+
+                        bag.OnRepeatable = delegate (OrderedAST oAst)
+                        {
+                            var key = bag.Params.Pull(0).StrValue;
+                            var res = bag.Params.Pull(0).StrValue;
+
+                            var li = new Linear(bag.Linear, oAst.Left.ast);
+                            li.Op = "call";
+                            li.Type = "{}";
+                            li.Name = lin.Return;
+                            li.Attributes.Add(key);
+                            li.Attributes.Add(res);
+                            li.List();
+                        };
+
+                        onEnd = delegate
+                        {
+                            if (LastCode != null)
+                                bag.OnRepeatable(LastCode);
+                        };
                     }
                 }
 
@@ -1343,7 +1407,7 @@ namespace FractalMachine.Code.Langs
                     var mainParams = new Parameters(bag);
                     mainParams.Type = "()=";
 
-                    bag.OnRepeteable = delegate
+                    bag.OnRepeatable = delegate
                     {
                         mainParams.New(new Parameter(bag.Params));
                         bag.Params = new Parameters(bag);
@@ -1351,7 +1415,7 @@ namespace FractalMachine.Code.Langs
 
                     onEnd = delegate
                     {
-                        bag.OnRepeteable(null);
+                        bag.OnRepeatable(null);
                         bag.Parent.Params.New(new Parameter(mainParams));
                     };
                 }
@@ -1368,13 +1432,13 @@ namespace FractalMachine.Code.Langs
                         bag = bag.subBag(Bag.Status.DeclarationParenthesis);
                         var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
 
-                        bag.OnRepeteable = delegate (OrderedAST oAst)
+                        bag.OnRepeatable = delegate (OrderedAST oAst)
                         {
                             var bag = oAst.bag;
                             var p = bag.Params.Pull();
                             if (p != null)
                             {
-                                var lin = new Linear(l, oAst.ast);
+                                var lin = new Linear(l, oAst.Left.ast);
                                 lin.Op = "parameter";
                                 lin.Name = p.StrValue;
                                 lin.List();
@@ -1386,7 +1450,8 @@ namespace FractalMachine.Code.Langs
 
                         onEnd = delegate
                         {
-                            bag.OnRepeteable(LastCode);
+                            if(LastCode != null)
+                                bag.OnRepeatable(LastCode);
                         };
                     }
                     else if (csType == "Block")
@@ -1463,9 +1528,6 @@ namespace FractalMachine.Code.Langs
             /// </summary>
             void toLinear_ground_instruction()
             {
-                if (Subject == null && codes.Count == 0)
-                    return; // Is a dummy instruction
-
                 attachStatement();
 
                 if (IsOperator)
@@ -1485,6 +1547,12 @@ namespace FractalMachine.Code.Langs
                 {
                     case "=":
                         toLinear_ground_instruction_operator_assign();
+                        break;
+
+                    case ":":
+                        // Use cases:
+                        // 1. JSON Object: { key: value }
+                        // 2. Function call test(key1: value, key2: value)
                         break;
 
                     default:
@@ -2168,7 +2236,7 @@ namespace FractalMachine.Code.Langs
                             return false;
 
                         // This instruction supports repeated instructions (ie int var1, var2)
-                        OrderedAST.bag.OnRepeteable = delegate(OrderedAST ast)
+                        OrderedAST.bag.OnRepeatable = delegate(OrderedAST ast)
                         {
                             // so attach this statement to repeated function
                             ast.attachStatement(this);

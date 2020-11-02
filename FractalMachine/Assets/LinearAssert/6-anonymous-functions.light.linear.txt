@@ -1,0 +1,22 @@
+| 0. 
+==| Instructions:
+====| 0. declare
+======| Name: fun
+======| Return: var
+====| 1. function
+======| Name: £0
+======| Return: function
+======| Settings:
+========|parameters
+========| 0. parameters
+======| Instructions:
+========| 0. call
+==========| Name: Print
+==========| Return: £0
+==========| Attributes: $$*°ciao!  |  
+====| 2. =
+======| Name: fun
+======| Attributes: £0  |  
+====| 3. call
+======| Name: fun
+======| Return: £1

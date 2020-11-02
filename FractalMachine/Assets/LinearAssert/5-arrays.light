@@ -1,0 +1,6 @@
+
+var arr = [];
+arr[0] = 2;
+var normal = arr[0];
+
+var json = [ciao, come, va];

@@ -1,0 +1,46 @@
+| 0. 
+==| Instructions:
+====| 0. declare
+======| Name: arr
+======| Return: var
+====| 1. call
+======| Name: []
+======| Return: £0
+====| 2. =
+======| Name: arr
+======| Attributes: £0  |  
+====| 3. call
+======| Name: arr
+======| Attributes: 0  |  2  |  
+====| 4. declare
+======| Name: normal
+======| Return: var
+====| 5. call
+======| Type: []
+======| Name: arr
+======| Return: £1
+======| Attributes: 0  |  
+====| 6. =
+======| Name: normal
+======| Attributes: £1  |  
+====| 7. declare
+======| Name: json
+======| Return: var
+====| 8. call
+======| Name: []
+======| Return: £2
+====| 9. call
+======| Type: []
+======| Name: £2
+======| Attributes: 0  |  ciao  |  
+====| 10. call
+======| Type: []
+======| Name: £2
+======| Attributes: 1  |  come  |  
+====| 11. call
+======| Type: []
+======| Name: £2
+======| Attributes: 2  |  va  |  
+====| 12. =
+======| Name: json
+======| Attributes: £2  |  
