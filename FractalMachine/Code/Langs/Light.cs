@@ -758,6 +758,9 @@ namespace FractalMachine.Code.Langs
                 {
                     get
                     {
+                        if(strValue != null)
+                            return strValue; 
+
                         if (values != null)
                         {
                             if (values.Count == 1)
@@ -766,7 +769,7 @@ namespace FractalMachine.Code.Langs
                             return null;
                         }
 
-                        return strValue;
+                        return null;
                     }
 
                     set
@@ -917,6 +920,12 @@ namespace FractalMachine.Code.Langs
                 public void NewParam(string p)
                 {
                     Params.New(new Parameter(p));
+                }
+
+                public void AppendToParam(string p)
+                {
+                    var pp = Params.Pull(false);
+                    pp.StrValue += p;
                 }
 
                 #endregion
@@ -1137,7 +1146,19 @@ namespace FractalMachine.Code.Langs
                 if (ast.aclass == "angularBracket")
                     ast.subject = Properties.AngularBracketsMark + Subject;
 
-                bag.NewParam(Subject); // == bag.Params.New(Subject)
+                bool append = false;
+                if(bag.status == Bag.Status.Ground)
+                {
+                    if (Subject.StartsWith("."))
+                    {
+                        append = true;
+                    }
+                }
+
+                if(append)
+                    bag.AppendToParam(Subject);
+                else
+                    bag.NewParam(Subject); 
             }
 
             void toLinear_readAsIs()
@@ -1399,19 +1420,13 @@ namespace FractalMachine.Code.Langs
                             {
                                 var val = bag.Params.Pull(0).StrValue;
                                 lin.Attributes.Add(val);
-
-                            // Deprecated(?)
-                            Linear li = new Linear(bag.Linear, ast);
-                                li.Op = "push";
-                                li.Name = val;
-                                li.List();
                             }
 
                             bag = bag.Parent;
                             setTempReturn();
                         };
                     }
-                    else
+                    else if(Right.IsAttribute)
                     {
                         //it's a cast
                         lin = new Linear(bag.Linear, ast);
@@ -1466,11 +1481,11 @@ namespace FractalMachine.Code.Langs
                         lin = new Linear(parent.bag.Linear, ast);
                         lin.Op = Subject;
                         lin.Attributes.Add(bag.Params.Pull().StrValue);
+                        setTempReturn();
 
                         onEnd = delegate
                         {
                             lin.Attributes.Add(bag.Params.Pull().StrValue);
-                            setTempReturn();
                         };
 
                         if (codes.Count == 2)
@@ -1776,7 +1791,7 @@ namespace FractalMachine.Code.Langs
                 #region Statements
                 public class Retrieve : Statement
                 {
-                    Parameter ParName;
+                    string Name;
                     public Retrieve()
                     {
                         Scheduler.Add(scheduler_0);
@@ -1793,8 +1808,9 @@ namespace FractalMachine.Code.Langs
                         {
                             NextScheduler();
                             ImCompleted = true;
-                            ParName = Pull(Remove: false);
-                           
+                            var pull = Pull(Remove: false);
+                            //Name = pull.StrValue;
+
                             return true;
                         }
 
@@ -2151,7 +2167,10 @@ namespace FractalMachine.Code.Langs
                             SchedulerPos = 2;
                         };
 
-                        Names = bag.Params.LastParam.Values;
+                        var parNames = Pull();
+                        if (parNames == null) return false;
+
+                        Names = parNames.Values;
 
                         /// Completed!
                         NextScheduler();

@@ -212,6 +212,7 @@ namespace FractalMachine.Code
         {
             var ast = Instruction;
             var child = ast.children.Pull(-1, false);
+            if (child == null || child.type != AST.Type.Attribute) return InsertAttribute(line, pos, value);
             child.subject += value;
             return child;
         }
