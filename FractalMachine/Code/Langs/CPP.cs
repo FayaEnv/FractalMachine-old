@@ -223,7 +223,7 @@ namespace FractalMachine.Code.Langs
                     if (type == "function")
                     {
                         type = "void"; //todo: var
-                        if (name == "main" && Linear.component.Top.Type == Component.Types.Light) 
+                        if (name == "main" && Linear.component.Top.Type == Component.Types.File) 
                             type = "int";
                     }
 

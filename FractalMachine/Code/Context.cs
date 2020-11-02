@@ -56,7 +56,7 @@ namespace FractalMachine.Code
             Lang script = null;
             Linear linear = null;
 
-            Component.Types compType;
+            Language lang;
             var ext = Path.GetExtension(FileName);
 
             switch (ext)
@@ -64,14 +64,14 @@ namespace FractalMachine.Code
                 case ".light":
                     script = Light.OpenFile(FileName);
                     linear = script.GetLinear();
-                    compType = Component.Types.Light;
+                    lang = Language.Light;
                     break;
 
                 case ".h":
                 case ".hpp":
                     script = CPP.OpenFile(FileName);
                     linear = script.GetLinear();
-                    compType = Component.Types.CPP;
+                    lang = Language.CPP;
                     break;
 
                 default:
@@ -81,7 +81,8 @@ namespace FractalMachine.Code
             if (linear != null) // why linear should be null?
             {
                 comp = new Component(this, linear);
-                comp.Type = compType;
+                comp.lang = lang;
+                comp.Type = Component.Types.File;
                 comp.script = script;
                 comp.FileName = FileName;
 

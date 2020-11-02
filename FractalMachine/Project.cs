@@ -90,9 +90,6 @@ namespace FractalMachine
                 var compiler = env.Compiler;
                 compiler.Compile(cppOutPath, exeOutPath);
             }
-
-
-            string read = "";
         }
     }
 }

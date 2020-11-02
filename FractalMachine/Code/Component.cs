@@ -70,12 +70,13 @@ namespace FractalMachine.Code
         public enum Types
         {
             Default,
-            Light,
-            CPP,
+            File,
             Namespace,
-            Function
+            Function,
+            Variable
         }
 
+        internal Language lang;
         Types type = Types.Default;
         public Types Type
         {
@@ -91,9 +92,12 @@ namespace FractalMachine.Code
         {
             switch (type)
             {
-                case Types.Light:
-                    usings = new List<string>();
-                    usings.Add("namespace std");
+                case Types.File:
+                    if (lang == Language.Light)
+                    {
+                        usings = new List<string>();
+                        usings.Add("namespace std");
+                    }
                     break;
 
                 case Types.Function:
@@ -186,7 +190,7 @@ namespace FractalMachine.Code
                         break;
                 }
 
-                if(type == Types.Light && !afterIncludes && closesIncludes)
+                if(type == Types.File && !afterIncludes && closesIncludes)
                 {
                     // Inser linear advisor
                     var lin = new Linear(instr.ast);
@@ -440,7 +444,7 @@ namespace FractalMachine.Code
 
         #endregion
 
-        #region Components
+        #region SubComponents
 
         public Component Solve(string Name)
         {
