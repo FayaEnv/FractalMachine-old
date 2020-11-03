@@ -60,6 +60,15 @@ namespace FractalMachine.Code.Langs
             get { return Language.CPP; }
         }
 
+        override public Code.TypesSet GetTypesSet
+        {
+            get
+            {
+                throw new Exception("Todo");
+                return null;
+            }
+        }
+
         public abstract class Writer
         {
             Linear linear;

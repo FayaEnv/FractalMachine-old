@@ -21,6 +21,7 @@ using static FractalMachine.Code.AST;
 using FractalMachine.Classes;
 using System.Transactions;
 using System.ComponentModel.DataAnnotations;
+using static FractalMachine.Code.Type;
 
 namespace FractalMachine.Code.Langs
 {
@@ -53,9 +54,6 @@ namespace FractalMachine.Code.Langs
 
         public void Parse(string Script)
         {
-            ///
-            /// Cycle string
-            ///
             var amanuensis = new Amanuensis();
 
             amanuensis.Read(Script);
@@ -80,6 +78,144 @@ namespace FractalMachine.Code.Langs
         public override Language Language
         {
             get { return Language.Light; }
+        }
+
+        #endregion
+
+        #region Types
+
+        public class TypesSet : Code.TypesSet
+        {
+            override internal void init()
+            {
+                /// char
+                var _char = AddType("char");
+                _char.Bytes = 1;
+                _char.Signed = true;
+
+                /// uchar
+                var _uchar = AddType("uchar");
+                _uchar.Bytes = 1;
+
+                /// short
+                var _short = AddType("short");
+                _short.Bytes = 2;
+                _short.Signed = true;
+
+                /// ushort
+                var _ushort = AddType("ushort");
+                _ushort.Bytes = 2;
+
+                /// int
+                var _int = AddType("int");
+                _int.Bytes = 4;
+                _int.Signed = true;
+
+                /// uint
+                var _uint = AddType("uint");
+                _uint.Bytes = 4;
+
+                /// long
+                var _long = AddType("long");
+                _long.Bytes = 8;
+                _long.Signed = true;
+
+                /// ulong
+                var _ulong = AddType("ulong");
+                _ulong.Bytes = 8;
+
+                /// float
+                var _float = AddType("float");
+                _float.Bytes = 4;
+                _float.Floating = true;
+
+                /// double
+                var _double = AddType("double");
+                _double.Bytes = 8;
+                _double.Floating = true;
+
+                /// double
+                var _decimal = AddType("decimal");
+                _decimal.Bytes = 12;
+                _decimal.Floating = true;
+
+                /// string
+                var _string = AddType("string");
+                _string.Base = _char;
+                _string.Array = true;
+            }
+
+            override public AttributeType SolveAttribute(string Name)
+            {
+                var atype = new AttributeType(this);
+                atype.Type = AttributeType.Types.Name;
+
+                if (Name.HasStringMark())
+                {
+                    atype.TypeRef = "string";
+                }
+                else if (Char.IsDigit(Name[0]))
+                {
+                    atype.TypeRef = "int";
+
+                    for (int c = 0; c < Name.Length; c++)
+                    {
+                        if (!Char.IsLetter(Name[c]))
+                        {
+                            atype.Type = AttributeType.Types.Invalid;
+                            break;
+                        }
+
+                        if (Name[c] == '.')
+                            atype.TypeRef = "double";
+
+                        if (c == Name.Length - 1 && Name[c] == 'f')
+                            atype.TypeRef = "float";
+                    }     
+                }
+
+                return atype;
+            }
+
+            override public string ConvertAttributeTo(string Attribute, Type To, AttributeType From=null)
+            {
+                if(From == null)
+                    From = SolveAttribute(Attribute);
+
+                if (To.Class)
+                {
+                    throw new Exception("todo");
+                }
+
+                if (From.Type == AttributeType.Types.Type)
+                {
+                    switch (From.TypeRef)
+                    {
+                        case "string":
+                            return Attribute.NoMark();
+
+                        default:
+                            if (To.AttributeReference == "string")
+                                return Properties.StringMark + Attribute;
+                            break;
+                    }
+                }
+
+                return Attribute;
+            }
+        }
+
+        static TypesSet myTypesSet;
+
+        override public Code.TypesSet GetTypesSet
+        {
+            get
+            {
+                if (myTypesSet == null)
+                    myTypesSet = new TypesSet();
+
+                return myTypesSet;
+            }
         }
 
         #endregion
@@ -992,7 +1128,7 @@ namespace FractalMachine.Code.Langs
                 public enum Status
                 {
                     Ground,
-                    DeclarationParenthesis,
+                    DeclarationParameters,
                     JSON, //todo
                     ReadAsIs
                 }
@@ -1170,7 +1306,7 @@ namespace FractalMachine.Code.Langs
                     case Bag.Status.Ground:
                         toLinear_ground();
                         break;
-                    case Bag.Status.DeclarationParenthesis:
+                    case Bag.Status.DeclarationParameters:
                         toLinear_declarationParenthesis();
                         break;
                     case Bag.Status.ReadAsIs:
@@ -1276,6 +1412,8 @@ namespace FractalMachine.Code.Langs
                     }
                 }
             }
+
+            #region toLinear_ground
 
             void toLinear_ground()
             {
@@ -1397,7 +1535,7 @@ namespace FractalMachine.Code.Langs
                     if (IsAssignAccumulator)
                     {
                         // Are accumulated attributes
-                        bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                        bag = bag.subBag(Bag.Status.DeclarationParameters);
                         onEnd = delegate
                         {
                             bag.Params.Name = "accumulated";
@@ -1476,7 +1614,7 @@ namespace FractalMachine.Code.Langs
                         ///
                         /// This is a good example of different status management
                         ///
-                        bag = bag.subBag(Bag.Status.DeclarationParenthesis);
+                        bag = bag.subBag(Bag.Status.DeclarationParameters);
                         var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
 
                         bag.OnRepeatable = delegate (OrderedAST oAst)
@@ -1738,6 +1876,8 @@ namespace FractalMachine.Code.Langs
 
                 //attachStatement();
             }
+
+            #endregion
 
             #endregion
 

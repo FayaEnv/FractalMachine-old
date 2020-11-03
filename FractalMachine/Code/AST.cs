@@ -225,6 +225,7 @@ namespace FractalMachine.Code
             internal int Line = 1, Pos = 0;
         }
 
+        // to deprecate?
         public abstract class OrderedAST
         {
         }

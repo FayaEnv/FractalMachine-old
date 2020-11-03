@@ -62,7 +62,7 @@ namespace FractalMachine.Code
             return lin;
         }
 
-        public Linear Clone(AST ast)
+        /*public Linear Clone(AST ast)
         {
             Linear lin = new Linear(ast);
             lin.parent = parent;
@@ -75,7 +75,7 @@ namespace FractalMachine.Code
             parent.Instructions.Add(lin);
 
             return lin;
-        }
+        }*/
 
         #region Parent
 
@@ -85,26 +85,6 @@ namespace FractalMachine.Code
             if (!listed)
                 parent.Instructions.Add(this);
             listed = true;
-        }
-
-        public void Remove()
-        {
-            if (listed)
-            {
-                parent.Instructions.Remove(this);
-                listed = false;
-            }
-        }
-
-        public void SetParent(Linear Parent)
-        {
-            parent = Parent;
-        }
-
-        public void Add(Linear lin)
-        {
-            Instructions.Add(lin);
-            lin.parent = this;
         }
 
         #endregion

@@ -118,7 +118,6 @@ namespace FractalMachine.Code
 
             AnalyzeParameters();
 
-
             int pushNum = 0;
             Linear callParameters = null;
 
@@ -296,33 +295,35 @@ namespace FractalMachine.Code
 
         public void CheckType(string subject, string request, int linearPos)
         {
-            Type reqType = Code.Type.Get(request);
+            var types = script.GetTypesSet;
+            Type reqType = types.Get(request);
             Type subjType;
 
-            var attrType = Code.Type.GetAttributeType(subject);
+            var attrType = types.SolveAttribute(subject);
             
-            if(attrType == Code.Type.AttributeType.Invalid)
+            if(attrType.Type == Code.AttributeType.Types.Invalid)
             {
                 throw new Exception("Invalid type");
             }
 
-            if (attrType == Code.Type.AttributeType.Name)
+            if (attrType.Type == Code.AttributeType.Types.Name)
             {
                 // get component info    
                 var comp = Solve(subject);
-                subjType = Code.Type.Get(comp.Linear.Return);
+                subjType = types.Get(comp.Linear.Return);
                 subjType.Solve(this); // or comp?
 
                 if (subjType.Name != reqType.Name)
                 {
                     //todo
+                    throw new Exception("todo");
                 }
             }
             else
             {
-                if (attrType != reqType.MyAttributeType)
+                if (attrType.TypeRef != reqType.AttributeReference)
                 {
-                    subject = Code.Type.Convert(subject, reqType);
+                    subject = types.ConvertAttributeTo(subject, reqType, attrType);
                     Linear[linearPos].Name = subject;
                 }
             }   
@@ -509,8 +510,6 @@ namespace FractalMachine.Code
             if(writer == null)
                 writer = new CPP.Writer.Main(context, Linear);
 
-            Component comp;
-
             foreach(var lin in _linear.Instructions)
             {
                 //lin.component = this;
@@ -525,7 +524,7 @@ namespace FractalMachine.Code
                         new CPP.Writer.Function(writer, lin);
                         break;
 
-                    case "push":
+                    case "push": // deprecated
                         push.Add(lin.Name);
                         break;
 

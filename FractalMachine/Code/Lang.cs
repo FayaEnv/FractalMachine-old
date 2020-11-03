@@ -27,7 +27,7 @@ namespace FractalMachine.Code
     {
         public abstract Linear GetLinear();
         public abstract Language Language { get; }
-
+        public abstract TypesSet GetTypesSet { get; }
     }
 
     public enum Language

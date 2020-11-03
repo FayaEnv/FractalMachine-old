@@ -22,317 +22,106 @@ using System.ComponentModel.Design.Serialization;
 // think about it https://en.wikipedia.org/wiki/IEC_61131-3
 namespace FractalMachine.Code
 {
-    public class Type
+    public abstract class TypesSet
     {
-        #region Static
+        public Dictionary<string, Type> Types;
 
-        public static Dictionary<string, Type> Types = new Dictionary<string, Type>();
-        public static Dictionary<AttributeType, Type> DefaultTypes = new Dictionary<AttributeType, Type>();
-        static bool inited = false;
+        public TypesSet()
+        {
+            init();
+        }
 
-        private static Type AddType(string Name)
+        internal abstract void init();
+        public abstract AttributeType SolveAttribute(string Name);
+        public abstract string ConvertAttributeTo(string Attribute, Type To, AttributeType AttributeType=null);
+
+        internal Type AddType(string Name)
         {
             var t = new Type();
             Types.Add(Name, t);
-            t._name = Name;
+            t.Name = Name;
             return t;
         }
 
-        private static void SetAsDefault(Type t, AttributeType attrType = AttributeType.Invalid)
+        public Type Get(string name)
         {
-            DefaultTypes[attrType == AttributeType.Invalid ? t._attributeType : attrType] = t;
+            return Types[name]; //todo better
+        }
+      
+    }
+
+    public class AttributeType
+    {
+        public TypesSet TypesSet;
+        public Types Type;
+        public string TypeRef;
+
+        public AttributeType(TypesSet typesSet)
+        {
+            TypesSet = typesSet;
         }
 
-        static void initTypes()
+        public enum Types
         {
-            if (inited)
-                return;
-
-            /// char
-            var _char = AddType("char");
-            _char._bytes = 1;
-            _char._signed = true;
-            _char._attributeType = AttributeType.String | AttributeType.Integer;
-
-            /// uchar
-            var _uchar = AddType("uchar");
-            _uchar._bytes = 1;
-            _uchar._attributeType = AttributeType.String | AttributeType.Integer;
-
-            /// short
-            var _short = AddType("short");
-            _short._bytes = 2;
-            _short._signed = true;
-            _short._attributeType = AttributeType.Integer;
-
-            /// ushort
-            var _ushort = AddType("ushort");
-            _ushort._bytes = 2;
-            _ushort._attributeType = AttributeType.Integer;
-
-            /// int
-            var _int = AddType("int");
-            _int._bytes = 4;
-            _int._signed = true;
-            _int._attributeType = AttributeType.Integer;
-            SetAsDefault(_int);
-
-            /// uint
-            var _uint = AddType("uint");
-            _uint._bytes = 4;
-            _uint._attributeType = AttributeType.Integer;
-
-            /// long
-            var _long = AddType("long");
-            _long._bytes = 8;
-            _long._signed = true;
-            _long._attributeType = AttributeType.Integer;
-
-            /// ulong
-            var _ulong = AddType("ulong");
-            _ulong._bytes = 8;
-            _ulong._attributeType = AttributeType.Integer;
-
-            /// float
-            var _float = AddType("float");
-            _float._bytes = 4;
-            _float._floating = true;
-            _float._attributeType = AttributeType.Float;
-            SetAsDefault(_float);
-
-            /// double
-            var _double = AddType("double");
-            _double._bytes = 8;
-            _double._floating = true;
-            _double._attributeType = AttributeType.Double;
-            SetAsDefault(_double);
-
-            /// double
-            var _decimal = AddType("decimal");
-            _decimal._bytes = 12;
-            _decimal._floating = true;
-            _decimal._attributeType = AttributeType.Float;
-
-            /// string
-            var _string = AddType("string");
-            _string._base = _char;
-            _string._array = true;
-            _string._attributeType = AttributeType.String;
-            SetAsDefault(_string);
-
-            inited = true;
-        }
-
-        public static Type Get(string TypeName)
-        {
-            initTypes();
-
-            Type o;
-            if(!Types.TryGetValue(TypeName, out o))
-            {
-                o = new Type(TypeName);
-            }
-
-            return o;
-        }
-
-        #region AttributeType
-
-        public enum AttributeType
-        {
-            Integer,
-            Float,
-            Double,
-            String,
+            Type,
             Name,
             Invalid
         }
+    }
 
-        public static AttributeType GetAttributeType(string Name)
-        {
-            if (Name.HasStringMark())
-            {
-                return AttributeType.String;
-            }
-            else if (Char.IsDigit(Name[0]))
-            {
-                var numb = AttributeType.Integer;
-
-                for (int c = 0; c < Name.Length; c++)
-                {
-                    if (!Char.IsLetter(Name[c]))
-                        return AttributeType.Invalid;
-
-                    if (Name[c] == '.')
-                        numb = AttributeType.Double;
-
-                    if (c == Name.Length - 1 && Name[c] == 'f')
-                        return AttributeType.Float;
-                }
-
-                return numb;
-            }
-
-            return AttributeType.Name;
-        }
-
-        public static Type AttributeTypeToType(AttributeType attrType)
-        {
-            initTypes();
-
-            switch (attrType)
-            {
-                case AttributeType.Integer:
-                    return Types["int"];
-                case AttributeType.Float:
-                    return Types["float"];
-                case AttributeType.Double:
-                    return Types["double"];
-                case AttributeType.String:
-                    return Types["string"];
-            }
-
-            return new Type();
-        }
-
-        public static string Convert(string cont, Type to)
-        {
-            var from = GetAttributeType(cont);
-
-            if (to._class)
-            {
-                //todo
-            }
-
-            switch (from)
-            {
-                case AttributeType.String:
-                    return cont.NoMark();
-
-                default:
-                    if (to._attributeType == AttributeType.String)
-                        return Properties.StringMark + cont;
-                    break;
-            }
-
-            return cont;
-        }
-
-        #endregion
-
-        #endregion
-
-        #region Dynamic
-
-        Type _base;
-        AttributeType _attributeType;
-        string _name;
-        int _bytes;
-        bool _floating = false;
-        bool _signed = false;
-        bool _array = false;
-        bool _class = false;
+    public class Type
+    { 
+        public Type Base;
+        public string Name;
+        public int Bytes;
+        public bool Floating = false;
+        public bool Signed = false;
+        public bool Array = false;
+        public bool Class = false;
 
         public Type()
         {
-            _name = "var";
+            Name = "var"; // means generic type
         }
 
         public Type(string Name, int Bytes, bool Floating, bool Signed)
         {
-            _name = Name;
-            _bytes = Bytes;
-            _floating = Floating;
-            _signed = Signed;
+            this.Name = Name;
+            this.Bytes = Bytes;
+            this.Floating = Floating;
+            this.Signed = Signed;
         }
 
         public Type(Type Base)
         {
-            _base = Base;
-            _name = Base._name + "[]";
+            this.Base = Base;
         }
 
         public Type(string Name)
         {
-            _name = Name;
-            _class = true;
+            this.Name = Name;
+            Class = true;
         }
-
-        #region Properties
-
-        public Type Base
-        {
-            get { return _base; }
-        }
-
-        public AttributeType MyAttributeType
-        {
-            get { return _attributeType; }
-        }
-
-        public string Name
-        {
-            get { return _name; }
-        }
-
-        public int Bytes
-        {
-            get { return _bytes; }
-        }
-
-        public bool Floating
-        {
-            get { return _floating; }
-        }
-
-        public bool Signed
-        {
-            get { return _signed; }
-        }
-
-        public bool Array
-        {
-            get { return _array; }
-        }
-
-        public bool Class
-        {
-            get { return _class; }
-        }
-
-        #endregion
 
         public void Solve(Component comp)
         {
-            if (_class)
+            if (Class)
             {
                 //todo
+                throw new Exception("todo");
             }
         }
 
-        /*public Converter GetConverter
+        public string AttributeReference
         {
             get
             {
-                switch (_name)
-                {
-                    case "string":
-                        return new Converter.String();
-                }
+                if (Base != null)
+                    return Base.AttributeReference;
 
-                return null;
+                return Name;
             }
-        }*/
 
-        #endregion
-
-        #region Converters
-
-        /*public class Converter
-        {
-            
-        }*/
-
-        #endregion
+        }
     }
 }
