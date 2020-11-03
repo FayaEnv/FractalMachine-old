@@ -1,2 +1,7 @@
 
-Print("ciao");
+string ExampleFun(string str){
+	printf("%s", str);
+	return "yuppi";
+}
+
+var res = ExampleFun("ciao");

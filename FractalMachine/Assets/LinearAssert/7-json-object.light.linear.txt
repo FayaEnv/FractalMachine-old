@@ -20,4 +20,4 @@
 ======| Attributes: stai  |  $$*°are you  |  
 ====| 5. =
 ======| Name: json
-======| Attributes: £0  |  
+======| Return: £0

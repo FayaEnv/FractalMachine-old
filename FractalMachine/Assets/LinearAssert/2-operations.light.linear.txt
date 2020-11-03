@@ -5,13 +5,13 @@
 ======| Return: int
 ====| 1. =
 ======| Name: v0
-======| Attributes: 2  |  
+======| Return: 2
 ====| 2. declare
 ======| Name: v1
 ======| Return: int
 ====| 3. =
 ======| Name: v1
-======| Attributes: 3  |  
+======| Return: 3
 ====| 4. declare
 ======| Name: sum
 ======| Return: int
@@ -20,7 +20,7 @@
 ======| Attributes: v0  |  v1  |  
 ====| 6. =
 ======| Name: sum
-======| Attributes: £0  |  
+======| Return: £0
 ====| 7. declare
 ======| Name: more
 ======| Return: int
@@ -32,4 +32,4 @@
 ======| Attributes: v0  |  £1  |  
 ====| 10. =
 ======| Name: more
-======| Attributes: £2  |  
+======| Return: £2

@@ -1,6 +1,29 @@
 | 0. 
 ==| Instructions:
-====| 0. call
-======| Name: Print
+====| 0. function
+======| Name: ExampleFun
+======| Return: string
+======| Settings:
+========|parameters
+========| 0. parameters
+==========| Instructions:
+============| 0. parameter
+==============| Name: str
+==============| Return: string
+======| Instructions:
+========| 0. call
+==========| Name: printf
+==========| Return: £0
+==========| Attributes: $$*°%s  |  str  |  
+========| 1. return
+==========| Return: $$*°yuppi
+====| 1. declare
+======| Name: res
+======| Return: var
+====| 2. call
+======| Name: ExampleFun
 ======| Return: £0
 ======| Attributes: $$*°ciao  |  
+====| 3. =
+======| Name: res
+======| Return: £0

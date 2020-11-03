@@ -18,4 +18,4 @@
 ======| Attributes: £1  |  £2  |  
 ====| 5. =
 ======| Name: ciao
-======| Attributes: £3  |  
+======| Return: £3

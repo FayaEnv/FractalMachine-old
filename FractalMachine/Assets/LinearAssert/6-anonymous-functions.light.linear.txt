@@ -16,7 +16,7 @@
 ==========| Attributes: $$*°ciao!  |  
 ====| 2. =
 ======| Name: fun
-======| Attributes: £0  |  
+======| Return: £0
 ====| 3. call
 ======| Name: fun
 ======| Return: £1

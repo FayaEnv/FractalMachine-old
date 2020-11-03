@@ -8,7 +8,7 @@
 ======| Return: £0
 ====| 2. =
 ======| Name: arr
-======| Attributes: £0  |  
+======| Return: £0
 ====| 3. call
 ======| Name: arr
 ======| Attributes: 0  |  2  |  
@@ -22,7 +22,7 @@
 ======| Attributes: 0  |  
 ====| 6. =
 ======| Name: normal
-======| Attributes: £1  |  
+======| Return: £1
 ====| 7. declare
 ======| Name: json
 ======| Return: var
@@ -43,4 +43,4 @@
 ======| Attributes: 2  |  va  |  
 ====| 12. =
 ======| Name: json
-======| Attributes: £2  |  
+======| Return: £2

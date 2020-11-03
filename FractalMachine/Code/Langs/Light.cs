@@ -1617,27 +1617,36 @@ namespace FractalMachine.Code.Langs
                         bag = bag.subBag(Bag.Status.DeclarationParameters);
                         var l = bag.Linear = bag.Linear.SetSettings("parameters", ast);
 
-                        bag.OnRepeatable = delegate (OrderedAST oAst)
+                        if (codes.Count > 0)
                         {
-                            var bag = oAst.bag;
-                            var p = bag.Params.Pull();
-                            if (p != null)
+                            // Force repeteabled
+                            FirstCode.IsRepeatedInstruction = true;
+
+                            bag.OnRepeatable = delegate (OrderedAST oAst)
                             {
-                                var lin = new Linear(l, oAst.Left.ast);
-                                lin.Op = "parameter";
-                                lin.Name = p.StrValue;
-                                lin.List();
+                                oAst.onPostEnds.Add(delegate
+                                {
+                                    var bag = oAst.bag;
+                                    var p = bag.Params.Pull();
+                                    if (p != null)
+                                    {
+                                        var lin = new Linear(l, oAst.ast);
+                                        lin.Op = "parameter";
+                                        lin.Name = p.StrValue;
+                                        lin.List();
 
-                                if (bag.Params.Count > 0)
-                                    lin.Return = bag.Params.Pull().StrValue;
-                            }
-                        };
+                                        if (bag.Params.Count > 0)
+                                            lin.Return = bag.Params.Pull().StrValue;
+                                    }
+                                });
+                            };
+                        }
 
-                        onEnd = delegate
+                        /*onEnd = delegate
                         {
                             if(LastCode != null)
                                 bag.OnRepeatable(LastCode);
-                        };
+                        };*/
                     }
                     else if (csType == "Block")
                     {
@@ -1686,7 +1695,7 @@ namespace FractalMachine.Code.Langs
                             setTempReturn();
                         };
                     }
-                    else if(Right.IsAttribute && !Right.IsDotAttribute && codes.Count==1 && LastCode.IsAttribute)
+                    else if(Right != null && Right.IsAttribute && !Right.IsDotAttribute && codes.Count==1 && LastCode.IsAttribute)
                     {
                         //it's a cast
                         lin = new Linear(bag.Linear, ast);
@@ -1859,7 +1868,8 @@ namespace FractalMachine.Code.Langs
                             lin.Op = Subject;
                             lin.Name = parName.StrValue;
                             lin.List();
-                            lin.Attributes.Add(attr);
+                            lin.Return = attr;
+                            //lin.Attributes.Add(attr); //deprecated
                         }
                     }
                 };
@@ -1919,6 +1929,7 @@ namespace FractalMachine.Code.Langs
                     AddDisk(new Declaration());
                     AddDisk(new Block());
                     AddDisk(new Retrieve());
+                    AddDisk(new Return());
                 }
 
                 private Statement() { }
@@ -2118,6 +2129,53 @@ namespace FractalMachine.Code.Langs
                 #endregion
 
                 #region Statements
+
+                public class Return : Statement
+                {
+
+                    public Return()
+                    {
+                        Scheduler.Add(scheduler_0);
+                        Scheduler.Add(scheduler_1);
+                    }
+                    bool scheduler_0(OrderedAST ast)
+                    {
+                        if (!ast.IsAttribute)
+                            return false;
+
+                        var spar = Pull().StrValue;
+
+                        if (spar == "return")
+                        {
+                            NextScheduler();
+                            Monopoly();
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    bool scheduler_1(OrderedAST ast)
+                    {
+                        var bag = OrderedAST.bag;
+
+                        if (!bag.HasNewParam)
+                            return false;
+
+                        var returns = Pull().StrValue;
+
+                        var lin = new Linear(bag.Linear, ast.ast);
+                        lin.Op = "return";
+                        lin.Return = returns;
+                        lin.List();
+
+                        NextScheduler();
+
+                        return true;
+                    }
+                }
+
                 public class Retrieve : Statement
                 {
                     string Name;
