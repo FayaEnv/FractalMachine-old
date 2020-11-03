@@ -1755,6 +1755,9 @@ namespace FractalMachine.Code.Langs
             // Classe usa e getta
             public class Statement 
             {
+                /* To think:
+                    - Replace Disks.RemoveAt with a bool parameter "removed" for performance reasons?
+                */
                 Statement parent;
                 OrderedAST parentOrderedAST, curderedAST;
                 List<Statement> Disks = new List<Statement>();
