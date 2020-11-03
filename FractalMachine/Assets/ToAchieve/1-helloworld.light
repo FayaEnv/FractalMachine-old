@@ -1,0 +1,4 @@
+
+function Main(){
+	printf("Hello world!");
+}

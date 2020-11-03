@@ -1,0 +1,6 @@
+
+function Main(){
+	var str1 = "ciao";
+	string str2 = "!";
+	printf("%s", (str1+str2));
+}
