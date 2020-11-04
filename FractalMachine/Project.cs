@@ -26,13 +26,17 @@ namespace FractalMachine
 {
     public class Project
     {
+        Ambiance.Environment env;
+
         string outName;
         string entryPoint;
         string directory;
 
+        internal string exeOutPath;
+
         public Project(string ProjectPath) 
         {
-            var env = Ambiance.Environment.GetEnvironment;
+            env = Ambiance.Environment.GetEnvironment;
 
             FileAttributes attr;
             try { attr = File.GetAttributes(ProjectPath); }
@@ -58,6 +62,10 @@ namespace FractalMachine
                 directory = Path.GetDirectoryName(ProjectPath); //tocheck: ends with /?
                 outName = Path.GetFileNameWithoutExtension(entryPoint);
             }
+
+            /// Pre calculates
+            var outPath = directory + outName;
+            exeOutPath = outPath + env.exeFormat;
         }
 
         public void Compile(string Out = null)
@@ -80,10 +88,6 @@ namespace FractalMachine
             }
 
             // Compile
-            var env = Ambiance.Environment.GetEnvironment;
-
-            var exeOutPath = directory+outName+env.exeFormat;
-
             // Pay attention to the case of an updated library but not the entry point
             if (Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
             {

@@ -26,7 +26,7 @@ namespace FractalMachine.Develop
             {
                 if (file.Extension == ".light")
                 {
-                    if(file.Name == "4-functions-call.light" || true) // Debug purposes
+                    if(file.Name == "6-anonymous-functions.light" || true) // Debug purposes
                         elaborateFile(file.FullName);
                 }
             }

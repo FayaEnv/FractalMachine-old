@@ -34,7 +34,7 @@ namespace FractalMachine
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
-            var test = "linearAssert";
+            var test = "toAchieve";
             switch (test)
             {
                 case "short":
@@ -77,6 +77,11 @@ namespace FractalMachine
                     var assert = new Develop.LinearAssert();
                     assert.Execute();
 
+                    break;
+
+                case "toAchieve":
+                    var toAchieve = new Develop.ToAchieve();
+                    toAchieve.Achieve();
                     break;
             }
 

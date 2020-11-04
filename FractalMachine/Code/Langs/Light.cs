@@ -1642,11 +1642,6 @@ namespace FractalMachine.Code.Langs
                             };
                         }
 
-                        /*onEnd = delegate
-                        {
-                            if(LastCode != null)
-                                bag.OnRepeatable(LastCode);
-                        };*/
                     }
                     else if (csType == "Block")
                     {
@@ -1721,13 +1716,13 @@ namespace FractalMachine.Code.Langs
 
             #region toLinear_ground_instruction
             void toLinear_ground_instruction()
-            {
-                attachStatement();
-
+            {                
                 if (IsOperator)
                     toLinear_ground_instruction_operator();
                 else
                     toLinear_ground_instruction_default();
+
+                attachStatement();
             }
 
             #region assignIf
@@ -2098,11 +2093,12 @@ namespace FractalMachine.Code.Langs
                 /// <summary>
                 /// This is your branch for sure, so destroy the competion
                 /// </summary>
-                internal void Monopoly(Statement winner = null)
+                internal void AbsoluteWinner(Statement winner = null)
                 {
                     if(winner == null)
                     {
-                        parent.Monopoly(this);
+                        parent.AbsoluteWinner(this);
+                        NextScheduler();
                     }
                     else
                     {
@@ -2147,9 +2143,7 @@ namespace FractalMachine.Code.Langs
 
                         if (spar == "return")
                         {
-                            NextScheduler();
-                            Monopoly();
-
+                            AbsoluteWinner();
                             return true;
                         }
 
@@ -2247,8 +2241,7 @@ namespace FractalMachine.Code.Langs
                       
                         if (isBlock)
                         {
-                            NextScheduler();
-                            Monopoly();
+                            AbsoluteWinner();
                             
                             // Parameters checking
                             var parenthesis = ast.Right;
@@ -2315,8 +2308,7 @@ namespace FractalMachine.Code.Langs
 
                         if (spar == "import")
                         {
-                            NextScheduler();
-                            Monopoly();
+                            AbsoluteWinner();
 
                             return true;
                         }
@@ -2434,8 +2426,7 @@ namespace FractalMachine.Code.Langs
 
                         if (spar == "namespace")
                         {
-                            NextScheduler();
-                            Monopoly();  
+                            AbsoluteWinner();  
 
                             return true;
                         }
@@ -2576,16 +2567,6 @@ namespace FractalMachine.Code.Langs
                         if (parNames == null) return false;
 
                         Names = parNames.Values;
-
-                        /// Completed!
-                        NextScheduler();
-
-                        // Saves name param for next instruction
-                        if (ast.Right?.IsOperator ?? false && false) //tothink
-                        {
-                            bag.Params.New(parNames);
-                        }
-
                         foreach (var Name in Names)
                         {
                             lin = new Linear(bag.Linear, OrderedAST.ast);
@@ -2595,7 +2576,10 @@ namespace FractalMachine.Code.Langs
                             if (!String.IsNullOrEmpty(Modifier)) lin.Attributes.Add(Modifier);
                             lin.List();
                         }
-                        
+
+                        /// Completed!
+                        AbsoluteWinner();
+
                         return true;
                     }
 
