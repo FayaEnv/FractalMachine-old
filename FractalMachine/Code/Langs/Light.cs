@@ -1901,7 +1901,7 @@ namespace FractalMachine.Code.Langs
             public class Statement 
             {
                 /* To think:
-                    - Replace Disks.RemoveAt with a bool parameter "removed" for performance reasons?
+                    - Replace Disks.RemoveAt with a bool parameter "removed" for performance reasons(?)
                 */
                 Statement parent;
                 OrderedAST parentOrderedAST, curderedAST;
@@ -1911,8 +1911,6 @@ namespace FractalMachine.Code.Langs
 
                 List<OnScheduler> Scheduler = new List<OnScheduler>();
                 int SchedulerPos = 0;
-
-                List<Linear> Barrel = new List<Linear>();
 
                 bool killed = false;
                 public Statement(OrderedAST oast)
@@ -1927,9 +1925,7 @@ namespace FractalMachine.Code.Langs
                     AddDisk(new Return());
                 }
 
-                private Statement() { }
-
-                
+                private Statement() { }            
 
                 #region Properties
 
@@ -2058,6 +2054,7 @@ namespace FractalMachine.Code.Langs
 
                 #region Params
                 // Not particularly efficient
+                // simply don't delete parameters after use(?)
                 List<Parameter> pulledParameters = new List<Parameter>();
                 internal Parameter Pull(int Pos=-1, bool Remove = true)
                 {
@@ -2073,6 +2070,7 @@ namespace FractalMachine.Code.Langs
 
                     return par;
                 }
+
                 internal void ReversePull(Parameter ToReverse = null)
                 {
                     if (ToReverse == null)
@@ -2081,6 +2079,7 @@ namespace FractalMachine.Code.Langs
                         pulledParameters.Remove(ToReverse);
                 }
                 #endregion
+
                 internal void CheckDisksTurn()
                 {
                     for(int d=0; d<Disks.Count; d++)
