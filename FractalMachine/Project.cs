@@ -27,7 +27,7 @@ namespace FractalMachine
 {
     public class Project : Component
     {
-        Ambiance.Environment env;
+        internal Ambiance.Environment env;
 
         string outName;
         string entryPoint;
@@ -88,11 +88,13 @@ namespace FractalMachine
                 if (name == "main") name = Path.GetDirectoryName(entryPoint);
             }
 
+            var cpp = new CPP();
+
             var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
             if (Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
             {
                 var comp = ExtractComponent(entryPoint);
-                var output = comp.WriteToCpp();
+                var output = comp.WriteTo(cpp.GetSettings);
                 File.WriteAllText(cppOutPath, output);
             }
 
@@ -141,11 +143,11 @@ namespace FractalMachine
 
             if (linear != null) // why linear should be null?
             {
-                comp = new File(this, linear);
-                comp.lang = script.Language;
-                comp.Type = Component.Types.File;
-                comp.script = script;
-                comp.FileName = FileName;
+                comp = new Code.Components.File(this, linear)
+                {
+                    script = script,
+                    FileName = FileName
+                };
 
                 comp.ReadLinear();
 
@@ -193,7 +195,7 @@ namespace FractalMachine
 
         internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
         {
-            var comp = project.ExtractComponent(file);
+            var comp = ExtractComponent(file);
             //comp.parent = this; // ???
 
             foreach (var c in comp.components)

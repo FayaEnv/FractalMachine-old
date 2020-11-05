@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
     {
         public Class(Component parent, Linear linear) : base(parent, linear)
         {
-            type = Types.Class;
+            containerType = ContainerTypes.Class;
         }
 
         #region Writer 

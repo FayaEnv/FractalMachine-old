@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
     {
         public Namespace(Component parent, Linear linear) : base(parent, linear)
         {
-            type = Types.Namespace;
+            containerType = ContainerTypes.Namespace;
         }
 
 

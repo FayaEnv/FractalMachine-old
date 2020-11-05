@@ -66,6 +66,18 @@ namespace FractalMachine.Classes
             return listToClone.Select(item => item).ToList();
         }
 
+        public static string ConcatWithString(this List<string> list, string Union)
+        {
+            string res = "";
+            int count = list.Count;
+            for(int i=0; i< count; i++)
+            {
+                res += list[i];
+                if (i != count - 1) res += Union;
+            }
+            return res;
+        }
+
         #endregion
 
         #region Marks

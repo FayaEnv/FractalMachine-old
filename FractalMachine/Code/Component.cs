@@ -36,13 +36,12 @@ namespace FractalMachine.Code
         internal Component parent;
 
         public Dictionary<string, Component> components = new Dictionary<string, Component>();
-        //internal Dictionary<string, string> parameters = new Dictionary<string, string>();
+        internal Dictionary<string, string> parameters = new Dictionary<string, string>();
 
         public Component(Component parent, Linear Linear) 
         {
             this.parent = parent;
             _linear = Linear;
-            type = Types.Default;
         }
 
 
@@ -50,12 +49,9 @@ namespace FractalMachine.Code
 
         public enum Types
         {
-            Default,
-            File,
-            Namespace,
+            Container,
             Function,
-            Class,
-            Variable,
+            Overload,
             Member
         }
 
@@ -106,12 +102,44 @@ namespace FractalMachine.Code
 
         internal virtual void readLinear_function(Linear instr)
         {
+            Function function;
 
+            try
+            {
+                function = (Function)getComponent(instr.Name);
+            }
+            catch(Exception ex)
+            {
+                throw new Exception("Name used for another variable");
+            }
+            
+            if (function == null)
+            {
+                function = new Function(this, null);
+                addComponent(instr.Name, function);
+            }
+
+            function.addOverload(instr);
         }
 
         internal virtual void readLinear_namespace(Linear instr)
         {
+            Namespace ns;
 
+            try
+            {
+                ns = (Namespace)getComponent(instr.Name);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Name used for another variable");
+            }
+
+            if(ns == null)
+            {
+                ns = new Namespace(this, instr);
+                addComponent(instr.Name, ns);
+            }
         }
 
         internal virtual void readLinear_call(Linear instr)
@@ -263,6 +291,35 @@ namespace FractalMachine.Code
 
         #region AddComponents
 
+        internal Component getBaseComponent(string Name, out string toCreate)
+        {
+            var names = Name.Split('.').ToList();
+            toCreate = names.Pull();
+
+            Component baseComp = this;
+            if (names.Count > 0)
+                baseComp = Solve(names.ConcatWithString("."));
+
+            return baseComp;
+        } 
+
+        internal void addComponent(string Name, Component comp)
+        {
+            string toCreate;
+            var baseComp = getBaseComponent(Name, out toCreate);
+
+            baseComp.components[toCreate] = comp;
+        }
+
+        internal Component getComponent(string Name)
+        {
+            string toCreate;
+            var baseComp = getBaseComponent(Name, out toCreate);
+            Component comp;
+            baseComp.components.TryGetValue(Name, out comp);
+            return comp;
+        }
+
         /*internal Component addComponent(Linear instr)
         {
             var comp = addComponent(instr.Name);
@@ -297,7 +354,7 @@ namespace FractalMachine.Code
 
         #endregion
 
-       
+
 
         #region Properties
 
@@ -448,7 +505,7 @@ namespace FractalMachine.Code
 
         virtual public void writeTo_function(Lang.Settings LangSettings, Linear instr)
         {
-            Function fun = (Function)Solve(instr.Name);
+            Overload fun = (Overload)Solve(instr.Name);
             var res = fun.WriteTo(LangSettings);
             writeToCont(res);
         }
@@ -521,27 +578,7 @@ namespace FractalMachine.Code
             return writer.Compose();
         }*/
 
-        public string WriteLibrary()
-        {
-            if (outFileName == null)
-            {
-                if (script.Language == Language.Light)
-                {               
-                    outFileName = context.tempDir + Misc.DirectoryNameToFile(FileName) + ".hpp";
-                    outFileName = Path.GetFullPath(outFileName);
-                    if (Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
-                    {
-                        var output = WriteToCpp();
-                        File.WriteAllText(outFileName, output);
-                    }
-                }
-                else
-                    outFileName = FileName;
-            }
 
-            // non so se l'AssertPath metterlo qui o direttamente in WriteCPP
-            return context.env.Path(outFileName);
-        }
 
         #endregion
     }

@@ -29,8 +29,6 @@ namespace FractalMachine
 
             Console.WriteLine("Hello fractal!");
 
-            Context machine = new Context();
-
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
@@ -42,12 +40,14 @@ namespace FractalMachine
                     light.Parse("IO.test(\"ciao\")");
                     break;
 
-                case "test":               
-                    machine.ExtractComponent(assetsDir + "/test.light");
+                case "test":
+                    var proj = new Project(assetsDir + "/test.light");
+                    proj.Compile();
                     break;
 
                 case "machine":
-                    machine.ExtractComponent(assetsDir + "/test.light");
+                    proj = new Project(assetsDir + "/test.light");
+                    proj.Compile();
                     break;
 
                 case "bashTest":
@@ -67,7 +67,7 @@ namespace FractalMachine
                     break;
 
                 case "project":
-                    var proj = new Project(assetsDir+"/proj_example");
+                    proj = new Project(assetsDir+"/proj_example");
                     proj.Compile();
 
                     read = "";

@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
 {
     public class File : Container
     {
-        internal string fileName, outFileName;
+        internal string FileName, outFileName;
         internal Component parent;
         internal Lang script;
 
@@ -17,10 +17,10 @@ namespace FractalMachine.Code.Components
         public File(Project Project, Linear Linear) : base(Project, Linear)
         {
             usings.Add("namespace std");
-            type = Types.File;
+            containerType = ContainerTypes.File;
         }
 
-        public Project Parent
+        public Project Project
         {
             get { return (Project)parent; }
         }
@@ -83,6 +83,28 @@ namespace FractalMachine.Code.Components
         override internal int writeToNewLine()
         {
             return newLines++;
+        }
+
+        public string WriteLibrary(Lang.Settings LangSettings)
+        {
+            if (outFileName == null)
+            {
+                if (script.Language == Language.Light)
+                {
+                    outFileName = Project.tempDir + Misc.DirectoryNameToFile(FileName) + ".hpp";
+                    outFileName = Path.GetFullPath(outFileName);
+                    if (Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
+                    {
+                        var output = WriteTo(LangSettings);
+                        System.IO.File.WriteAllText(outFileName, output);
+                    }
+                }
+                else
+                    outFileName = FileName;
+            }
+
+            // non so se l'AssertPath metterlo qui o direttamente in WriteCPP
+            return Project.env.Path(outFileName);
         }
 
         #endregion
