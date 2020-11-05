@@ -27,7 +27,10 @@ namespace FractalMachine.Code.Components
 
         #region ReadLinear
 
-
+        internal override void readLinear_import(Linear instr)
+        {
+            throw new Exception("import not expected");
+        }
 
         #endregion
 

@@ -86,6 +86,11 @@ namespace FractalMachine.Code
                     case "call":
                         readLinear_call(instr);
                         break;
+
+                    default:
+                        if (instr.Type == "operation")
+                            readLinear_operation(instr);
+                        break;
                 }
             }
         }
@@ -96,6 +101,11 @@ namespace FractalMachine.Code
         }
 
         internal virtual void readLinear_declare(Linear instr)
+        {
+
+        }
+
+        internal virtual void readLinear_operation(Linear instr)
         {
 
         }
@@ -298,7 +308,7 @@ namespace FractalMachine.Code
 
             Component baseComp = this;
             if (names.Count > 0)
-                baseComp = Solve(names.ConcatWithString("."));
+                baseComp = Solve(String.Join(".", names));
 
             return baseComp;
         } 
