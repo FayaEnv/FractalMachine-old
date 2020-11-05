@@ -28,6 +28,16 @@ namespace FractalMachine.Code
         public abstract Linear GetLinear();
         public abstract Language Language { get; }
         public abstract TypesSet GetTypesSet { get; }
+        public abstract Settings GetSettings { get; }
+
+        public abstract class Settings
+        {
+            public abstract string EntryPointFunction { get; }
+            public abstract string OpenBlock { get; }
+            public abstract string CloseBlock { get; }
+            public abstract string StructureImport { get; }
+
+        }
     }
 
     public enum Language

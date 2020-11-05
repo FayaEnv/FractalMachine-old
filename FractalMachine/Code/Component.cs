@@ -15,6 +15,7 @@
 */
 
 using FractalMachine.Classes;
+using FractalMachine.Code.Components;
 using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
@@ -28,42 +29,22 @@ using System.Text;
 
 namespace FractalMachine.Code
 {
-    public class Component
+    abstract public class Component
     {
-        Linear _linear;
-        Context context;
-
-        internal string FileName, outFileName;
+        internal Types type;
+        internal Linear _linear;
         internal Component parent;
-        internal Lang script;
-        internal bool called = false;
 
         public Dictionary<string, Component> components = new Dictionary<string, Component>();
-        internal Dictionary<string, string> parameters = new Dictionary<string, string>();
-        internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
+        //internal Dictionary<string, string> parameters = new Dictionary<string, string>();
 
-        /// 
-        /// File
-        /// 
-        List<string> usings;
-
-        public Component(Component parent)
+        public Component(Component parent, Linear Linear) 
         {
-            this.context = parent.context;
             this.parent = parent;
+            _linear = Linear;
+            type = Types.Default;
         }
 
-        public Component(Component parent, Linear linear) : this(parent)
-        {
-            this.Linear = linear;
-        }
-
-        public Component(Context context, Linear linear)
-        {
-            this.context = context;
-            this.parent = linear.component;
-            this.Linear = linear;       
-        }
 
         #region ComponentTypes
 
@@ -73,45 +54,76 @@ namespace FractalMachine.Code
             File,
             Namespace,
             Function,
-            Variable
-        }
-
-        internal Language lang;
-        Types type = Types.Default;
-        public Types Type
-        {
-            get { return type; }
-            set
-            {
-                type = value;
-                initType();
-            }
-        }
-
-        void initType()
-        {
-            switch (type)
-            {
-                case Types.File:
-                    if (lang == Language.Light)
-                    {
-                        usings = new List<string>();
-                        usings.Add("namespace std");
-                    }
-                    break;
-
-                case Types.Function:
-                    //tothink
-                    break;
-
-                // also todo Light and CPP
-            }
+            Class,
+            Variable,
+            Member
         }
 
         #endregion
 
+        #region ReadLinear
+
+        public virtual void ReadLinear()
+        {
+            for (int i = 0; i < _linear.Instructions.Count; i++)
+            {
+                var instr = _linear[i];
+
+                switch (instr.Op)
+                {
+                    case "import":
+                        readLinear_import(instr);
+                        break;
+
+                    case "declare":
+                        readLinear_declare(instr);
+                        break;
+
+                    case "function":
+                        readLinear_function(instr);
+                        break;
+
+                    case "namespace":
+                        readLinear_namespace(instr);
+                        break;
+
+                    case "call":
+                        readLinear_call(instr);
+                        break;
+                }
+            }
+        }
+
+        internal virtual void readLinear_import(Linear instr)
+        {
+            throw new Exception("import not expected");
+        }
+
+        internal virtual void readLinear_declare(Linear instr)
+        {
+
+        }
+
+        internal virtual void readLinear_function(Linear instr)
+        {
+
+        }
+
+        internal virtual void readLinear_namespace(Linear instr)
+        {
+
+        }
+
+        internal virtual void readLinear_call(Linear instr)
+        {
+
+        }
+
+
+        #endregion
+
         bool linearRead = false;
-        public void ReadLinear()
+        /*public void ReadLinear()
         {
             if (linearRead)
                 return;
@@ -203,17 +215,11 @@ namespace FractalMachine.Code
             }
 
             linearRead = true;
-        }
+        }*/
 
         //tothink: is it so important that this parameters are instanced when strictly necessary?
-        internal void IsNested()
-        {
-            components = new Dictionary<string, Component>();
-            parameters = new Dictionary<string, string>();
-            importLink = new Dictionary<string, Component>();
-        }
 
-        internal void AnalyzeParameters()
+        /*internal void AnalyzeParameters()
         {
             string parAs;
 
@@ -253,11 +259,11 @@ namespace FractalMachine.Code
                 }
             }
 
-        }
+        }*/
 
-        #region Components
+        #region AddComponents
 
-        internal Component addComponent(Linear instr)
+        /*internal Component addComponent(Linear instr)
         {
             var comp = addComponent(instr.Name);
             comp.Linear = instr;
@@ -287,55 +293,15 @@ namespace FractalMachine.Code
             }
 
             return comp;
-        }
+        }*/
 
         #endregion
 
-        #region Types
-
-        public void CheckType(string subject, string request, int linearPos)
-        {
-            var types = script.GetTypesSet;
-            Type reqType = types.Get(request);
-            Type subjType;
-
-            var attrType = types.SolveAttribute(subject);
-            
-            if(attrType.Type == Code.AttributeType.Types.Invalid)
-            {
-                throw new Exception("Invalid type");
-            }
-
-            if (attrType.Type == Code.AttributeType.Types.Name)
-            {
-                // get component info    
-                var comp = Solve(subject);
-                subjType = types.Get(comp.Linear.Return);
-                subjType.Solve(this); // or comp?
-
-                if (subjType.Name != reqType.Name)
-                {
-                    //todo
-                    throw new Exception("todo");
-                }
-            }
-            else
-            {
-                if (attrType.TypeRef != reqType.AttributeReference)
-                {
-                    subject = types.ConvertAttributeTo(subject, reqType, attrType);
-                    Linear[linearPos].Name = subject;
-                }
-            }   
-
-            string done = "";
-        }
-
-        #endregion
+       
 
         #region Properties
 
-        static string[] NestedOperations = new string[] { "namespace", "function" };
+        /*static string[] NestedOperations = new string[] { "namespace", "function" };
 
         internal Linear Linear
         {
@@ -351,97 +317,7 @@ namespace FractalMachine.Code
                 if (NestedOperations.Contains(_linear.Op))
                     IsNested();
             }
-        }
-
-        #endregion
-
-        #region Import
-
-        public void Import(string ToImport, Dictionary<string, string> Parameters)
-        {
-            if (ToImport.HasMark())
-            {
-                // Is file
-                //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
-                var fname = ToImport.NoMark();
-                var dir = context.libsDir+"/"+ fname;
-                var c = importFileIntoComponent(dir, Parameters);
-                importLink.Add(fname, c);
-                //todo: importLink.Add(ResultingNamespace, dir);
-            }
-            else
-            {
-                // Is namespace
-                var fname = findNamespaceDirectory(ToImport);
-                var dir = context.libsDir + fname;
-
-                if (Directory.Exists(dir))
-                    importDirectoryIntoComponent(dir);
-
-                dir += ".light";
-                if (File.Exists(dir))
-                {
-                    var c = importFileIntoComponent(dir, Parameters);
-                    importLink.Add(ToImport, c);
-                }
-            }
-        }
-
-        internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
-        {
-            var comp = context.ExtractComponent(file);
-            //comp.parent = this; // ???
-
-            foreach (var c in comp.components)
-            {
-                //todo: file name yet exists
-                this.components.Add(c.Key, c.Value);
-            }
-
-            comp.parameters = parameters;
-
-            return comp;
-        }
-
-        internal void importDirectoryIntoComponent(string dir)
-        {
-            //todo
-        }
-
-        string findNamespaceDirectory(string ns)
-        {
-            var dir = "";
-            var split = ns.Split('.');
-
-            bool dirExists = false;
-
-            int s = 0;
-            for (; s < split.Length; s++)
-            {
-                var ss = split[s];
-                dir += "/" + ss;
-
-                if (!(dirExists = Directory.Exists(context.libsDir + dir)))
-                {
-                    break;
-                }
-            }
-
-            if (dirExists)
-            {
-                return dir;
-            }
-            else
-            {
-                while (!File.Exists(context.libsDir + dir + ".light") && s >= 0)
-                {
-                    dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
-                    s--;
-                }
-            }
-
-            return dir;
-        }
+        }*/
 
         #endregion
 
@@ -485,12 +361,18 @@ namespace FractalMachine.Code
             }
         }
 
+        #endregion
+
+        #region Called
+
+        internal bool called = false;
+
         public bool Called
         {
             get
             {
                 if (called) return true;
-                foreach(var comp in components)
+                foreach (var comp in components)
                 {
                     if (comp.Value.Called) return true;
                 }
@@ -499,16 +381,98 @@ namespace FractalMachine.Code
             }
         }
 
+        public Linear Linear
+        {
+            get
+            {
+                return _linear;
+            }
+        }
+
         #endregion
 
         #region Writer
 
-        internal List<string> push = new List<string>();
+        internal string wtCont = "";
 
-        public string WriteToCpp(CPP.Writer writer = null)
+        virtual public string WriteTo(Lang.Settings LangSettings)
+        {
+            wtCont = "";
+
+            foreach (var lin in _linear.Instructions)
+            {
+                //lin.component = this;
+
+                switch (lin.Op)
+                {
+                    case "import":
+                        writeTo_import(LangSettings, lin);
+                        break;
+
+                    case "function":
+                        writeTo_function(LangSettings, lin);
+                        break;
+
+                    case "call":
+                        writeTo_call(LangSettings, lin);
+                        break;
+
+                    case "namespace":
+                        writeTo_namespace(LangSettings, lin);
+                        break;
+
+                    case "compiler":
+                        writeTo_compiler(LangSettings, lin);
+                        break;
+                }
+            }
+
+            return wtCont;
+        }
+
+        virtual internal int writeToNewLine()
+        {
+            wtCont += "\r\n";
+            return parent.writeToNewLine();
+        }
+
+        virtual internal void writeToCont(string str)
+        {
+            wtCont += str;
+        }
+
+        virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
+        {
+            
+        }
+
+        virtual public void writeTo_function(Lang.Settings LangSettings, Linear instr)
+        {
+            Function fun = (Function)Solve(instr.Name);
+            var res = fun.WriteTo(LangSettings);
+            writeToCont(res);
+        }
+
+        virtual public void writeTo_call(Lang.Settings LangSettings, Linear instr)
+        {
+            
+        }
+
+        virtual public void writeTo_namespace(Lang.Settings LangSettings, Linear instr)
+        {
+            
+        }
+
+        virtual public void writeTo_compiler(Lang.Settings LangSettings, Linear instr)
+        {
+            
+        }
+
+
+        /*public string WriteToCpp(CPP.Writer writer = null)
         {        
             if(writer == null)
-                writer = new CPP.Writer.Main(context, Linear);
+                writer = new CPP.Writer.Main(this, Linear);
 
             foreach(var lin in _linear.Instructions)
             {
@@ -522,10 +486,6 @@ namespace FractalMachine.Code
 
                     case "function":
                         new CPP.Writer.Function(writer, lin);
-                        break;
-
-                    case "push": // deprecated
-                        push.Add(lin.Name);
                         break;
 
                     case "call":
@@ -559,7 +519,7 @@ namespace FractalMachine.Code
             }
 
             return writer.Compose();
-        }
+        }*/
 
         public string WriteLibrary()
         {

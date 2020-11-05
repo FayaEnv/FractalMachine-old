@@ -21,10 +21,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using FractalMachine.Code.Langs;
 
 namespace FractalMachine
 {
-    public class Project
+    public class Project : Component
     {
         Ambiance.Environment env;
 
@@ -34,7 +35,12 @@ namespace FractalMachine
 
         internal string exeOutPath;
 
-        public Project(string ProjectPath) 
+        /// Context
+        internal string assetsDir, libsDir, tempDir;
+        internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
+        internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
+
+        public Project(string ProjectPath) : base(null, null)
         {
             env = Ambiance.Environment.GetEnvironment;
 
@@ -66,6 +72,11 @@ namespace FractalMachine
             /// Pre calculates
             var outPath = directory + outName;
             exeOutPath = outPath + env.exeFormat;
+
+            /// Assets and dirs
+            assetsDir = Resources.Solve("Assets");
+            libsDir = assetsDir + "/libs";
+            tempDir = Properties.TempDir;
         }
 
         public void Compile(string Out = null)
@@ -77,12 +88,10 @@ namespace FractalMachine
                 if (name == "main") name = Path.GetDirectoryName(entryPoint);
             }
 
-            var context = new Context();
-
             var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
             if (Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
             {
-                var comp = context.ExtractComponent(entryPoint);
+                var comp = ExtractComponent(entryPoint);
                 var output = comp.WriteToCpp();
                 File.WriteAllText(cppOutPath, output);
             }
@@ -95,5 +104,149 @@ namespace FractalMachine
                 compiler.Compile(cppOutPath, exeOutPath);
             }
         }
+
+        #region Context
+
+        internal Component ExtractComponent(string FileName)
+        {
+            Component comp;
+
+            FileName = Path.GetFullPath(FileName);
+
+            if (imports.TryGetValue(FileName, out comp))
+                return comp;
+
+            //todo: as
+            Lang script = null;
+            Linear linear = null;
+
+            var ext = Path.GetExtension(FileName);
+
+            switch (ext)
+            {
+                case ".light":
+                    script = Light.OpenFile(FileName);
+                    linear = script.GetLinear();
+                    break;
+
+                case ".h":
+                case ".hpp":
+                    script = CPP.OpenFile(FileName);
+                    linear = script.GetLinear();
+                    break;
+
+                default:
+                    throw new Exception("Todo");
+            }
+
+            if (linear != null) // why linear should be null?
+            {
+                comp = new File(this, linear);
+                comp.lang = script.Language;
+                comp.Type = Component.Types.File;
+                comp.script = script;
+                comp.FileName = FileName;
+
+                comp.ReadLinear();
+
+                imports.Add(FileName, comp);
+
+                return comp;
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        #region Import
+
+        public void Import(string ToImport, Dictionary<string, string> Parameters)
+        {
+            if (ToImport.HasMark())
+            {
+                // Is file
+                //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
+                var fname = ToImport.NoMark();
+                var dir = libsDir + "/" + fname;
+                var c = importFileIntoComponent(dir, Parameters);
+                importLink.Add(fname, c);
+                //todo: importLink.Add(ResultingNamespace, dir);
+            }
+            else
+            {
+                // Is namespace
+                var fname = findNamespaceDirectory(ToImport);
+                var dir = libsDir + fname;
+
+                if (Directory.Exists(dir))
+                    importDirectoryIntoComponent(dir);
+
+                dir += ".light";
+                if (File.Exists(dir))
+                {
+                    var c = importFileIntoComponent(dir, Parameters);
+                    importLink.Add(ToImport, c);
+                }
+            }
+        }
+
+        internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
+        {
+            var comp = project.ExtractComponent(file);
+            //comp.parent = this; // ???
+
+            foreach (var c in comp.components)
+            {
+                //todo: file name yet exists
+                this.components.Add(c.Key, c.Value);
+            }
+
+            comp.parameters = parameters;
+
+            return comp;
+        }
+
+        internal void importDirectoryIntoComponent(string dir)
+        {
+            //todo
+        }
+
+        string findNamespaceDirectory(string ns)
+        {
+            var dir = "";
+            var split = ns.Split('.');
+
+            bool dirExists = false;
+
+            int s = 0;
+            for (; s < split.Length; s++)
+            {
+                var ss = split[s];
+                dir += "/" + ss;
+
+                if (!(dirExists = Directory.Exists(libsDir + dir)))
+                {
+                    break;
+                }
+            }
+
+            if (dirExists)
+            {
+                return dir;
+            }
+            else
+            {
+                while (!File.Exists(libsDir + dir + ".light") && s >= 0)
+                {
+                    dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
+                    s--;
+                }
+            }
+
+            return dir;
+        }
+
+        #endregion
     }
 }

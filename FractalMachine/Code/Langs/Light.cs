@@ -82,6 +82,15 @@ namespace FractalMachine.Code.Langs
 
         #endregion
 
+        #region Settings 
+
+        override public Lang.Settings GetSettings
+        {
+            get { return null;  }
+        }
+
+        #endregion
+
         #region Types
 
         public class TypesSet : Code.TypesSet
@@ -1795,6 +1804,7 @@ namespace FractalMachine.Code.Langs
                         lin = new Linear(bag.Linear, ast);
                         lin.Op = "assignIf";
                         lin.Name = condition;
+                        lin.Type = "operation";
 
                         onEnd = delegate
                         {
@@ -1809,6 +1819,7 @@ namespace FractalMachine.Code.Langs
                         lin = new Linear(Parent.bag.Linear, ast);
                         lin.Op = Subject;
                         lin.Attributes.Add(bag.Params.Pull().StrValue);
+                        lin.Type = "operation";
 
                         onEnd = delegate
                         {
@@ -1861,6 +1872,7 @@ namespace FractalMachine.Code.Langs
                         {
                             lin = new Linear(Parent.bag.Linear, ast);
                             lin.Op = Subject;
+                            lin.Type = "operation";
                             lin.Name = parName.StrValue;
                             lin.List();
                             lin.Return = attr;

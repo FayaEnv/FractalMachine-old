@@ -15,6 +15,7 @@
 */
 
 using FractalMachine.Classes;
+using FractalMachine.Code.Components;
 using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
@@ -68,6 +69,59 @@ namespace FractalMachine.Code.Langs
                 return null;
             }
         }
+
+        #region Settings
+
+        public class Settings : Lang.Settings
+        {
+            public override string EntryPointFunction
+            {
+                get
+                {
+                    return "main";
+                }
+            }
+
+            public override string OpenBlock
+            {
+                get
+                {
+                    return "{";
+                }
+            }
+
+            public override string CloseBlock
+            {
+                get
+                {
+                    return "}";
+                }
+            }
+
+            public override string StructureImport
+            {
+                get
+                {
+                    return "#include \"$%PATH\"";
+                }
+            }
+
+        }
+
+        static Settings _settings;
+
+        public override Lang.Settings GetSettings
+        {
+            get
+            {
+                if (_settings == null)
+                    _settings = new Settings();
+
+                return _settings;
+            }
+        }
+
+        #endregion
 
         public abstract class Writer
         {
@@ -142,14 +196,16 @@ namespace FractalMachine.Code.Langs
                 return Attribute;
             }
 
+       
+
             #region Subclasses
 
-            public class Main : Writer
+            /*public class Main : Writer
             {
-                Context context;
+                File context;
                 int _lineNumber = 1;
 
-                public Main(Context context, Linear linear):base(null, linear) 
+                public Main(File context, Linear linear):base(null, linear) 
                 {
                     this.context = context;
                 }
@@ -386,8 +442,9 @@ namespace FractalMachine.Code.Langs
                     Write("}");
                 }
             }
-
+            */
             #endregion
+
         }
     }
 }
