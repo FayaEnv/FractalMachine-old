@@ -167,7 +167,7 @@ namespace FractalMachine
         {
             if (ToImport.HasMark())
             {
-                // Is file
+                /// Import as file/directory name
                 //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
                 var fname = ToImport.NoMark();
                 var dir = libsDir + "/" + fname;
@@ -177,7 +177,22 @@ namespace FractalMachine
             }
             else
             {
-                // Is namespace
+                /// Is namespace
+                var names = ToImport.Split('.'); 
+                for(int n=0; n<names.Length; n++)
+                {
+                    var name = names[n];
+
+                    if (n == 0) // Is first step
+                    {
+                        //todo
+                        // the first step is decisive for knowing if:
+                        // it is an internal file/directory
+                        // it is an imported library
+                    }
+                }
+
+                // Find its filename (to depreace(?))
                 var fname = findNamespaceDirectory(ToImport);
                 var dir = libsDir + fname;
 
@@ -198,6 +213,8 @@ namespace FractalMachine
 
         internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
         {
+            //todo, check up Main.light 
+
             var comp = ExtractComponent(file);
             //comp.parent = this; // ???
 
@@ -214,15 +231,17 @@ namespace FractalMachine
 
         internal Component importDirectoryIntoComponent(string dir)
         {
-            if (File.Exists(dir + "/" + "Main.light"))
-            {
-                //it's a project
+            if (isDirProject(dir)) //it's a project  
                 return new Project(dir);
-            }
 
             // else, maybe, it should list all files and add as subcomponent
-
+            throw new Exception("todo");
             return null;
+        }
+
+        bool isDirProject(string fn)
+        {
+            return File.Exists(fn + "/" + Properties.ProjectMainFile);
         }
 
         string findNamespaceDirectory(string ns)

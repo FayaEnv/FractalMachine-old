@@ -27,7 +27,10 @@ namespace FractalMachine
         public static string CygwinDownloadUrl = "https://srv-store2.gofile.io/download/iITx0L/cygwin64-light.zip";
         public static int MaxRepositoryDays = 7;
 
-        public static string[] FileImportExtensions = new string[] { ".h", ".light" };
+        public static string LightExt = ".light";
+        public static string ProjectMainFile = "Main"+ LightExt;
+
+        public static string[] FileImportExtensions = new string[] { ".h", LightExt };
         public static string InternalVariable = "£";
 
         // Marks should have just 2 chars
