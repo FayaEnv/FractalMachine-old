@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -64,6 +65,26 @@ public static class Resources
         }
 
         return null;
+    }
+
+    public enum FileType
+    {
+        DontExists,
+        File,
+        Directory
+    }
+
+    public static FileType GetFileType(string FileName)
+    {
+        try { 
+            var attr = File.GetAttributes(FileName);
+            if (attr == FileAttributes.Directory)
+                return FileType.Directory;
+            return FileType.File;
+        }
+        catch { 
+            return FileType.DontExists; 
+        }
     }
 
     public static void CreateDirIfNotExists(string dir)

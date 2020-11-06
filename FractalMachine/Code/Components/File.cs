@@ -8,28 +8,35 @@ namespace FractalMachine.Code.Components
 {
     public class File : Container
     {
-        internal string FileName, outFileName;
+        internal string outFileName;
         internal Component parent;
         internal Lang script;
 
         List<string> usings;
 
-        public File(Project Project, Linear Linear) : base(Project, Linear)
+        public File(Component Parent, Linear Linear, string FileName) : base(Parent, Linear)
         {
             usings.Add("namespace std");
             containerType = ContainerTypes.File;
+            _fileName = FileName;
+
+            loadFileFamily();
         }
 
         public Project Project
         {
-            get { return (Project)parent; }
+            get 
+            { 
+                //todo: find project
+                return (Project)parent;         
+            }
         }
 
         #region ReadLinear
 
         internal override void readLinear_import(Linear instr)
         {
-            Project.Import(instr.Name, instr.Parameters);
+            Import(instr.Name, instr.Parameters);
         }
 
         #endregion
@@ -72,6 +79,47 @@ namespace FractalMachine.Code.Components
             }
 
             string done = "";
+        }
+
+        #endregion
+
+        #region FileName
+
+        internal string _fileName;
+        public string FileName
+        {
+            get { return _fileName; }
+        }
+
+        internal void loadFileFamily()
+        {
+            string myDir = FileName;
+            if (myDir == null) return;
+
+            var ft = Resources.GetFileType(myDir);
+
+            if (ft == Resources.FileType.DontExists)
+                throw new Exception("What?");
+
+            if(ft == Resources.FileType.File)
+                myDir = myDir.Substring(0, myDir.Length - Path.GetExtension(myDir).Length);
+
+            var dirInfo = new DirectoryInfo(myDir);
+
+            var files = dirInfo.GetFiles();
+            foreach (var file in files)
+            {
+                string name = Path.GetFileNameWithoutExtension(file.Name);
+                var comp = new File(this, null, file.FullName);
+                addComponent(name, comp);
+            }
+
+            var dirs = dirInfo.GetDirectories();
+            foreach (var dir in dirs)
+            {
+                var comp = new File(this, null, dir.FullName);
+                addComponent(dir.Name, comp);
+            }
         }
 
         #endregion

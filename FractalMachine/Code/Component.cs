@@ -134,11 +134,11 @@ namespace FractalMachine.Code
 
         internal virtual void readLinear_namespace(Linear instr)
         {
-            Namespace ns;
+            Components.File ns;
 
             try
             {
-                ns = (Namespace)getComponent(instr.Name);
+                ns = (Components.File)getComponent(instr.Name);
             }
             catch (Exception ex)
             {
@@ -147,9 +147,11 @@ namespace FractalMachine.Code
 
             if(ns == null)
             {
-                ns = new Namespace(this, instr);
+                ns = new Components.File(this, null, null);
                 addComponent(instr.Name, ns);
             }
+
+            //Execute new linear in component
         }
 
         internal virtual void readLinear_call(Linear instr)
@@ -390,27 +392,56 @@ namespace FractalMachine.Code
 
         #region SubComponents
 
-        public Component Solve(string Name)
+        public Component Solve(string Name, bool DontPanic = false)
         {
             var parts = Name.Split('.');
+            return Solve(parts, DontPanic);
+        }
+
+        public Component Solve(string[] Names, bool DontPanic = false)
+        {
             Component comp = this, bcomp = this;
             var tot = "";
 
-            while (!comp.components.TryGetValue(parts[0], out comp))
+            while (!comp.components.TryGetValue(Names[0], out comp))
             {
                 comp = bcomp.parent;
-                if(comp == null)
-                    throw new Exception("Error, " + parts[0] + " not found");
+                if (comp == null)
+                {
+                    if (!DontPanic) throw new Exception("Error, " + Names[0] + " not found");
+                    return null;
+                }
                 bcomp = comp;
             }
 
-            for(int p=1; p<parts.Length; p++)
+            for (int p = 1; p < Names.Length; p++)
             {
-                var part = parts[p];
+                var part = Names[p];
                 if (!comp.components.TryGetValue(part, out comp))
-                    throw new Exception("Error, " + tot + part + " not found");
+                {
+                    if (!DontPanic) throw new Exception("Error, " + tot + part + " not found");
+                    return null;
+                }
 
                 tot += part + ".";
+            }
+
+            return comp;
+        }
+
+        #endregion
+
+        #region Import
+
+        public Component Import(string Name, Dictionary<string, string> Parameters)
+        {
+            //todo: handle Parameters
+            var comp = Solve(Name);
+
+            foreach (var c in comp.components)
+            {
+                //todo: imported key yet exists
+                this.components.Add(c.Key, c.Value);
             }
 
             return comp;

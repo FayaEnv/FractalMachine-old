@@ -22,10 +22,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using FractalMachine.Code.Langs;
+using System.Linq;
 
 namespace FractalMachine
 {
-    public class Project : Component
+    public class Project : Code.Components.File
     {
         internal Ambiance.Environment env;
 
@@ -40,15 +41,12 @@ namespace FractalMachine
         internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
         internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
 
-        public Project(string ProjectPath) : base(null, null)
-        {
+        public Project(string ProjectPath) : base(null, null, ProjectPath)
+        { 
             env = Ambiance.Environment.GetEnvironment;
 
-            FileAttributes attr;
-            try { attr = File.GetAttributes(ProjectPath); }
-            catch { throw new Exception("Path " + ProjectPath + " not found"); }
-
-            if(attr == FileAttributes.Directory)
+            var ft = Resources.GetFileType(ProjectPath);
+            if (ft == Resources.FileType.Directory)
             {
                 if (!ProjectPath.EndsWith(env.PathChar))
                     ProjectPath += env.PathChar;
@@ -65,8 +63,8 @@ namespace FractalMachine
             else
             {
                 entryPoint = ProjectPath;
-                directory = Path.GetDirectoryName(ProjectPath); //tocheck: ends with /?
-                outName = Path.GetFileNameWithoutExtension(entryPoint);
+                _fileName = directory = Path.GetDirectoryName(ProjectPath); //tocheck: ends with /?
+                outName = Path.GetFileNameWithoutExtension(entryPoint); 
             }
 
             /// Pre calculates
@@ -143,10 +141,9 @@ namespace FractalMachine
 
             if (linear != null) // why linear should be null?
             {
-                comp = new Code.Components.File(this, linear)
+                comp = new Code.Components.File(this, linear, FileName)
                 {
-                    script = script,
-                    FileName = FileName
+                    script = script
                 };
 
                 comp.ReadLinear();
@@ -163,7 +160,7 @@ namespace FractalMachine
 
         #region Import
 
-        public void Import(string ToImport, Dictionary<string, string> Parameters)
+        /*public void Import(string ToImport, Dictionary<string, string> Parameters)
         {
             if (ToImport.HasMark())
             {
@@ -178,21 +175,9 @@ namespace FractalMachine
             else
             {
                 /// Is namespace
-                var names = ToImport.Split('.'); 
-                for(int n=0; n<names.Length; n++)
-                {
-                    var name = names[n];
+                var comp = Solve(ToImport);
 
-                    if (n == 0) // Is first step
-                    {
-                        //todo
-                        // the first step is decisive for knowing if:
-                        // it is an internal file/directory
-                        // it is an imported library
-                    }
-                }
-
-                // Find its filename (to depreace(?))
+                // Find its filename (to deprecate(?))
                 var fname = findNamespaceDirectory(ToImport);
                 var dir = libsDir + fname;
 
@@ -209,6 +194,24 @@ namespace FractalMachine
                     importLink.Add(ToImport, c);
                 }
             }
+        }*/
+
+        enum dirExistsResult
+        {
+            Nope, 
+            File,
+            Directory
+        }
+
+        dirExistsResult dirExists(string dir)
+        {
+            if (Directory.Exists(dir))
+                return dirExistsResult.Directory;
+
+            if (File.Exists(dir + Properties.LightExt))
+                return dirExistsResult.File;
+
+            return dirExistsResult.Nope;
         }
 
         internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
