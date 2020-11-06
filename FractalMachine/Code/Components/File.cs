@@ -1,4 +1,5 @@
 ﻿using FractalMachine.Classes;
+using FractalMachine.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +9,7 @@ namespace FractalMachine.Code.Components
 {
     public class File : Container
     {
+        internal bool loaded = false;
         internal string outFileName;
         internal Component parent;
         internal Lang script;
@@ -30,6 +32,37 @@ namespace FractalMachine.Code.Components
                 //todo: find project
                 return (Project)parent;         
             }
+        }
+
+        internal void Load()
+        {
+            if (loaded) return;
+
+            var ext = Path.GetExtension(FileName);
+
+            switch (ext)
+            {
+                case ".light":
+                    script = Light.OpenFile(FileName);
+                    _linear = script.GetLinear();
+                    break;
+
+                case ".h":
+                case ".hpp":
+                    script = CPP.OpenFile(FileName);
+                    _linear = script.GetLinear();
+                    break;
+
+                default:
+                    throw new Exception("Todo");
+            }
+
+            if (_linear == null)
+                throw new Exception("Dunno, Linear not loaded");
+
+            ReadLinear();
+
+            loaded = true;
         }
 
         #region ReadLinear
@@ -101,17 +134,23 @@ namespace FractalMachine.Code.Components
             if (ft == Resources.FileType.DontExists)
                 throw new Exception("What?");
 
-            if(ft == Resources.FileType.File)
+            if (ft == Resources.FileType.File)
+            {
                 myDir = myDir.Substring(0, myDir.Length - Path.GetExtension(myDir).Length);
+                if (!Directory.Exists(myDir)) return;
+            }
 
             var dirInfo = new DirectoryInfo(myDir);
 
             var files = dirInfo.GetFiles();
             foreach (var file in files)
             {
-                string name = Path.GetFileNameWithoutExtension(file.Name);
-                var comp = new File(this, null, file.FullName);
-                addComponent(name, comp);
+                if (file.Extension == Properties.LightExtension)
+                {
+                    string name = Path.GetFileNameWithoutExtension(file.Name);
+                    var comp = new File(this, null, file.FullName);
+                    addComponent(name, comp);
+                }
             }
 
             var dirs = dirInfo.GetDirectories();

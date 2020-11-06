@@ -37,6 +37,7 @@ namespace FractalMachine
         internal string exeOutPath;
 
         /// Context
+        internal Code.Components.File mainComp;
         internal string assetsDir, libsDir, tempDir;
         internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
         internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
@@ -57,19 +58,17 @@ namespace FractalMachine
                 var spl = ProjectPath.Replace('\\','/').Split('/');
                 outName = spl[spl.Length-2];
 
-                if (!File.Exists(entryPoint))
-                    throw new Exception("Unable to open project directory " + ProjectPath);
+                mainComp = (Code.Components.File) Solve("Main", false);
+                if (mainComp == null)
+                    throw new Exception("Unable to open project directory " + ProjectPath+": Main entry point is missing");
             }
             else
             {
                 entryPoint = ProjectPath;
                 _fileName = directory = Path.GetDirectoryName(ProjectPath); //tocheck: ends with /?
-                outName = Path.GetFileNameWithoutExtension(entryPoint); 
+                outName = Path.GetFileNameWithoutExtension(entryPoint);
+                mainComp = this;
             }
-
-            /// Pre calculates
-            var outPath = directory + outName;
-            exeOutPath = outPath + env.exeFormat;
 
             /// Assets and dirs
             assetsDir = Resources.Solve("Assets");
@@ -79,20 +78,18 @@ namespace FractalMachine
 
         public void Compile(string Out = null)
         {
-            string name;
-            if(Out == null)
-            {
-                name = Path.GetFileNameWithoutExtension(entryPoint);
-                if (name == "main") name = Path.GetDirectoryName(entryPoint);
-            }
+            // Name
+            var outPath = directory + (Out==null ? outName : Out);
+            exeOutPath = outPath + env.exeFormat;
 
             var cpp = new CPP();
 
             var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
             if (Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
             {
-                var comp = ExtractComponent(entryPoint);
-                var output = comp.WriteTo(cpp.GetSettings);
+                //var comp = ExtractComponent(entryPoint);
+                mainComp.Load();
+                var output = mainComp.WriteTo(cpp.GetSettings);
                 File.WriteAllText(cppOutPath, output);
             }
 
@@ -105,183 +102,5 @@ namespace FractalMachine
             }
         }
 
-        #region Context
-
-        internal Component ExtractComponent(string FileName)
-        {
-            Component comp;
-
-            FileName = Path.GetFullPath(FileName);
-
-            if (imports.TryGetValue(FileName, out comp))
-                return comp;
-
-            //todo: as
-            Lang script = null;
-            Linear linear = null;
-
-            var ext = Path.GetExtension(FileName);
-
-            switch (ext)
-            {
-                case ".light":
-                    script = Light.OpenFile(FileName);
-                    linear = script.GetLinear();
-                    break;
-
-                case ".h":
-                case ".hpp":
-                    script = CPP.OpenFile(FileName);
-                    linear = script.GetLinear();
-                    break;
-
-                default:
-                    throw new Exception("Todo");
-            }
-
-            if (linear != null) // why linear should be null?
-            {
-                comp = new Code.Components.File(this, linear, FileName)
-                {
-                    script = script
-                };
-
-                comp.ReadLinear();
-
-                imports.Add(FileName, comp);
-
-                return comp;
-            }
-
-            return null;
-        }
-
-        #endregion
-
-        #region Import
-
-        /*public void Import(string ToImport, Dictionary<string, string> Parameters)
-        {
-            if (ToImport.HasMark())
-            {
-                /// Import as file/directory name
-                //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
-                var fname = ToImport.NoMark();
-                var dir = libsDir + "/" + fname;
-                var c = importFileIntoComponent(dir, Parameters);
-                importLink.Add(fname, c);
-                //todo: importLink.Add(ResultingNamespace, dir);
-            }
-            else
-            {
-                /// Is namespace
-                var comp = Solve(ToImport);
-
-                // Find its filename (to deprecate(?))
-                var fname = findNamespaceDirectory(ToImport);
-                var dir = libsDir + fname;
-
-                if (Directory.Exists(dir))
-                {
-                    var c = importDirectoryIntoComponent(dir);
-                    importLink.Add(ToImport, c);
-                }
-
-                dir += ".light";
-                if (File.Exists(dir))
-                {
-                    var c = importFileIntoComponent(dir, Parameters);
-                    importLink.Add(ToImport, c);
-                }
-            }
-        }*/
-
-        enum dirExistsResult
-        {
-            Nope, 
-            File,
-            Directory
-        }
-
-        dirExistsResult dirExists(string dir)
-        {
-            if (Directory.Exists(dir))
-                return dirExistsResult.Directory;
-
-            if (File.Exists(dir + Properties.LightExt))
-                return dirExistsResult.File;
-
-            return dirExistsResult.Nope;
-        }
-
-        internal Component importFileIntoComponent(string file, Dictionary<string, string> parameters)
-        {
-            //todo, check up Main.light 
-
-            var comp = ExtractComponent(file);
-            //comp.parent = this; // ???
-
-            foreach (var c in comp.components)
-            {
-                //todo: file name yet exists
-                this.components.Add(c.Key, c.Value);
-            }
-
-            comp.parameters = parameters;
-
-            return comp;
-        }
-
-        internal Component importDirectoryIntoComponent(string dir)
-        {
-            if (isDirProject(dir)) //it's a project  
-                return new Project(dir);
-
-            // else, maybe, it should list all files and add as subcomponent
-            throw new Exception("todo");
-            return null;
-        }
-
-        bool isDirProject(string fn)
-        {
-            return File.Exists(fn + "/" + Properties.ProjectMainFile);
-        }
-
-        string findNamespaceDirectory(string ns)
-        {
-            var dir = "";
-            var split = ns.Split('.');
-
-            bool dirExists = false;
-
-            int s = 0;
-            for (; s < split.Length; s++)
-            {
-                var ss = split[s];
-                dir += "/" + ss;
-
-                if (!(dirExists = Directory.Exists(libsDir + dir)))
-                {
-                    break;
-                }
-            }
-
-            if (dirExists)
-            {
-                return dir;
-            }
-            else
-            {
-                while (!File.Exists(libsDir + dir + ".light") && s >= 0)
-                {
-                    dir = dir.Substring(0, dir.Length - (split[s].Length + 1));
-                    s--;
-                }
-            }
-
-            return dir;
-        }
-
-        #endregion
     }
 }

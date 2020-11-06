@@ -51,7 +51,6 @@ namespace FractalMachine.Code
         {
             Container,
             Function,
-            Overload,
             Member
         }
 
@@ -59,11 +58,16 @@ namespace FractalMachine.Code
 
         #region ReadLinear
 
-        public virtual void ReadLinear()
+        public void ReadLinear()
         {
-            for (int i = 0; i < _linear.Instructions.Count; i++)
+            ReadLinear(_linear);
+        }
+
+        public virtual void ReadLinear(Linear lin)
+        {
+            for (int i = 0; i < lin.Instructions.Count; i++)
             {
-                var instr = _linear[i];
+                var instr = lin[i];
 
                 switch (instr.Op)
                 {
@@ -159,147 +163,7 @@ namespace FractalMachine.Code
 
         }
 
-
         #endregion
-
-        bool linearRead = false;
-        /*public void ReadLinear()
-        {
-            if (linearRead)
-                return;
-
-            AnalyzeParameters();
-
-            int pushNum = 0;
-            Linear callParameters = null;
-
-            bool afterIncludes = false;
-
-            for(int i=0; i<_linear.Instructions.Count; i++)
-            {
-                var instr = _linear[i];
-                instr.component = this;
-
-                bool closesIncludes = afterIncludes;
-                Component comp;             
-
-                switch (instr.Op)
-                {
-                    case "import":
-                        Import(instr.Name, instr.Parameters);
-                        break;
-
-                    case "declare":
-                        addComponent(instr);
-                        closesIncludes = true;
-
-                        break;
-
-                    case "function":
-                        comp = addComponent(instr);
-                        comp.Type = Types.Function;
-                        closesIncludes = true;
-                        break;
-
-                    case "namespace":
-                        comp = addComponent(instr.Name);
-                        comp.Linear = instr;
-                        comp.Type = Types.Namespace;
-                        comp.ReadLinear();
-                        break;
-
-                    case "push":
-                        if(callParameters == null)
-                        {
-                            int j = 0;
-                            while (_linear[i + j].Op != "call") j++;
-                            var call = _linear.Instructions[i + j];
-                            var function = Solve(call.Name).Linear;
-                            callParameters = function.Settings["parameters"];
-                            pushNum = 0;
-                        }
-
-                        // Check parameter
-                        var par = callParameters[pushNum];
-                        CheckType(instr.Name, par.Return, i);
-                        pushNum++;
-                        
-                        break;
-
-                    case "call":
-                        if (instr.Type != null)
-                        {
-                            //todo
-                        }
-                        else
-                        {
-                            comp = Solve(instr.Name);
-                            comp.called = true;
-                            callParameters = null;
-                        }
-                        
-                        break;
-                }
-
-                if(type == Types.File && !afterIncludes && closesIncludes)
-                {
-                    // Inser linear advisor
-                    var lin = new Linear(instr.ast);
-                    lin.Op = "compiler";
-                    lin.Name = "endIncluse";
-                    _linear.Instructions.Insert(i, lin);
-                    i++;
-
-                    afterIncludes = true;
-                }
-            }
-
-            linearRead = true;
-        }*/
-
-        //tothink: is it so important that this parameters are instanced when strictly necessary?
-
-        /*internal void AnalyzeParameters()
-        {
-            string parAs;
-
-            if (parameters.TryGetValue("as", out parAs))
-            {
-                // Depends if CPP or Light
-                if (Top.script.Language == Language.CPP)
-                {
-                    //Check for last import
-                    int l = 0;
-                    for (; l < _linear.Instructions.Count; l++)
-                    {
-                        if (_linear.Instructions[l].Op != "#include")
-                            break;
-                    }
-
-                    //todo: add namespace here
-                    string read = "";
-                }
-            }
-
-            if (_linear != null)
-            {             
-                switch (_linear.Op)
-                {
-                    case "function":
-                        Linear sett;
-                        if (!_linear.Settings.TryGetValue("parameters", out sett))
-                            throw new Exception("Missing function parameters");
-
-                        foreach(var param in sett.Instructions)
-                        {
-                            addComponent(param);
-                        }
-
-                        break;
-                }
-            }
-
-        }*/
 
         #region AddComponents
 
@@ -331,62 +195,6 @@ namespace FractalMachine.Code
             baseComp.components.TryGetValue(Name, out comp);
             return comp;
         }
-
-        /*internal Component addComponent(Linear instr)
-        {
-            var comp = addComponent(instr.Name);
-            comp.Linear = instr;
-            comp.ReadLinear();
-            return comp;
-        }
-
-        internal Component addComponent(string Name)
-        {           
-            var names = Name.Split('.');
-            var parent = this;
-            for (int i=0; i<names.Length; i++)
-            {
-                parent = parent.getComponentOrCreate(names[i]);
-            }
-
-            return parent;
-        }
-
-        internal Component getComponentOrCreate(string Name)
-        {
-            Component comp;
-            if (!components.TryGetValue(Name, out comp))
-            {
-                comp = new Component(this);
-                components.Add(Name, comp);
-            }
-
-            return comp;
-        }*/
-
-        #endregion
-
-
-
-        #region Properties
-
-        /*static string[] NestedOperations = new string[] { "namespace", "function" };
-
-        internal Linear Linear
-        {
-            get { return _linear; }
-            set
-            {
-                if (value == null)
-                    return;
-
-                _linear = value;
-                _linear.component = this;
-
-                if (NestedOperations.Contains(_linear.Op))
-                    IsNested();
-            }
-        }*/
 
         #endregion
 
@@ -435,6 +243,19 @@ namespace FractalMachine.Code
 
         public Component Import(string Name, Dictionary<string, string> Parameters)
         {
+            /*
+            if (ToImport.HasMark())
+            {
+                /// Import as file/directory name
+                //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
+                var fname = ToImport.NoMark();
+                var dir = libsDir + "/" + fname;
+                var c = importFileIntoComponent(dir, Parameters);
+                importLink.Add(fname, c);
+                //todo: importLink.Add(ResultingNamespace, dir);
+            }
+            */
+
             //todo: handle Parameters
             var comp = Solve(Name);
 
@@ -565,62 +386,7 @@ namespace FractalMachine.Code
         {
             
         }
-
-
-        /*public string WriteToCpp(CPP.Writer writer = null)
-        {        
-            if(writer == null)
-                writer = new CPP.Writer.Main(this, Linear);
-
-            foreach(var lin in _linear.Instructions)
-            {
-                //lin.component = this;
-
-                switch (lin.Op)
-                {
-                    case "import":
-                        new CPP.Writer.Import(writer, lin, this);
-                        break;
-
-                    case "function":
-                        new CPP.Writer.Function(writer, lin);
-                        break;
-
-                    case "call":
-                        new CPP.Writer.Call(writer, lin);
-                        push.Clear();
-                        break;
-
-                    case "namespace":
-                        new CPP.Writer.Namespace(writer, lin);
-                        break;
-
-                    ///
-                    /// Compiler instructions
-                    /// 
-
-                    case "compiler":
-
-                        switch (lin.Name) {
-                            case "endIncluse":
-                                // Write usings
-                                while (usings.Count > 0)
-                                {
-                                    new CPP.Writer.Using(writer, lin, usings[0]);
-                                    usings.RemoveAt(0);
-                                }
-                                break;
-                        }
-
-                        break;
-                }
-            }
-
-            return writer.Compose();
-        }*/
-
-
-
+      
         #endregion
+        }
     }
-}
