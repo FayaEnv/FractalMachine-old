@@ -182,7 +182,10 @@ namespace FractalMachine
                 var dir = libsDir + fname;
 
                 if (Directory.Exists(dir))
-                    importDirectoryIntoComponent(dir);
+                {
+                    var c = importDirectoryIntoComponent(dir);
+                    importLink.Add(ToImport, c);
+                }
 
                 dir += ".light";
                 if (File.Exists(dir))
@@ -209,9 +212,17 @@ namespace FractalMachine
             return comp;
         }
 
-        internal void importDirectoryIntoComponent(string dir)
+        internal Component importDirectoryIntoComponent(string dir)
         {
-            //todo
+            if (File.Exists(dir + "/" + "Main.light"))
+            {
+                //it's a project
+                return new Project(dir);
+            }
+
+            // else, maybe, it should list all files and add as subcomponent
+
+            return null;
         }
 
         string findNamespaceDirectory(string ns)

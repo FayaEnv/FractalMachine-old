@@ -29,7 +29,7 @@ namespace FractalMachine.Code.Components
 
         internal override void readLinear_import(Linear instr)
         {
-            throw new Exception("import not expected");
+            Project.Import(instr.Name, instr.Parameters);
         }
 
         #endregion

@@ -102,12 +102,12 @@ namespace FractalMachine.Code
 
         internal virtual void readLinear_declare(Linear instr)
         {
-
+            throw new Exception("declare not expected");
         }
 
         internal virtual void readLinear_operation(Linear instr)
         {
-
+            throw new Exception("operation not expected");
         }
 
         internal virtual void readLinear_function(Linear instr)

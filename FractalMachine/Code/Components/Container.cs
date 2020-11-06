@@ -26,5 +26,20 @@ namespace FractalMachine.Code.Components
             Namespace
         }
 
+        #region ReadLinear
+
+        internal override void readLinear_declare(Linear instr)
+        {
+            throw new Exception("declare not expected");
+        }
+
+        internal override void readLinear_operation(Linear instr)
+        {
+            throw new Exception("operation not expected");
+        }
+
+
+        #endregion
+
     }
 }
