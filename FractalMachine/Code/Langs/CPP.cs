@@ -71,57 +71,69 @@ namespace FractalMachine.Code.Langs
                 var _char = AddType("char");
                 _char.Bytes = 1;
                 _char.Signed = true;
+                _char.LightType = "char";
 
                 /// uchar
                 var _uchar = AddType("unsigned char");
                 _uchar.Bytes = 1;
+                _uchar.LightType = "uchar";
 
                 /// short
                 var _short = AddType("short int");
                 _short.Bytes = 2;
                 _short.Signed = true;
+                _short.LightType = "short";
 
                 /// ushort
                 var _ushort = AddType("unsigned short int");
                 _ushort.Bytes = 2;
+                _ushort.LightType = "ushort";
 
                 /// int
                 var _int = AddType("int");
                 _int.Bytes = 4;
                 _int.Signed = true;
+                _int.LightType = "int";
 
                 /// uint
                 var _uint = AddType("unsigned int");
                 _uint.Bytes = 4;
+                _uint.LightType = "uint";
 
                 /// long
                 var _long = AddType("long int");
                 _long.Bytes = 8;
                 _long.Signed = true;
+                _long.LightType = "long";
 
                 /// ulong
                 var _ulong = AddType("unsigned long int");
                 _ulong.Bytes = 8;
+                _ulong.LightType = "ulong";
 
                 /// float
                 var _float = AddType("float");
                 _float.Bytes = 4;
                 _float.Floating = true;
+                _float.LightType = "float";
 
                 /// double
                 var _double = AddType("double");
                 _double.Bytes = 8;
                 _double.Floating = true;
+                _double.LightType = "double";
 
                 /// decimal
                 var _decimal = AddType("long double");
                 _decimal.Bytes = 12;
                 _decimal.Floating = true;
+                _decimal.LightType = "decimal";
 
                 /// string
                 var _string = AddType("string");
                 _string.Base = _char;
                 _string.Array = true;
+                _string.LightType = "string";
             }
 
             override public AttributeType GetAttributeType(string Name)

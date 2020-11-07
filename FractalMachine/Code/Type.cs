@@ -18,6 +18,7 @@ using FractalMachine.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Linq;
 
 // think about it https://en.wikipedia.org/wiki/IEC_61131-3
 namespace FractalMachine.Code
@@ -40,6 +41,7 @@ namespace FractalMachine.Code
             var t = new Type();
             Types.Add(Name, t);
             t.Name = Name;
+            t.LightType = Name;
             return t;
         }
 
@@ -48,8 +50,11 @@ namespace FractalMachine.Code
             return Types[name]; //todo better
         }
       
-        public AttributeType Convert(AttributeType attribute)
+        public AttributeType Convert(AttributeType attribute, bool recycle = true)
         {
+            if (attribute.Type == AttributeType.Types.Name)
+                return attribute;
+
             var from = attribute.TypesSet;
 
             if (from == this)
@@ -58,13 +63,33 @@ namespace FractalMachine.Code
             var fromType = from.Types[attribute.TypeRef];
             var toType = Convert(fromType);
 
-            return null;
+            AttributeType toAttr = attribute;
+
+            if (!recycle)
+            {
+                toAttr = new AttributeType(this);
+                toAttr.AbsValue = attribute.AbsValue;
+                toAttr.Type = AttributeType.Types.Type;
+            }
+
+            toAttr.TypeRef = toType.Name;
+
+            return toAttr;
         }
 
         public Type Convert(Type from)
         {
-            throw new Exception("todo");
-            return null;
+            // Lazy method
+            var ltype = from.LightType;
+            var search = Types.Where(s => s.Value.LightType == ltype);
+
+            if(ltype.Count() == 0)
+            {
+                // deep search
+                throw new Exception("todo");
+            }
+            else 
+                return Types.Where(s => s.Value.LightType == ltype).First().Value;
         }
     }
 
@@ -88,7 +113,8 @@ namespace FractalMachine.Code
     }
 
     public class Type
-    { 
+    {
+        public string LightType;
         public Type Base;
         public string Name;
         public int Bytes;
