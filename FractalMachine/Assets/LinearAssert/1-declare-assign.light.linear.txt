@@ -7,10 +7,10 @@
 ======| Name: v1
 ======| Return: var
 ====| 2. =
-======| Type: operation
+======| Type: oprt
 ======| Name: v1
 ======| Return: 2
 ====| 3. =
-======| Type: operation
+======| Type: oprt
 ======| Name: v0
 ======| Return: 3

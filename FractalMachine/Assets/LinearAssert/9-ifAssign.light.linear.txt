@@ -4,15 +4,15 @@
 ======| Name: ciao
 ======| Return: var
 ====| 1. <
-======| Type: operation
+======| Type: oprt
 ======| Return: £0
 ======| Attributes: test  |  2  |  
 ====| 2. +
-======| Type: operation
+======| Type: oprt
 ======| Return: £1
 ======| Attributes: $$*°ok  |  2  |  
 ====| 3. +
-======| Type: operation
+======| Type: oprt
 ======| Return: £2
 ======| Attributes: $$*°not  |  1  |  
 ====| 4. assignIf
@@ -21,6 +21,6 @@
 ======| Return: £3
 ======| Attributes: £1  |  £2  |  
 ====| 5. =
-======| Type: operation
+======| Type: oprt
 ======| Name: ciao
 ======| Return: £3

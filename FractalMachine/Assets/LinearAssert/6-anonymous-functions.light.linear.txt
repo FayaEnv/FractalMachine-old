@@ -15,7 +15,7 @@
 ==========| Return: £0
 ==========| Attributes: $$*°ciao!  |  
 ====| 2. =
-======| Type: operation
+======| Type: oprt
 ======| Name: fun
 ======| Return: £0
 ====| 3. call

@@ -19,6 +19,6 @@
 ======| Name: £0
 ======| Attributes: stai  |  $$*°are you  |  
 ====| 5. =
-======| Type: operation
+======| Type: oprt
 ======| Name: json
 ======| Return: £0

@@ -243,7 +243,7 @@ namespace FractalMachine.Code.Langs
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
-                var trgOperator = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&", "|", ":", "?" } });
+                var trgOperator = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "==", "!=", "<=", ">=", "<", ">", "=", "+", "-", "/", "%", "*", "&", "|", ":", "?", "!" } });
                 var trgConjunction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "&&", "||" } });
                 var trgFastIncrement = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "++", "--" } });
                 var trgInsert = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { "." } }); // Add to buffer without any new instruction
@@ -1709,13 +1709,14 @@ namespace FractalMachine.Code.Langs
 
             #region toLinear_ground_instruction
             void toLinear_ground_instruction()
-            {                
+            {
+                attachStatement();
+
                 if (IsOperator)
                     toLinear_ground_instruction_operator();
                 else
                     toLinear_ground_instruction_default();
 
-                attachStatement();
             }
 
             #region assignIf
@@ -1801,26 +1802,39 @@ namespace FractalMachine.Code.Langs
 
                     default:
                         lin = new Linear(Parent.bag.Linear, ast);
-                        lin.Op = Subject;
-                        lin.Attributes.Add(bag.Params.Pull().StrValue);
-                        lin.Type = "operation";
+                        lin.Op = Subject;                    
+                        lin.Type = "oprt";
 
-                        onEnd = delegate
+                        if (Subject == "!")
+                        {
+                            onSchedulerPostCode = delegate (OrderedAST ast)
+                            {
+                                lin.Attributes.Add(bag.Params.Pull().StrValue);
+                                setTempReturn();
+                                return true;
+                            };
+                        }
+                        else
                         {
                             lin.Attributes.Add(bag.Params.Pull().StrValue);
-                            setTempReturn();
-                        };
 
-                        if (codes.Count == 2)
-                        {
-                            // ie operators have priority against conjunctions
-                            if (LastCode.IsConjunction && LastCode.OperatorPriority > OperatorPriority)
+                            onEnd = delegate
                             {
-                                onAfterChildCycle = delegate (OrderedAST ast)
+                                lin.Attributes.Add(bag.Params.Pull().StrValue);
+                                setTempReturn();
+                            };
+
+                            if (codes.Count == 2)
+                            {
+                                // ie operators have priority against conjunctions
+                                if (LastCode.IsConjunction && LastCode.OperatorPriority > OperatorPriority)
                                 {
-                                    callEnd();
-                                    onAfterChildCycle = null;
-                                };
+                                    onAfterChildCycle = delegate (OrderedAST ast)
+                                    {
+                                        callEnd();
+                                        onAfterChildCycle = null;
+                                    };
+                                }
                             }
                         }
 
@@ -1856,7 +1870,7 @@ namespace FractalMachine.Code.Langs
                         {
                             lin = new Linear(Parent.bag.Linear, ast);
                             lin.Op = Subject;
-                            lin.Type = "operation";
+                            lin.Type = "oprt";
                             lin.Name = parName.StrValue;
                             lin.List();
                             lin.Return = attr;

@@ -63,8 +63,8 @@ namespace FractalMachine.Code.Components
                         break;
 
                     default:
-                        if (instr.Type == "operation")
-                            readLinear_operation(instr);
+                        if (instr.Type == "oprt")
+                            readLinear_operator(instr);
                         else
                             throw new Exception("Unexpected instruction");
                         break;
@@ -85,9 +85,15 @@ namespace FractalMachine.Code.Components
 
         }
 
-        internal virtual void readLinear_operation(Linear instr)
+        internal virtual void readLinear_operator(Linear instr)
         {
+            var ts = instr.Lang.GetTypesSet;
 
+            var v1 = instr.Attributes[0];
+            var v2 = instr.Attributes[1];
+
+            var attr1 = ts.GetAttributeType(v1);
+            var attr2 = ts.GetAttributeType(v2);
         }
 
         internal virtual void readLinear_call(Linear instr)

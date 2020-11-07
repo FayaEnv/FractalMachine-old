@@ -8,7 +8,7 @@
 ==========| Name: £0
 ==========| Instructions:
 ============| 0. <
-==============| Type: operation
+==============| Type: oprt
 ==============| Return: £0
 ==============| Attributes: test  |  2  |  
 ======| Instructions:
