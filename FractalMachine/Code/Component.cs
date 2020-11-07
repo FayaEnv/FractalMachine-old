@@ -59,7 +59,7 @@ namespace FractalMachine.Code
         #region ReadLinear
 
         //tothink: move this region from Component to Components.Container?
-
+        /*
         public void ReadLinear()
         {
             ReadLinear(_linear);
@@ -131,7 +131,7 @@ namespace FractalMachine.Code
         internal virtual void readLinear_call(Linear instr)
         {
             throw new Exception("call not expected");
-        }
+        }*/
 
         #endregion
 

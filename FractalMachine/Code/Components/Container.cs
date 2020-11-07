@@ -29,27 +29,70 @@ namespace FractalMachine.Code.Components
 
         #region ReadLinear
 
-        internal override void readLinear_declare(Linear instr)
+        public void ReadLinear()
+        {
+            ReadLinear(_linear);
+        }
+
+        public virtual void ReadLinear(Linear lin)
+        {
+            for (int i = 0; i < lin.Instructions.Count; i++)
+            {
+                var instr = lin[i];
+
+                switch (instr.Op)
+                {
+                    case "import":
+                        readLinear_import(instr);
+                        break;
+
+                    case "declare":
+                        readLinear_declare(instr);
+                        break;
+
+                    case "function":
+                        readLinear_function(instr);
+                        break;
+
+                    case "namespace":
+                        readLinear_namespace(instr);
+                        break;
+
+                    case "call":
+                        readLinear_call(instr);
+                        break;
+
+                    default:
+                        if (instr.Type == "operation")
+                            readLinear_operation(instr);
+                        else
+                            throw new Exception("Unexpected instruction");
+                        break;
+                }
+            }
+        }
+
+        internal virtual void readLinear_declare(Linear instr)
         {
             //todo
         }
 
-        internal override void readLinear_operation(Linear instr)
+        internal virtual void readLinear_operation(Linear instr)
         {
             //todo
         }
 
-        internal override void readLinear_call(Linear instr)
+        internal virtual void readLinear_call(Linear instr)
         {
             //todo
         }
 
-        internal override void readLinear_import(Linear instr)
+        internal virtual void readLinear_import(Linear instr)
         {
             Import(instr.Name, instr.Parameters);
         }
 
-        internal override void readLinear_function(Linear instr)
+        internal virtual void readLinear_function(Linear instr)
         {
             Function function;
 
@@ -71,7 +114,7 @@ namespace FractalMachine.Code.Components
             function.addOverload(instr);
         }
 
-        internal override void readLinear_namespace(Linear instr)
+        internal virtual void readLinear_namespace(Linear instr)
         {
             Components.File ns;
 
