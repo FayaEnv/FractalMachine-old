@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.WebSockets;
 using System.Text;
 
 namespace FractalMachine.Code.Components 
@@ -89,11 +90,48 @@ namespace FractalMachine.Code.Components
         {
             var ts = instr.Lang.GetTypesSet;
 
-            var v1 = instr.Attributes[0];
-            var v2 = instr.Attributes[1];
+            string v1, v2;
+            AttributeType attr1, attr2;
 
-            var attr1 = ts.GetAttributeType(v1);
-            var attr2 = ts.GetAttributeType(v2);
+            v1 = instr.Attributes[0];
+            attr1 = ts.GetAttributeType(v1);
+
+            if(instr.Name != "!")
+            {
+                v2 = instr.Attributes[1];
+                attr2 = ts.GetAttributeType(v2);
+            }
+
+
+            switch (instr.Op)
+            {             
+                case "=":
+                    Member name;
+                    var compName = Solve(instr.Name);
+
+                    if (compName == null)
+                        throw new Exception(instr.Name + " not declared");
+
+                    try { name = (Member)compName; }
+                    catch { throw new Exception(instr.Name + " is not assignable"); }
+
+                    var attr = ts.GetAttributeType(instr.Attributes[0]);
+                    if (name.typeToBeDefined)
+                    {
+                        if (attr.Type == AttributeType.Types.Type)
+                        {
+                            name.langType = ts.Get(attr.TypeRef);
+                        }
+                        else
+                        {
+                            var attrComp = Solve(attr.AbsValue);
+                            //todo get langType from comp
+                        }
+                    }
+
+                    break;
+            }
+            
         }
 
         internal virtual void readLinear_call(Linear instr)
