@@ -143,7 +143,7 @@ namespace FractalMachine.Code.Langs
                 _double.Bytes = 8;
                 _double.Floating = true;
 
-                /// double
+                /// decimal
                 var _decimal = AddType("decimal");
                 _decimal.Bytes = 12;
                 _decimal.Floating = true;
@@ -154,17 +154,19 @@ namespace FractalMachine.Code.Langs
                 _string.Array = true;
             }
 
-            override public AttributeType SolveAttribute(string Name)
+            override public AttributeType GetAttributeType(string Name)
             {
                 var atype = new AttributeType(this);
                 atype.Type = AttributeType.Types.Name;
 
                 if (Name.HasStringMark())
                 {
+                    atype.AbsValue = Name.NoMark();
                     atype.TypeRef = "string";
                 }
                 else if (Char.IsDigit(Name[0]))
                 {
+                    atype.AbsValue = Name;
                     atype.TypeRef = "int";
 
                     for (int c = 0; c < Name.Length; c++)
@@ -179,39 +181,21 @@ namespace FractalMachine.Code.Langs
                             atype.TypeRef = "double";
 
                         if (c == Name.Length - 1 && Name[c] == 'f')
+                        {
                             atype.TypeRef = "float";
-                    }     
+                            atype.AbsValue = atype.AbsValue.Substring(0, atype.AbsValue.Length - 1);
+                        }
+                    }
                 }
 
                 return atype;
             }
 
-            override public string ConvertAttributeTo(string Attribute, Type To, AttributeType From=null)
+            public override string SolveAttributeType(AttributeType AttributeType)
             {
-                if(From == null)
-                    From = SolveAttribute(Attribute);
-
-                if (To.Class)
-                {
-                    throw new Exception("todo");
-                }
-
-                if (From.Type == AttributeType.Types.Type)
-                {
-                    switch (From.TypeRef)
-                    {
-                        case "string":
-                            return Attribute.NoMark();
-
-                        default:
-                            if (To.AttributeReference == "string")
-                                return Properties.StringMark + Attribute;
-                            break;
-                    }
-                }
-
-                return Attribute;
+                return AttributeType.AbsValue;
             }
+
         }
 
         static TypesSet myTypesSet;

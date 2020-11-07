@@ -61,18 +61,130 @@ namespace FractalMachine.Code.Langs
             get { return Language.CPP; }
         }
 
+        #region Types
+
+        public class TypesSet : Code.TypesSet
+        {
+            override internal void init()
+            {
+                /// char
+                var _char = AddType("char");
+                _char.Bytes = 1;
+                _char.Signed = true;
+
+                /// uchar
+                var _uchar = AddType("unsigned char");
+                _uchar.Bytes = 1;
+
+                /// short
+                var _short = AddType("short int");
+                _short.Bytes = 2;
+                _short.Signed = true;
+
+                /// ushort
+                var _ushort = AddType("unsigned short int");
+                _ushort.Bytes = 2;
+
+                /// int
+                var _int = AddType("int");
+                _int.Bytes = 4;
+                _int.Signed = true;
+
+                /// uint
+                var _uint = AddType("unsigned int");
+                _uint.Bytes = 4;
+
+                /// long
+                var _long = AddType("long int");
+                _long.Bytes = 8;
+                _long.Signed = true;
+
+                /// ulong
+                var _ulong = AddType("unsigned long int");
+                _ulong.Bytes = 8;
+
+                /// float
+                var _float = AddType("float");
+                _float.Bytes = 4;
+                _float.Floating = true;
+
+                /// double
+                var _double = AddType("double");
+                _double.Bytes = 8;
+                _double.Floating = true;
+
+                /// decimal
+                var _decimal = AddType("long double");
+                _decimal.Bytes = 12;
+                _decimal.Floating = true;
+
+                /// string
+                var _string = AddType("string");
+                _string.Base = _char;
+                _string.Array = true;
+            }
+
+            override public AttributeType GetAttributeType(string Name)
+            {
+                var atype = new AttributeType(this);
+                atype.Type = AttributeType.Types.Name;
+
+                if (Name.HasStringMark())
+                {
+                    atype.AbsValue = Name.NoMark();
+                    atype.TypeRef = "string";
+                }
+                else if (Char.IsDigit(Name[0]))
+                {
+                    atype.AbsValue = Name;
+                    atype.TypeRef = "int";
+
+                    for (int c = 0; c < Name.Length; c++)
+                    {
+                        if (!Char.IsLetter(Name[c]))
+                        {
+                            atype.Type = AttributeType.Types.Invalid;
+                            break;
+                        }
+
+                        if (Name[c] == '.')
+                            atype.TypeRef = "double";
+
+                        if (c == Name.Length - 1 && Name[c] == 'f')
+                        {
+                            atype.TypeRef = "float";
+                            atype.AbsValue = atype.AbsValue.Substring(0, atype.AbsValue.Length - 1);
+                        }
+                    }
+                }
+
+                return atype;
+            }
+
+            public override string SolveAttributeType(AttributeType AttributeType)
+            {
+                return AttributeType.AbsValue;
+            }
+        }
+
+        static TypesSet myTypesSet;
+
         override public Code.TypesSet GetTypesSet
         {
             get
             {
-                throw new Exception("Todo");
-                return null;
+                if (myTypesSet == null)
+                    myTypesSet = new TypesSet();
+
+                return myTypesSet;
             }
         }
 
+        #endregion
+
         #region Settings
 
-        public class Settings : Lang.Settings
+        public new class Settings : Lang.Settings
         {
             public override string EntryPointFunction
             {

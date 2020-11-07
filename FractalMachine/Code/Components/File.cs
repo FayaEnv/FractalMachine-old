@@ -74,7 +74,7 @@ namespace FractalMachine.Code.Components
             Type reqType = types.Get(request);
             Type subjType;
 
-            var attrType = types.SolveAttribute(subject);
+            var attrType = types.GetAttributeType(subject);
 
             if (attrType.Type == Code.AttributeType.Types.Invalid)
             {
@@ -98,7 +98,7 @@ namespace FractalMachine.Code.Components
             {
                 if (attrType.TypeRef != reqType.AttributeReference)
                 {
-                    subject = types.ConvertAttributeTo(subject, reqType, attrType);
+                    //subject = types.ConvertAttributeTo(subject, reqType, attrType);
                     Linear[linearPos].Name = subject;
                 }
             }

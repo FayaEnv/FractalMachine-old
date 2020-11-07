@@ -1,5 +1,6 @@
 import Other;
 
 function Main(){
-	test();
+	var test = "2";
+	//test();
 }

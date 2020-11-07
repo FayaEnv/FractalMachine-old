@@ -32,8 +32,8 @@ namespace FractalMachine.Code
         }
 
         internal abstract void init();
-        public abstract AttributeType SolveAttribute(string Name);
-        public abstract string ConvertAttributeTo(string Attribute, Type To, AttributeType AttributeType=null);
+        public abstract AttributeType GetAttributeType(string Name);
+        public abstract string SolveAttributeType(AttributeType AttributeType);
 
         internal Type AddType(string Name)
         {
@@ -48,13 +48,31 @@ namespace FractalMachine.Code
             return Types[name]; //todo better
         }
       
+        public AttributeType Convert(AttributeType attribute)
+        {
+            var from = attribute.TypesSet;
+
+            if (from == this)
+                return attribute;
+
+            var fromType = from.Types[attribute.TypeRef];
+            var toType = Convert(fromType);
+
+            return null;
+        }
+
+        public Type Convert(Type from)
+        {
+            throw new Exception("todo");
+            return null;
+        }
     }
 
     public class AttributeType
     {
         public TypesSet TypesSet;
         public Types Type;
-        public string TypeRef;
+        public string TypeRef, AbsValue;
 
         public AttributeType(TypesSet typesSet)
         {
