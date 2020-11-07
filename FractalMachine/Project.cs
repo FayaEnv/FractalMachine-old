@@ -45,6 +45,7 @@ namespace FractalMachine
         public Project(string ProjectPath) : base(null, null, ProjectPath)
         { 
             env = Ambiance.Environment.GetEnvironment;
+            containerType = ContainerTypes.Project;
 
             var ft = Resources.GetFileType(ProjectPath);
             if (ft == Resources.FileType.Directory)
@@ -53,7 +54,7 @@ namespace FractalMachine
                     ProjectPath += env.PathChar;
                 
                 directory = ProjectPath;
-                entryPoint = ProjectPath + "Main.light";
+                entryPoint = ProjectPath +'/'+ Properties.ProjectMainFile;
 
                 var spl = ProjectPath.Replace('\\','/').Split('/');
                 outName = spl[spl.Length-2];

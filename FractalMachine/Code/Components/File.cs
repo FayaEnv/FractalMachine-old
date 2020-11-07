@@ -65,14 +65,6 @@ namespace FractalMachine.Code.Components
             loaded = true;
         }
 
-        #region ReadLinear
-
-        internal override void readLinear_import(Linear instr)
-        {
-            Import(instr.Name, instr.Parameters);
-        }
-
-        #endregion
 
         #region Types
 

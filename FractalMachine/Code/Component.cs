@@ -94,6 +94,8 @@ namespace FractalMachine.Code
                     default:
                         if (instr.Type == "operation")
                             readLinear_operation(instr);
+                        else
+                            throw new Exception("Unexpected instruction");
                         break;
                 }
             }
@@ -116,51 +118,17 @@ namespace FractalMachine.Code
 
         internal virtual void readLinear_function(Linear instr)
         {
-            Function function;
-
-            try
-            {
-                function = (Function)getComponent(instr.Name);
-            }
-            catch(Exception ex)
-            {
-                throw new Exception("Name used for another variable");
-            }
-            
-            if (function == null)
-            {
-                function = new Function(this, null);
-                addComponent(instr.Name, function);
-            }
-
-            function.addOverload(instr);
+            throw new Exception("function not expected");
         }
 
         internal virtual void readLinear_namespace(Linear instr)
         {
-            Components.File ns;
-
-            try
-            {
-                ns = (Components.File)getComponent(instr.Name);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Name used for another variable");
-            }
-
-            if(ns == null)
-            {
-                ns = new Components.File(this, null, null);
-                addComponent(instr.Name, ns);
-            }
-
-            //Execute new linear in component
+            throw new Exception("namespace not expected");
         }
 
         internal virtual void readLinear_call(Linear instr)
         {
-
+            throw new Exception("call not expected");
         }
 
         #endregion
@@ -232,37 +200,6 @@ namespace FractalMachine.Code
                 }
 
                 tot += part + ".";
-            }
-
-            return comp;
-        }
-
-        #endregion
-
-        #region Import
-
-        public Component Import(string Name, Dictionary<string, string> Parameters)
-        {
-            /*
-            if (ToImport.HasMark())
-            {
-                /// Import as file/directory name
-                //todo: ToImport.HasStringMark() || (angularBrackets = ToImport.HasAngularBracketMark())
-                var fname = ToImport.NoMark();
-                var dir = libsDir + "/" + fname;
-                var c = importFileIntoComponent(dir, Parameters);
-                importLink.Add(fname, c);
-                //todo: importLink.Add(ResultingNamespace, dir);
-            }
-            */
-
-            //todo: handle Parameters
-            var comp = Solve(Name);
-
-            foreach (var c in comp.components)
-            {
-                //todo: imported key yet exists
-                this.components.Add(c.Key, c.Value);
             }
 
             return comp;
