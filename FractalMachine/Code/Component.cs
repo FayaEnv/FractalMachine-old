@@ -58,6 +58,8 @@ namespace FractalMachine.Code
 
         #region ReadLinear
 
+        //tothink: move this region from Component to Components.Container?
+
         public void ReadLinear()
         {
             ReadLinear(_linear);
