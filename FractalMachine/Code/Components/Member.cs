@@ -6,8 +6,10 @@ namespace FractalMachine.Code.Components
 {
     class Member : Component
     {
-        Type LangType;
+        internal Type langType;
         MemberType memberType;
+
+        internal bool typeToBeDefined = false;
 
         public Member(Component parent, Linear linear):base(parent, linear)
         {

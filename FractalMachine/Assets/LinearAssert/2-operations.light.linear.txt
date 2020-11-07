@@ -4,32 +4,39 @@
 ======| Name: v0
 ======| Return: int
 ====| 1. =
+======| Type: operation
 ======| Name: v0
 ======| Return: 2
 ====| 2. declare
 ======| Name: v1
 ======| Return: int
 ====| 3. =
+======| Type: operation
 ======| Name: v1
 ======| Return: 3
 ====| 4. declare
 ======| Name: sum
 ======| Return: int
 ====| 5. +
+======| Type: operation
 ======| Return: £0
 ======| Attributes: v0  |  v1  |  
 ====| 6. =
+======| Type: operation
 ======| Name: sum
 ======| Return: £0
 ====| 7. declare
 ======| Name: more
 ======| Return: int
 ====| 8. +
+======| Type: operation
 ======| Return: £1
 ======| Attributes: v1  |  1  |  
 ====| 9. *
+======| Type: operation
 ======| Return: £2
 ======| Attributes: v0  |  £1  |  
 ====| 10. =
+======| Type: operation
 ======| Name: more
 ======| Return: £2

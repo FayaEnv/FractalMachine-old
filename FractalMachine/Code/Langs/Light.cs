@@ -72,7 +72,7 @@ namespace FractalMachine.Code.Langs
 
         public override Linear GetLinear()
         {
-            return Linear = GetOrderedAst().ToLinear();
+            return Linear = GetOrderedAst().ToLinear(this);
         }
 
         public override Language Language
@@ -1173,10 +1173,10 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
-            public Linear ToLinear()
+            public Linear ToLinear(Lang lang)
             {
                 var bag = new Bag();
-                bag.Linear = new Linear(ast);
+                bag.Linear = new Linear(lang, ast);
                 toLinear(bag);
                 Revision(bag.Linear);
                 return bag.Linear;

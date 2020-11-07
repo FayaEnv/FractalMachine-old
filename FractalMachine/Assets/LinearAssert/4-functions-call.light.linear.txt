@@ -25,5 +25,6 @@
 ======| Return: £0
 ======| Attributes: $$*°ciao  |  
 ====| 3. =
+======| Type: operation
 ======| Name: res
 ======| Return: £0

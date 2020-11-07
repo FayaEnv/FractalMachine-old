@@ -47,6 +47,9 @@ namespace FractalMachine.Code
 
         public Type Get(string name)
         {
+            if (name.Contains("["))
+                throw new Exception("todo"); //handle array types
+
             return Types[name]; //todo better
         }
       

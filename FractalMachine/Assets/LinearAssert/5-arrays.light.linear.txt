@@ -7,6 +7,7 @@
 ======| Name: []
 ======| Return: £0
 ====| 2. =
+======| Type: operation
 ======| Name: arr
 ======| Return: £0
 ====| 3. call
@@ -21,6 +22,7 @@
 ======| Return: £1
 ======| Attributes: 0  |  
 ====| 6. =
+======| Type: operation
 ======| Name: normal
 ======| Return: £1
 ====| 7. declare
@@ -42,5 +44,6 @@
 ======| Name: £2
 ======| Attributes: 2  |  va  |  
 ====| 12. =
+======| Type: operation
 ======| Name: json
 ======| Return: £2

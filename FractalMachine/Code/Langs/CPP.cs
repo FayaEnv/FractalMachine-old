@@ -53,7 +53,7 @@ namespace FractalMachine.Code.Langs
         public override Linear GetLinear()
         {
             var oAst = new Light.OrderedAST(AST);
-            return Linear = oAst.ToLinear();
+            return Linear = oAst.ToLinear(this);
         }
 
         public override Language Language

@@ -24,6 +24,7 @@ namespace FractalMachine.Code
 {
     public class Linear
     {
+        internal Lang Lang;
         internal Component component;
         internal Linear parent;
         internal AST ast;
@@ -42,12 +43,13 @@ namespace FractalMachine.Code
 
         internal int DebugLine = -1;
 
-        public Linear(AST ast)
+        public Linear(Lang lang, AST ast)
         {
             this.ast = ast;
+            this.Lang = lang;
         }
 
-        public Linear(Linear Parent, AST orderedAst) : this(orderedAst)
+        public Linear(Linear Parent, AST orderedAst) : this(Parent.Lang, orderedAst)
         {
             parent = Parent;
             //parent.Instructions.Add(this);
@@ -55,7 +57,7 @@ namespace FractalMachine.Code
 
         public Linear SetSettings(string Name, AST ast)
         {
-            var lin = new Linear(ast);
+            var lin = new Linear(Lang, ast);
             lin.parent = this;
             lin.Op = Name;
             Settings[Name] = lin;

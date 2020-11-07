@@ -1,7 +1,7 @@
 | 0. 
 ==| Instructions:
 ====| 0. declare
-======| Name: json
+======| Name: obj
 ======| Return: var
 ====| 1. call
 ======| Name: {}
@@ -9,16 +9,12 @@
 ====| 2. call
 ======| Type: {}
 ======| Name: £0
-======| Attributes: ciao  |  $$*°hi  |  
+======| Attributes: this  |  $$*°is  |  
 ====| 3. call
 ======| Type: {}
 ======| Name: £0
-======| Attributes: come  |  $$*°how  |  
-====| 4. call
-======| Type: {}
-======| Name: £0
-======| Attributes: stai  |  $$*°are you  |  
-====| 5. =
+======| Attributes: a  |  $$*°test  |  
+====| 4. =
 ======| Type: operation
-======| Name: json
+======| Name: obj
 ======| Return: £0

@@ -75,14 +75,19 @@ namespace FractalMachine.Code.Components
         internal virtual void readLinear_declare(Linear instr)
         {
             var member = new Member(this, instr);
-            //member.type = instr.Return;
+
+            if (instr.Return == "var")
+                member.typeToBeDefined = true;
+            else
+                member.langType = instr.Lang.GetTypesSet.Get(instr.Return);
+
             addComponent(instr.Name, member);
 
         }
 
         internal virtual void readLinear_operation(Linear instr)
         {
-            //todo
+
         }
 
         internal virtual void readLinear_call(Linear instr)
