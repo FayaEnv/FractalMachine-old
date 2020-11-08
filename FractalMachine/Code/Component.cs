@@ -242,11 +242,6 @@ namespace FractalMachine.Code
             
         }
 
-        virtual public void writeTo_namespace(Lang.Settings LangSettings, Linear instr)
-        {
-            
-        }
-
         virtual public void writeTo_compiler(Lang.Settings LangSettings, Linear instr)
         {
             

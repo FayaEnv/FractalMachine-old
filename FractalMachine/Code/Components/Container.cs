@@ -42,6 +42,8 @@ namespace FractalMachine.Code.Components
                 foreach (var i in instr.Instructions)
                     _linear.Instructions.Add(i);
             }
+
+            instr.component = this;
         }
 
         #region ReadLinear
