@@ -80,7 +80,7 @@ namespace FractalMachine.Code.Components
             if (instr.Return == "var")
                 member.typeToBeDefined = true;
             else
-                member.langType = instr.Lang.GetTypesSet.Get(instr.Return);
+                member.returnType = instr.Lang.GetTypesSet.Get(instr.Return);
 
             addComponent(instr.Name, member);
 
@@ -120,7 +120,7 @@ namespace FractalMachine.Code.Components
                     {
                         if (attr.Type == AttributeType.Types.Type)
                         {
-                            name.langType = ts.Get(attr.TypeRef);
+                            name.returnType = ts.Get(attr.TypeRef);
                         }
                         else
                         {
@@ -128,6 +128,14 @@ namespace FractalMachine.Code.Components
                             //todo get langType from comp
                         }
                     }
+
+                    break;
+
+                case "!":
+                    throw new Exception("todo");
+                    break;
+
+                default:
 
                     break;
             }

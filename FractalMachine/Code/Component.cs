@@ -31,6 +31,7 @@ namespace FractalMachine.Code
 {
     abstract public class Component
     {
+        internal Type returnType;
         internal Types type;
         internal Linear _linear;
         internal Component parent;

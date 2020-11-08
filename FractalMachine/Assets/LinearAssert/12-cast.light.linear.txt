@@ -1,0 +1,20 @@
+| 0. 
+==| Instructions:
+====| 0. declare
+======| Name: fl
+======| Return: var
+====| 1. =
+======| Type: oprt
+======| Name: fl
+======| Return: 2.5
+====| 2. declare
+======| Name: in
+======| Return: var
+====| 3. cast
+======| Type: int
+======| Name: fl
+======| Return: £0
+====| 4. =
+======| Type: oprt
+======| Name: in
+======| Return: £0

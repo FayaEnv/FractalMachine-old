@@ -1,0 +1,2 @@
+var fl = 2.5;
+var in = (int)fl;

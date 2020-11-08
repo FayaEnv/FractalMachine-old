@@ -1683,7 +1683,7 @@ namespace FractalMachine.Code.Langs
                             setTempReturn();
                         };
                     }
-                    else if(Right != null && Right.IsAttribute && !Right.IsDotAttribute && codes.Count==1 && LastCode.IsAttribute)
+                    else if(Right != null && Right.IsAttribute && !Right.IsDotAttribute && codes.Count==1 && FirstCode.LastCode.IsAttribute)
                     {
                         //it's a cast
                         lin = new Linear(bag.Linear, ast);
@@ -1693,12 +1693,13 @@ namespace FractalMachine.Code.Langs
 
                         onEnd = delegate
                         {
-                            lin.Name = bag.Params.Pull().StrValue;
+                            lin.Type = bag.Params.Pull().StrValue;
                         };
 
                         Parent.onPreEnds.Add(delegate
                         {
-                            lin.Return = bag.Params.Pull(false).StrValue;
+                            lin.Name = bag.Params.Pull(false).StrValue;
+                            setTempReturn();
                             lin.List();
                         });
                     }

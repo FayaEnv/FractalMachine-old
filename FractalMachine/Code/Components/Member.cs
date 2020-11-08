@@ -6,7 +6,6 @@ namespace FractalMachine.Code.Components
 {
     class Member : Component
     {
-        internal Type langType;
         MemberType memberType;
 
         internal bool typeToBeDefined = false;
