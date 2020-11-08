@@ -8,8 +8,9 @@ namespace FractalMachine.Code.Components
     abstract public class Container : Component
     {
         internal ContainerTypes containerType;
+        internal List<Operation> operations = new List<Operation>();
 
-        public Container(Component parent, Linear linear):base(parent, linear)
+        public Container(Component parent, Linear linear) : base(parent, linear)
         {
             type = Types.Container;
         }
@@ -22,7 +23,7 @@ namespace FractalMachine.Code.Components
         public enum ContainerTypes
         {
             Project,
-            File,            
+            File,
             Class,
             Overload,
             Namespace
@@ -63,6 +64,10 @@ namespace FractalMachine.Code.Components
                         readLinear_call(instr);
                         break;
 
+                    case "cast":
+                        readLinear_cast(instr);
+                        break;
+
                     default:
                         if (instr.Type == "oprt")
                             readLinear_operator(instr);
@@ -71,6 +76,11 @@ namespace FractalMachine.Code.Components
                         break;
                 }
             }
+        }
+
+        internal virtual void readLinear_cast(Linear instr)
+        {
+
         }
 
         internal virtual void readLinear_declare(Linear instr)
@@ -90,18 +100,8 @@ namespace FractalMachine.Code.Components
         {
             var ts = instr.Lang.GetTypesSet;
 
-            string v1, v2;
-            AttributeType attr1, attr2;
-
-            v1 = instr.Attributes[0];
-            attr1 = ts.GetAttributeType(v1);
-
-            if(instr.Name != "!")
-            {
-                v2 = instr.Attributes[1];
-                attr2 = ts.GetAttributeType(v2);
-            }
-
+            var op = new Operation(this, instr);
+            operations.Add(op);
 
             switch (instr.Op)
             {             
@@ -125,17 +125,38 @@ namespace FractalMachine.Code.Components
                         else
                         {
                             var attrComp = Solve(attr.AbsValue);
-                            //todo get langType from comp
+                            name.returnType = attrComp.returnType;
                         }
+                    }
+                    else
+                    {
+                        // Else verify that the assign have to be casted
                     }
 
                     break;
 
-                case "!":
-                    throw new Exception("todo");
-                    break;
-
                 default:
+                    string v1, v2;
+                    Type t1, t2 = null;
+
+                    v1 = instr.Attributes[0];
+                    t1 = solveAttributeType(v1);
+
+                    if (instr.Op != "!")
+                    {
+                        v2 = instr.Attributes[1];
+                        t2 = solveAttributeType(v2);
+                    }
+
+                    Type returnType = t1;
+
+                    // Study return variable (it's always an InternalVariable)
+                    var ret = instr.Return;
+                    
+                    if(t2 != null)
+                        returnType = ts.CompareTypeCast(t1, t2);
+
+                    //todo
 
                     break;
             }
@@ -195,6 +216,22 @@ namespace FractalMachine.Code.Components
 
             //Execute new linear in component
         }
+
+        #endregion
+
+        #region Methods
+
+        Type solveAttributeType(string attr)
+        {
+            var ts = _linear.Lang.GetTypesSet;
+            var attrType = ts.GetAttributeType(attr);
+
+            if (attrType.Type == AttributeType.Types.Name)
+                return Solve(attr).returnType;
+            else
+                return attrType.GetLangType;
+        }
+
 
         #endregion
 

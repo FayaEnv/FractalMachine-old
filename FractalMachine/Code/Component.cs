@@ -52,7 +52,8 @@ namespace FractalMachine.Code
         {
             Container,
             Function,
-            Member
+            Member,
+            Operation
         }
 
         #endregion

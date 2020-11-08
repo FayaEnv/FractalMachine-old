@@ -94,6 +94,22 @@ namespace FractalMachine.Code
             else 
                 return Types.Where(s => s.Value.LightType == ltype).First().Value;
         }
+
+        public Type CompareTypeCast(Type t1, Type t2)
+        {
+            //todo: improve this, this is a temporary solution
+            Type ideal;
+
+            ideal = t1.Bytes > t2.Bytes ? t1 : t2;
+            
+            if(t1.Floating != t2.Floating)
+                ideal = t1.Floating ? t1 : t2;
+
+            if (t1.LightType == "string" || t2.LightType == "string")
+                ideal = t1.LightType == "string" ? t1 : t2;
+
+            return ideal;
+        }
     }
 
     public class AttributeType
@@ -112,6 +128,15 @@ namespace FractalMachine.Code
             Type,
             Name,
             Invalid
+        }
+
+        public Type GetLangType
+        {
+            get
+            {
+                if (Type != Types.Name) return null;
+                return TypesSet.Get(TypeRef);
+            }
         }
     }
 

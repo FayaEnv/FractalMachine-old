@@ -1812,6 +1812,7 @@ namespace FractalMachine.Code.Langs
                             {
                                 lin.Attributes.Add(bag.Params.Pull().StrValue);
                                 setTempReturn();
+                                onSchedulerPostCode = null;
                                 return true;
                             };
                         }
