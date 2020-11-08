@@ -259,10 +259,10 @@ namespace FractalMachine.Code
         {
             wtCont = "";
 
-            foreach (var lin in _linear.Instructions)
+            // Logic is changed: no more lecture instructions by instruction but direct reading of components and operations
+            /*foreach (var lin in _linear.Instructions)
             {
                 //lin.component = this;
-
                 switch (lin.Op)
                 {
                     case "import":
@@ -285,6 +285,11 @@ namespace FractalMachine.Code
                         writeTo_compiler(LangSettings, lin);
                         break;
                 }
+            }*/
+
+            foreach(var comp in components)
+            {
+                wtCont += comp.Value.WriteTo(LangSettings);
             }
 
             return wtCont;

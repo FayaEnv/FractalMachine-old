@@ -131,6 +131,7 @@ namespace FractalMachine.Code.Components
                     else
                     {
                         // Else verify that the assign have to be casted
+                        // or calculate expected data type ie float test = 1/2 as (float)1/(float)2
                     }
 
                     break;
@@ -148,15 +149,15 @@ namespace FractalMachine.Code.Components
                         t2 = solveAttributeType(v2);
                     }
 
-                    Type returnType = t1;
+                    Type retType = t1;
 
                     // Study return variable (it's always an InternalVariable)
                     var ret = instr.Return;
-                    
-                    if(t2 != null)
-                        returnType = ts.CompareTypeCast(t1, t2);
 
-                    //todo
+                    if (t2 != null)
+                        retType = ts.CompareTypeCast(t1, t2);
+
+                    op.returnType = retType;
 
                     break;
             }
@@ -165,7 +166,8 @@ namespace FractalMachine.Code.Components
 
         internal virtual void readLinear_call(Linear instr)
         {
-            //todo
+            var op = new Operation(this, instr);
+            operations.Add(op);
         }
 
         internal virtual void readLinear_import(Linear instr)
