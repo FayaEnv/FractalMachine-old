@@ -31,6 +31,7 @@ namespace FractalMachine.Code
 {
     abstract public class Component
     {
+        internal string name;
         internal Type returnType;
         internal Types type;
         internal Linear _linear;
@@ -43,6 +44,7 @@ namespace FractalMachine.Code
         {
             this.parent = parent;
             _linear = Linear;
+            if (_linear != null) _linear.component = this;
         }
 
 
@@ -55,85 +57,6 @@ namespace FractalMachine.Code
             Member,
             Operation
         }
-
-        #endregion
-
-        #region ReadLinear
-
-        //tothink: move this region from Component to Components.Container?
-        /*
-        public void ReadLinear()
-        {
-            ReadLinear(_linear);
-        }
-
-        public virtual void ReadLinear(Linear lin)
-        {
-            for (int i = 0; i < lin.Instructions.Count; i++)
-            {
-                var instr = lin[i];
-
-                switch (instr.Op)
-                {
-                    case "import":
-                        readLinear_import(instr);
-                        break;
-
-                    case "declare":
-                        readLinear_declare(instr);
-                        break;
-
-                    case "function":
-                        readLinear_function(instr);
-                        break;
-
-                    case "namespace":
-                        readLinear_namespace(instr);
-                        break;
-
-                    case "call":
-                        readLinear_call(instr);
-                        break;
-
-                    default:
-                        if (instr.Type == "operation")
-                            readLinear_operation(instr);
-                        else
-                            throw new Exception("Unexpected instruction");
-                        break;
-                }
-            }
-        }
-
-        internal virtual void readLinear_import(Linear instr)
-        {
-            throw new Exception("import not expected");
-        }
-
-        internal virtual void readLinear_declare(Linear instr)
-        {
-            throw new Exception("declare not expected");
-        }
-
-        internal virtual void readLinear_operation(Linear instr)
-        {
-            throw new Exception("operation not expected");
-        }
-
-        internal virtual void readLinear_function(Linear instr)
-        {
-            throw new Exception("function not expected");
-        }
-
-        internal virtual void readLinear_namespace(Linear instr)
-        {
-            throw new Exception("namespace not expected");
-        }
-
-        internal virtual void readLinear_call(Linear instr)
-        {
-            throw new Exception("call not expected");
-        }*/
 
         #endregion
 
@@ -157,6 +80,7 @@ namespace FractalMachine.Code
             var baseComp = getBaseComponent(Name, out toCreate);
 
             baseComp.components[toCreate] = comp;
+            comp.name = toCreate;
         }
 
         internal Component getComponent(string Name)
@@ -260,32 +184,27 @@ namespace FractalMachine.Code
             wtCont = "";
 
             // Logic is changed: no more lecture instructions by instruction but direct reading of components and operations
-            /*foreach (var lin in _linear.Instructions)
+            foreach (var lin in _linear.Instructions)
             {
-                //lin.component = this;
-                switch (lin.Op)
+                if(lin.Op == "call" || lin.Type == "oprt")
+                    writeTo_operation(LangSettings, lin);
+                else switch (lin.Op)
                 {
                     case "import":
                         writeTo_import(LangSettings, lin);
                         break;
 
-                    case "function":
-                        writeTo_function(LangSettings, lin);
-                        break;
-
-                    case "call":
-                        writeTo_call(LangSettings, lin);
-                        break;
-
                     case "namespace":
-                        writeTo_namespace(LangSettings, lin);
+                    case "class":
+                    case "function":
+                            writeToCont(lin.component.WriteTo(LangSettings));
                         break;
 
                     case "compiler":
                         writeTo_compiler(LangSettings, lin);
                         break;
                 }
-            }*/
+            }
 
             foreach(var comp in components)
             {
@@ -308,7 +227,7 @@ namespace FractalMachine.Code
 
         virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
         {
-            
+            throw new Exception("todo");
         }
 
         virtual public void writeTo_function(Lang.Settings LangSettings, Linear instr)
@@ -318,7 +237,7 @@ namespace FractalMachine.Code
             writeToCont(res);
         }
 
-        virtual public void writeTo_call(Lang.Settings LangSettings, Linear instr)
+        virtual public void writeTo_operation(Lang.Settings LangSettings, Linear instr)
         {
             
         }

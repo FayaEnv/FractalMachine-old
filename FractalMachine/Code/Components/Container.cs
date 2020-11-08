@@ -29,6 +29,21 @@ namespace FractalMachine.Code.Components
             Namespace
         }
 
+        public void InjectLinear(Linear instr)
+        {
+            if (_linear == null)
+            {
+                _linear = instr;
+            }
+            else
+            {
+                ReadLinear(instr);
+
+                foreach (var i in instr.Instructions)
+                    _linear.Instructions.Add(i);
+            }
+        }
+
         #region ReadLinear
 
         public void ReadLinear()
@@ -212,11 +227,13 @@ namespace FractalMachine.Code.Components
 
             if (ns == null)
             {
-                ns = new Components.File(this, null, null);
+                ns = new Components.File(this, instr, null);
                 addComponent(instr.Name, ns);
             }
-
-            //Execute new linear in component
+            else
+            {
+                ns.InjectLinear(instr);
+            }
         }
 
         #endregion
