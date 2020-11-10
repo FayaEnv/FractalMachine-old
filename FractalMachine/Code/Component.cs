@@ -158,6 +158,20 @@ namespace FractalMachine.Code
 
         #endregion
 
+        #region Methods
+
+        public string GetName(Component relativeTo = null)
+        {
+            if (relativeTo == this)
+                return null;
+
+            string topName = parent?.GetName(relativeTo);
+
+            return name + topName != null ? '.' + topName : "";
+        }
+
+        #endregion
+
         #region Called
 
         internal bool called = false;
@@ -192,7 +206,7 @@ namespace FractalMachine.Code
         internal int writeContLength = 0;
         internal List<string> writeCont;
 
-        abstract public string WriteTo(Lang.Settings LangSettings);
+        abstract public string WriteTo(Lang Lang);
 
         internal virtual void writeReset()
         {

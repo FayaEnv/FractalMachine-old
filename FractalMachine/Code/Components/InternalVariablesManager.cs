@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Classes;
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Text;
@@ -27,6 +28,16 @@ namespace FractalMachine.Code.Components
             int n = getN(ivar);
             var iv = vars[n];
             iv.type = t;
+        }
+
+        public string HandleVarName(string var)
+        {
+            if (!var.IsInternalVariable())
+                return var;
+
+            var n = getN(var);
+
+            return null;
         }
 
         int getN(string ivar)

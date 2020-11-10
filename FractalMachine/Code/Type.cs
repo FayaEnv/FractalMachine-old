@@ -184,6 +184,8 @@ namespace FractalMachine.Code
             }
         }
 
+        #region Properties
+
         public string AttributeReference
         {
             get
@@ -195,5 +197,15 @@ namespace FractalMachine.Code
             }
 
         }
+
+        public Type GetLightType
+        {
+            get
+            {
+                return Langs.Light.StaticGetTypesSet.Get(LightType);
+            }
+        }
+
+        #endregion
     }
 }

@@ -90,7 +90,7 @@ namespace FractalMachine
             {
                 //var comp = ExtractComponent(entryPoint);
                 mainComp.Load();
-                var output = mainComp.WriteTo(cpp.GetSettings);
+                var output = mainComp.WriteTo(cpp);
                 File.WriteAllText(cppOutPath, output);
             }
 

@@ -318,14 +318,14 @@ namespace FractalMachine.Code.Components
 
         #region Writer
 
-        override public string WriteTo(Lang.Settings LangSettings)
+        override public string WriteTo(Lang Lang)
         {
             writeReset();
 
             // Logic is reading instructions by instructions for maintaining original order
             foreach (var lin in _linear.Instructions)
             {
-                writeToCont(lin.component.WriteTo(LangSettings));
+                writeToCont(lin.component.WriteTo(Lang));
 
                 /*if (lin.Op == "call" || lin.Type == "oprt")
                     writeTo_operation(LangSettings, lin);

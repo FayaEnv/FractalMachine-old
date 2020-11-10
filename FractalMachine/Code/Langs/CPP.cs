@@ -175,7 +175,22 @@ namespace FractalMachine.Code.Langs
 
             public override string SolveAttributeType(AttributeType AttributeType)
             {
-                return AttributeType.AbsValue;
+                var iType = AttributeType.GetLangType;
+
+                string ret = AttributeType.AbsValue;
+
+                switch (iType.LightType)
+                {
+                    case "string":
+                        return '"' + ret + '"';
+
+                    case "float":
+                        if (!ret.Contains('.')) ret += ".";
+                        ret += 'f';
+                        return ret;
+                }
+
+                return ret;
             }
         }
 

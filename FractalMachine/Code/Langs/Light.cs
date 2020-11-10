@@ -211,6 +211,17 @@ namespace FractalMachine.Code.Langs
             }
         }
 
+        public static Code.TypesSet StaticGetTypesSet
+        {
+            get
+            {
+                if (myTypesSet == null)
+                    myTypesSet = new TypesSet();
+
+                return myTypesSet;
+            }
+        }
+
         #endregion
 
         #region Classes
