@@ -20,5 +20,20 @@ namespace FractalMachine.Code.Components
                 return (Container)parent;
             }
         }
+
+        override public string WriteTo(Lang.Settings LangSettings)
+        {
+            if(_linear.HasOperator)
+            {
+
+            }
+            else if (_linear.IsCall)
+            {
+
+            }
+
+            return writeReturn();
+        }
     }
 }
+  

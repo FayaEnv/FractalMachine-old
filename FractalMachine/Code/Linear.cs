@@ -79,6 +79,34 @@ namespace FractalMachine.Code
             return lin;
         }*/
 
+        #region Properties
+
+        public bool HasOperator
+        {
+            get
+            {
+                return Type == "oprt";
+            }
+        }
+
+        public bool IsOperation
+        {
+            get
+            {
+                return HasOperator || Op == "call";
+            }
+        }
+
+        public bool IsCall
+        {
+            get
+            {
+                return Op == "call";
+            }
+        }
+
+        #endregion
+
         #region Parent
 
         bool listed = false;

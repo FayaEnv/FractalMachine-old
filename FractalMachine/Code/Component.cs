@@ -192,10 +192,7 @@ namespace FractalMachine.Code
         internal int writeContLength = 0;
         internal List<string> writeCont;
 
-        virtual public string WriteTo(Lang.Settings LangSettings)
-        {
-            return null;
-        }
+        abstract public string WriteTo(Lang.Settings LangSettings);
 
         internal virtual void writeReset()
         {
