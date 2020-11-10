@@ -70,6 +70,11 @@ namespace FractalMachine.Classes
 
         #region Marks
 
+        public static bool IsInternalVariable(this string str)
+        {
+            return str.StartsWith(Properties.InternalVariable);
+        }
+
         public static bool HasMark(this string obj)
         {
             return obj.Length >= Properties.StringMark.Length && obj.Substring(2, Properties.Mark.Length) == Properties.Mark;

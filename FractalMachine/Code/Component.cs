@@ -24,6 +24,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -44,9 +45,19 @@ namespace FractalMachine.Code
         {
             this.parent = parent;
             _linear = Linear;
-            if (_linear != null) _linear.component = this;
+
+            if (_linear != null)
+            {
+                _linear.component = this;
+                ReadLinear();
+            }
         }
 
+        #region ReadLinear
+
+        public virtual void ReadLinear() { } 
+
+        #endregion
 
         #region ComponentTypes
 
@@ -177,76 +188,35 @@ namespace FractalMachine.Code
 
         #region Writer
 
-        internal string wtCont = "";
+        internal int writeContLength = 0;
+        internal List<string> writeCont;
 
         virtual public string WriteTo(Lang.Settings LangSettings)
         {
-            wtCont = "";
-
-            // Logic is changed: no more lecture instructions by instruction but direct reading of components and operations
-            foreach (var lin in _linear.Instructions)
-            {
-                if(lin.Op == "call" || lin.Type == "oprt")
-                    writeTo_operation(LangSettings, lin);
-                else switch (lin.Op)
-                {
-                    case "import":
-                        writeTo_import(LangSettings, lin);
-                        break;
-
-                    case "namespace":
-                    case "class":
-                    case "function":
-                            writeToCont(lin.component.WriteTo(LangSettings));
-                        break;
-
-                    case "compiler":
-                        writeTo_compiler(LangSettings, lin);
-                        break;
-                }
-            }
-
-            foreach(var comp in components)
-            {
-                wtCont += comp.Value.WriteTo(LangSettings);
-            }
-
-            return wtCont;
+            writeCont.Clear();
+            writeContLength = 0;
+            return "";
         }
 
-        virtual internal int writeToNewLine()
+        internal int writeToNewLine()
         {
-            wtCont += "\r\n";
+            writeToCont("\r\n");
             return parent.writeToNewLine();
         }
 
-        virtual internal void writeToCont(string str)
+        internal void writeToCont(string str)
         {
-            wtCont += str;
+            writeCont.Add(str);
+            writeContLength += str.Length;
         }
 
-        virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
+        internal string writeReturn()
         {
-            throw new Exception("todo");
-        }
+            var strBuild = new StringBuilder(writeContLength);
+            strBuild.AppendJoin("", writeCont.ToArray());
+            return strBuild.ToString();
+        }     
 
-        virtual public void writeTo_function(Lang.Settings LangSettings, Linear instr)
-        {
-            Overload fun = (Overload)Solve(instr.Name);
-            var res = fun.WriteTo(LangSettings);
-            writeToCont(res);
-        }
-
-        virtual public void writeTo_operation(Lang.Settings LangSettings, Linear instr)
-        {
-            
-        }
-
-        virtual public void writeTo_compiler(Lang.Settings LangSettings, Linear instr)
-        {
-            
-        }
-      
         #endregion
-        }
     }
+}

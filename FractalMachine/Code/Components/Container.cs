@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Classes;
+using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
@@ -9,6 +10,7 @@ namespace FractalMachine.Code.Components
     {
         internal ContainerTypes containerType;
         internal List<Operation> operations = new List<Operation>();
+        internal InternalVariablesManager ivarMan = new InternalVariablesManager();
 
         public Container(Component parent, Linear linear) : base(parent, linear)
         {
@@ -37,18 +39,18 @@ namespace FractalMachine.Code.Components
             }
             else
             {
-                ReadLinear(instr);
-
                 foreach (var i in instr.Instructions)
                     _linear.Instructions.Add(i);
             }
+
+            ReadLinear(instr);
 
             instr.component = this;
         }
 
         #region ReadLinear
 
-        public void ReadLinear()
+        public override void ReadLinear()
         {
             ReadLinear(_linear);
         }
@@ -57,47 +59,56 @@ namespace FractalMachine.Code.Components
         {
             for (int i = 0; i < lin.Instructions.Count; i++)
             {
-                var instr = lin[i];
+                ReadSubLinear(lin, i);
+            }
+        }
 
-                switch (instr.Op)
-                {
-                    case "import":
-                        readLinear_import(instr);
-                        break;
+        public virtual void ReadSubLinear(Linear lin, int pos)
+        {
+            var instr = lin[pos];
+            ReadSubLinear(instr);
+        }
 
-                    case "declare":
-                        readLinear_declare(instr);
-                        break;
+        public virtual void ReadSubLinear(Linear instr)
+        {
+            switch (instr.Op)
+            {
+                case "import":
+                    readLinear_import(instr);
+                    break;
 
-                    case "function":
-                        readLinear_function(instr);
-                        break;
+                case "declare":
+                    readLinear_declare(instr);
+                    break;
 
-                    case "namespace":
-                        readLinear_namespace(instr);
-                        break;
+                case "function":
+                    readLinear_function(instr);
+                    break;
 
-                    case "call":
-                        readLinear_call(instr);
-                        break;
+                case "namespace":
+                    readLinear_namespace(instr);
+                    break;
 
-                    case "cast":
-                        readLinear_cast(instr);
-                        break;
+                case "call":
+                    readLinear_call(instr);
+                    break;
 
-                    default:
-                        if (instr.Type == "oprt")
-                            readLinear_operator(instr);
-                        else
-                            throw new Exception("Unexpected instruction");
-                        break;
-                }
+                case "cast":
+                    readLinear_cast(instr);
+                    break;
+
+                default:
+                    if (instr.Type == "oprt")
+                        readLinear_operator(instr);
+                    else
+                        throw new Exception("Unexpected instruction");
+                    break;
             }
         }
 
         internal virtual void readLinear_cast(Linear instr)
         {
-
+            throw new Exception("todo");
         }
 
         internal virtual void readLinear_declare(Linear instr)
@@ -121,7 +132,7 @@ namespace FractalMachine.Code.Components
             operations.Add(op);
 
             switch (instr.Op)
-            {             
+            {
                 case "=":
                     Member name;
                     var compName = Solve(instr.Name);
@@ -149,12 +160,17 @@ namespace FractalMachine.Code.Components
                     {
                         // Else verify that the assign have to be casted
                         // or calculate expected data type ie float test = 1/2 as (float)1/(float)2
+                        if (attr.Type == AttributeType.Types.Name)
+                        {
+                            if (attr.AbsValue.IsInternalVariable())
+                                ivarMan.ReverseSet(attr.AbsValue, name.returnType);
+                        }
                     }
 
                     break;
 
                 default:
-                    string v1, v2;
+                    string v1, v2 = null;
                     Type t1, t2 = null;
 
                     v1 = instr.Attributes[0];
@@ -172,23 +188,38 @@ namespace FractalMachine.Code.Components
                     var ret = instr.Return;
 
                     if (t2 != null)
+                    {
                         retType = ts.CompareTypeCast(t1, t2);
+
+                        if (v2.IsInternalVariable())
+                            ivarMan.ReverseSet(v2, retType);
+                    }
+
+                    if (v1.IsInternalVariable())
+                        ivarMan.ReverseSet(v1, retType);
 
                     op.returnType = retType;
 
+                    ivarMan.Set(instr.Return, op);
+
                     break;
             }
-            
+
         }
 
         internal virtual void readLinear_call(Linear instr)
         {
             var op = new Operation(this, instr);
             operations.Add(op);
+            ivarMan.Set(instr.Return, op);
         }
 
         internal virtual void readLinear_import(Linear instr)
         {
+            // Add as operation
+            var op = new Operation(this, instr);
+            operations.Add(op);
+
             Import(instr.Name, instr.Parameters);
         }
 
@@ -283,6 +314,55 @@ namespace FractalMachine.Code.Components
 
             return comp;
         }
+        #endregion
+
+        #region Writer
+
+        override public string WriteTo(Lang.Settings LangSettings)
+        {
+            base.WriteTo(null);
+
+            // Logic is reading instructions by instructions for maintaining original order
+            foreach (var lin in _linear.Instructions)
+            {
+                if (lin.Op == "call" || lin.Type == "oprt")
+                    writeTo_operation(LangSettings, lin);
+                else switch (lin.Op)
+                    {
+                        case "import":
+                            writeTo_import(LangSettings, lin);
+                            break;
+
+                        case "namespace":
+                        case "class":
+                        case "function":
+                            writeToCont(lin.component.WriteTo(LangSettings));
+                            break;
+
+                        case "compiler":
+                            writeTo_compiler(LangSettings, lin);
+                            break;
+                    }
+            }
+
+            return writeReturn();
+        }
+
+        virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
+        {
+            throw new Exception("To be overridden");
+        }
+
+        virtual public void writeTo_operation(Lang.Settings LangSettings, Linear instr)
+        {
+            throw new Exception("To be overridden");
+        }
+
+        virtual public void writeTo_compiler(Lang.Settings LangSettings, Linear instr)
+        {
+            throw new Exception("To be overridden");
+        }
+
         #endregion
 
     }
