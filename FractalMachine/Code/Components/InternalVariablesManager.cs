@@ -18,6 +18,7 @@ namespace FractalMachine.Code.Components
             int n = getN(ivar);
             var iv = new InternalVariable(op);
             vars.Add(n, iv);
+            op.returnVar = iv;
             return iv;
         }
 

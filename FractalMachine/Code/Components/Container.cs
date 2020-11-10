@@ -320,12 +320,14 @@ namespace FractalMachine.Code.Components
 
         override public string WriteTo(Lang.Settings LangSettings)
         {
-            base.WriteTo(null);
+            writeReset();
 
             // Logic is reading instructions by instructions for maintaining original order
             foreach (var lin in _linear.Instructions)
             {
-                if (lin.Op == "call" || lin.Type == "oprt")
+                writeToCont(lin.component.WriteTo(LangSettings));
+
+                /*if (lin.Op == "call" || lin.Type == "oprt")
                     writeTo_operation(LangSettings, lin);
                 else switch (lin.Op)
                     {
@@ -342,10 +344,21 @@ namespace FractalMachine.Code.Components
                         case "compiler":
                             writeTo_compiler(LangSettings, lin);
                             break;
-                    }
+                    }*/
             }
 
             return writeReturn();
+        }
+
+        internal override void writeReset()
+        {
+            if (written)
+            {
+                foreach (var i in operations)
+                    i.writeReset();
+            }
+
+            base.writeReset();
         }
 
         virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
@@ -355,7 +368,9 @@ namespace FractalMachine.Code.Components
 
         virtual public void writeTo_operation(Lang.Settings LangSettings, Linear instr)
         {
-            throw new Exception("To be overridden");
+            var op = (Operation)instr.component;
+            // x = y *OP* z
+
         }
 
         virtual public void writeTo_compiler(Lang.Settings LangSettings, Linear instr)

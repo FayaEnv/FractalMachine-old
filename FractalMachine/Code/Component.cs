@@ -188,14 +188,25 @@ namespace FractalMachine.Code
 
         #region Writer
 
+        internal bool written = false;
         internal int writeContLength = 0;
         internal List<string> writeCont;
 
         virtual public string WriteTo(Lang.Settings LangSettings)
         {
+            return null;
+        }
+
+        internal virtual void writeReset()
+        {
             writeCont.Clear();
             writeContLength = 0;
-            return "";
+
+            if (written) {
+                written = false;
+                foreach (var i in components)
+                    i.Value.writeReset();
+            }
         }
 
         internal int writeToNewLine()
