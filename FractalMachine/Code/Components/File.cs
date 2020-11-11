@@ -28,10 +28,10 @@ namespace FractalMachine.Code.Components
 
         public Project Project
         {
-            get 
-            { 
+            get
+            {
                 //todo: find project
-                return (Project)parent;         
+                return (Project)parent;
             }
         }
 
@@ -173,7 +173,7 @@ namespace FractalMachine.Code.Components
 
         #region Writer 
         int newLines = 1;
-        override internal int writeToNewLine()
+        override internal int writeNewLine()
         {
             return newLines++;
         }
@@ -181,8 +181,23 @@ namespace FractalMachine.Code.Components
         public override string WriteTo(Lang Lang)
         {
             Load();
+
+            // Check default libraries
+            foreach (var libName in includeDefaults)
+                writeToIncludeDefault(Lang, libName);
+
             base.WriteTo(Lang, true);
             return writeReturn();
+        }
+
+        void writeToIncludeDefault(Lang Lang, string libName)
+        {
+            writeToCont("#include");
+            writeToCont(" ");
+            writeToCont("<");
+            writeToCont(libName);
+            writeToCont(">");
+            writeNewLine();
         }
 
         public string WriteLibrary(Lang Lang)
@@ -221,11 +236,18 @@ namespace FractalMachine.Code.Components
                 writeToCont("\"");
                 writeToCont(ts.StringFormat(ofn)); //handle formattation
                 writeToCont("\"");
+                writeNewLine();
 
                 includedLibraries.Add(ofn);
             }
 
             return ofn;
+        }
+
+        List<string> includeDefaults = new List<string>();
+        public void IncludeDefault(string libName)
+        {
+            includeDefaults.Add(libName);
         }
 
         #endregion

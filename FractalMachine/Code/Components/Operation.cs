@@ -79,7 +79,10 @@ namespace FractalMachine.Code.Components
                     if (attrType.Type == AttributeType.Types.Name)
                     {
                         var var = Parent.ivarMan.Get(attr);
-                        writeToCont(var.realVarName);
+                        if(var != null)
+                            writeToCont(var.realVarName);
+                        else
+                            writeToCont(attr);
                     }
                     else
                     {

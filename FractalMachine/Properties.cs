@@ -33,6 +33,8 @@ namespace FractalMachine
         public static string[] FileImportExtensions = new string[] { ".h", LightExtension };
         public static string InternalVariable = "£";
 
+        public static string NativeFunctionPrefix = "___";
+
         // Marks should have just 2 chars
         public static string Mark = "*°";
         public static string StringMark = "$$" + Mark;

@@ -1,4 +1,4 @@
 
 function test(){
-	printf("Hello world!");
+	___c_cstdio_printf("Hello world!");
 }

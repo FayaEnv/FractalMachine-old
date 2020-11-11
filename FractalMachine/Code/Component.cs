@@ -118,6 +118,30 @@ namespace FractalMachine.Code
             Component comp = this, bcomp = this;
             var tot = "";
 
+            if (Names.Length == 1)
+            {
+                // check unique call
+                var name = Names[0];
+                if (name.StartsWith(Properties.NativeFunctionPrefix))
+                {
+                    // Is C function
+                    if (name.StartsWith(Properties.NativeFunctionPrefix+"c_"))
+                    {
+                        name = name.Substring(5);
+                        var spl = name.Split('_');
+                        var lib = spl[0];
+                        name = spl[1];
+
+                        TopFile.IncludeDefault(lib);
+
+                        //Create dummy component function
+                        var fun = new Function(null, null);
+                        fun.name = name;
+                        return fun;
+                    }
+                }
+            }
+
             while (!comp.components.TryGetValue(Names[0], out comp))
             {
                 comp = bcomp.parent;
@@ -195,7 +219,7 @@ namespace FractalMachine.Code
 
         #region Called
 
-        internal bool called = false;
+        internal bool _called = false;
 
         public bool Called
         {
@@ -204,7 +228,7 @@ namespace FractalMachine.Code
                 if (!(this is Components.Container))
                     return true;
 
-                if (called) return true;
+                if (_called) return true;
                 foreach (var comp in components)
                 {
                     if (comp.Value.Called) return true;
@@ -245,10 +269,10 @@ namespace FractalMachine.Code
             }
         }
 
-        internal virtual int writeToNewLine()
+        internal virtual int writeNewLine()
         {
             writeToCont("\r\n");
-            return parent.writeToNewLine();
+            return parent.writeNewLine();
         }
 
         internal void writeToCont(string str)

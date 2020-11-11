@@ -220,6 +220,9 @@ namespace FractalMachine.Code.Components
 
         internal virtual void readLinear_call(Linear instr)
         {
+            var comp = Solve(instr.Name);
+            comp._called = true;
+
             var op = new Operation(this, instr);
             operations.Add(op);
             ivarMan.Set(instr.Return, op);
@@ -320,6 +323,7 @@ namespace FractalMachine.Code.Components
 
             //todo: handle Parameters
             var comp = (Container)Solve(Name);
+            comp.TopFile.Load();
 
             foreach (var c in comp.components)
             {
@@ -347,7 +351,7 @@ namespace FractalMachine.Code.Components
             {
                 var comp = lin.component;
 
-                if(comp.called)
+                if(comp.Called)
                     writeToCont(comp.WriteTo(Lang));
 
                 /*if (lin.Op == "call" || lin.Type == "oprt")
