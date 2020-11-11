@@ -1871,9 +1871,11 @@ namespace FractalMachine.Code.Langs
                     {
                         if (parName.isArray)
                         {
+                            //todo: check this application
                             lin = new Linear(Parent.bag.Linear, ast);
                             lin.Op = "call";
-                            lin.Name = parName.StrValue;
+                            lin.Name = "[]";
+                            lin.Return = parName.StrValue;
                             lin.List();
 
                             foreach(var index in parName.AsParams)
@@ -1886,9 +1888,9 @@ namespace FractalMachine.Code.Langs
                             lin = new Linear(Parent.bag.Linear, ast);
                             lin.Op = Subject;
                             lin.Type = "oprt";
-                            lin.Name = parName.StrValue;
+                            lin.Return = parName.StrValue;
                             lin.List();
-                            lin.Return = attr;
+                            lin.Name = attr;
                             //lin.Attributes.Add(attr); //deprecated
                         }
                     }

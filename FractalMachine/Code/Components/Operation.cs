@@ -23,12 +23,20 @@ namespace FractalMachine.Code.Components
 
         override public string WriteTo(Lang Lang)
         {
+            ///
+            /// Special treatments
+            ///
+
             // Temporary
             if(_linear.Op == "import")
             {
                 TopFile.Include(Lang, _linear.component);
                 return "";
             }
+
+            ///
+            /// The others
+            ///
 
             var ts = Lang.GetTypesSet;
 
@@ -60,7 +68,10 @@ namespace FractalMachine.Code.Components
 
             if(_linear.HasOperator)
             {
-               
+                if (_linear.Op == "=")
+                {
+                    writeToCont(_linear.Name);
+                }
             }
             else if (_linear.IsCall)
             {
@@ -96,6 +107,9 @@ namespace FractalMachine.Code.Components
                 }
 
             }
+
+            writeToCont(";");
+            writeNewLine();
 
             return writeReturn();
         }

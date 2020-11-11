@@ -144,15 +144,15 @@ namespace FractalMachine.Code.Components
             {
                 case "=":
                     Member name;
-                    var compName = Solve(instr.Name);
+                    var compName = Solve(instr.Return);
 
                     if (compName == null)
-                        throw new Exception(instr.Name + " not declared");
+                        throw new Exception(instr.Return + " not declared");
 
                     try { name = (Member)compName; }
-                    catch { throw new Exception(instr.Name + " is not assignable"); }
+                    catch { throw new Exception(instr.Return + " is not assignable"); }
 
-                    var attr = ts.GetAttributeType(instr.Return);
+                    var attr = ts.GetAttributeType(instr.Name);
                     if (name.typeToBeDefined)
                     {
                         if (attr.Type == AttributeType.Types.Type)
