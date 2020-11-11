@@ -204,7 +204,8 @@ namespace FractalMachine.Code
 
         internal bool written = false;
         internal int writeContLength = 0;
-        internal List<string> writeCont;
+        internal List<string> writeCont = new List<string>();
+        internal Component writeRedirectTo;
 
         abstract public string WriteTo(Lang Lang);
 
@@ -220,7 +221,7 @@ namespace FractalMachine.Code
             }
         }
 
-        internal int writeToNewLine()
+        internal virtual int writeToNewLine()
         {
             writeToCont("\r\n");
             return parent.writeToNewLine();
@@ -236,8 +237,20 @@ namespace FractalMachine.Code
         {
             var strBuild = new StringBuilder(writeContLength);
             strBuild.AppendJoin("", writeCont.ToArray());
+
+            if(writeRedirectTo != null)
+            {
+                writeRedirectTo.writeCont.Add(strBuild.ToString());
+                return "";
+            }
+
             return strBuild.ToString();
-        }     
+        }
+        
+        internal void writeRedirect(Component to)
+        {
+            writeRedirectTo = to;
+        }
 
         #endregion
     }

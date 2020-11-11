@@ -143,11 +143,13 @@ namespace FractalMachine.Code.Langs
 
                 if (Name.HasStringMark())
                 {
+                    atype.Type = AttributeType.Types.Type;
                     atype.AbsValue = Name.NoMark();
                     atype.TypeRef = "string";
                 }
                 else if (Char.IsDigit(Name[0]))
                 {
+                    atype.Type = AttributeType.Types.Type;
                     atype.AbsValue = Name;
                     atype.TypeRef = "int";
 

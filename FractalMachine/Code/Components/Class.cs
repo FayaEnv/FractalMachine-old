@@ -13,7 +13,7 @@ namespace FractalMachine.Code.Components
 
         #region Writer 
 
-        public override string WriteTo(Lang.Settings LangSettings)
+        public override string WriteTo(Lang Lang)
         {
             throw new NotImplementedException();
         }

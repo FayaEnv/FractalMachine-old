@@ -22,16 +22,20 @@ namespace FractalMachine.Code.Components
 
         internal void addOverload(Linear instr)
         {
-
+            var ol = new Overload(this, instr);
+            overloads.Add(ol);
         }
 
         #endregion
 
         #region Writer 
 
-        public override string WriteTo(Lang.Settings LangSettings)
+        public override string WriteTo(Lang LangSettings)
         {
-            throw new NotImplementedException();
+            foreach (var overload in overloads)
+                writeToCont(overload.WriteTo(LangSettings));
+
+            return writeReturn();
         }
 
         #endregion
@@ -39,7 +43,7 @@ namespace FractalMachine.Code.Components
 
     class Overload : Container
     {
-        public Overload(Container parent, Linear linear) : base(parent, linear)
+        public Overload(Function parent, Linear linear) : base(parent, linear)
         {
             containerType = ContainerTypes.Overload;
         }
@@ -48,9 +52,6 @@ namespace FractalMachine.Code.Components
         {
             get
             {
-                if (parent.type != Types.Member)
-                    return ((Overload)parent).Parent;
-
                 return (Function)parent;
             }
         }
@@ -68,14 +69,57 @@ namespace FractalMachine.Code.Components
 
         #region Writer 
 
-        override internal void writeToCont(string str)
+        public override string WriteTo(Lang Lang)
         {
-            wtCont += str;
-        }
+            var ts = Lang.GetTypesSet;
+            var ots = _linear.Lang.GetTypesSet;
 
-        public override string WriteTo(Lang.Settings LangSettings)
-        {
-            throw new NotImplementedException();
+            // Handle return type
+            var ret = _linear.Return;
+
+            if (returnType == null)
+            {
+                // temporary way
+                writeToCont("void");
+            }
+            else
+            {
+                writeToCont(ts.GetTypeCodeName(returnType));
+            }
+                
+
+            writeToCont(ret);
+            writeToCont(" ");
+            writeToCont(Parent.name);
+
+            // Write parameters
+            var pars = _linear.Settings["parameters"];
+            writeToCont("(");
+            foreach(var par in pars.Instructions)
+            {
+                string parType; // by default a dynamic type
+
+                if (String.IsNullOrEmpty(par.Return))
+                {
+                    throw new Exception("todo: handle dynamic variables");
+                }
+                else
+                {
+                    var t = ots.Get(par.Return);
+                    parType = ts.GetTypeCodeName(t);
+                }
+
+                writeToCont(parType);
+                writeToCont(" ");
+                writeToCont(par.Name);
+            }
+            writeToCont(")");
+
+            writeToCont("{");
+            base.WriteTo(Lang, true);
+            writeToCont("}");
+
+            return writeReturn();
         }
 
         #endregion

@@ -8,13 +8,12 @@ namespace FractalMachine.Code.Components
 {
     public class InternalVariablesManager
     {
-        Container parent;
+        internal Container parent;
         Dictionary<int, InternalVariable> vars = new Dictionary<int, InternalVariable>();
         Dictionary<Type, TypeContainer> typeContainers = new Dictionary<Type, TypeContainer>();
 
-        public InternalVariablesManager(Container Parent)
+        public InternalVariablesManager()
         {
-            parent = Parent;
         }
 
         public InternalVariable Set(string ivar, Operation op)
@@ -132,6 +131,11 @@ namespace FractalMachine.Code.Components
                     realVarType = ts.GetTypeCodeName(newType);
 
                 realVarName = inst.name;
+            }
+
+            public bool IsUsed(Linear instr)
+            {
+                return lastAppearance > instr.Pos;
             }
         }
     }

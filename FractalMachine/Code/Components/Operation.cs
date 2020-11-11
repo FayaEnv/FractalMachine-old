@@ -23,6 +23,8 @@ namespace FractalMachine.Code.Components
 
         override public string WriteTo(Lang Lang)
         {
+            var ts = Lang.GetTypesSet;
+
             // Handle return
             if (!String.IsNullOrEmpty(_linear.Return)) // is it has a sense?
             {
@@ -30,18 +32,23 @@ namespace FractalMachine.Code.Components
                 var var = Parent.ivarMan.Get(_linear.Return);
                 if (var != null)
                 {
-                    var.setRealVar(Lang);
-                    if (!String.IsNullOrEmpty(var.realVarType))
+                    if (var.IsUsed(_linear))
                     {
-                        writeToCont(var.realVarType);
-                        writeToCont(" ");
+                        var.setRealVar(Lang);
+                        if (!String.IsNullOrEmpty(var.realVarType))
+                        {
+                            writeToCont(var.realVarType);
+                            writeToCont(" ");
+                        }
+                        writeToCont(var.realVarName);
+                        writeToCont("=");
                     }
-                    writeToCont(var.realVarName);               
                 }
                 else
+                {
                     writeToCont(_linear.Return);
-
-                writeToCont("=");
+                    writeToCont("=");
+                }
             }
 
             if(_linear.HasOperator)
@@ -70,7 +77,6 @@ namespace FractalMachine.Code.Components
                     else
                     {
                         // Get type and convert attribute
-                        var ts = Lang.GetTypesSet;
                         var val = ts.SolveAttributeType(attrType);
                         writeToCont(val);
                     }

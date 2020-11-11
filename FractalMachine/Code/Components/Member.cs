@@ -20,5 +20,10 @@ namespace FractalMachine.Code.Components
         {
             Normal // Variable
         }
+
+        public override string WriteTo(Lang Lang)
+        {
+            return ""; //todo?
+        }
     }
 }

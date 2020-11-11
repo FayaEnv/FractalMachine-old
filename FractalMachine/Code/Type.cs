@@ -25,7 +25,7 @@ namespace FractalMachine.Code
 {
     public abstract class TypesSet
     {
-        public Dictionary<string, Type> Types;
+        public Dictionary<string, Type> Types = new Dictionary<string, Type>();
 
         public TypesSet()
         {
@@ -38,7 +38,7 @@ namespace FractalMachine.Code
 
         internal Type AddType(string Name)
         {
-            var t = new Type();
+            var t = new Type(this);
             Types.Add(Name, t);
             t.Name = Name;
             t.LightType = Name;
@@ -97,6 +97,9 @@ namespace FractalMachine.Code
 
         public virtual string GetTypeCodeName(Type type)
         {
+            if (type.TypesSet != this)
+                type = Convert(type);
+
             return type.Name;
         }
 
@@ -147,6 +150,8 @@ namespace FractalMachine.Code
 
     public class Type
     {
+        public TypesSet TypesSet;
+
         public string LightType;
         public Type Base;
         public string Name;
@@ -156,12 +161,13 @@ namespace FractalMachine.Code
         public bool Array = false;
         public bool Class = false;
 
-        public Type()
+        public Type(TypesSet TypesSet)
         {
+            this.TypesSet = TypesSet;
             Name = "var"; // means generic type
         }
 
-        public Type(string Name, int Bytes, bool Floating, bool Signed)
+        public Type(TypesSet TypesSet, string Name, int Bytes, bool Floating, bool Signed) : this(TypesSet)
         {
             this.Name = Name;
             this.Bytes = Bytes;
@@ -169,12 +175,13 @@ namespace FractalMachine.Code
             this.Signed = Signed;
         }
 
-        public Type(Type Base)
+        public Type(TypesSet TypesSet, Type Base) : this(TypesSet)
         {
             this.Base = Base;
+            this.Name = "";
         }
 
-        public Type(string Name)
+        public Type(TypesSet TypesSet, string Name) : this(TypesSet)
         {
             this.Name = Name;
             Class = true;

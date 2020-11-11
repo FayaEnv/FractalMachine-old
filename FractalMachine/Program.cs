@@ -32,7 +32,7 @@ namespace FractalMachine
             var assetsDir = Resources.Solve("Assets");
             Light light = null;
 
-            var test = "linearAssert";
+            var test = "toAchieve";
             switch (test)
             {
                 case "short":

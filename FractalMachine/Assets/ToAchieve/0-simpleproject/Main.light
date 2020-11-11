@@ -1,6 +1,6 @@
 import Other;
 
 function Main(){
-	var test = "2";
-	//test();
+	var str = "2";
+	test(str);
 }

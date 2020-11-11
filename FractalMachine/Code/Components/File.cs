@@ -14,7 +14,7 @@ namespace FractalMachine.Code.Components
         internal Component parent;
         internal Lang script;
 
-        List<string> usings;
+        List<string> usings = new List<string>();
 
         public File(Component Parent, Linear Linear, string FileName) : base(Parent, Linear)
         {
@@ -167,7 +167,7 @@ namespace FractalMachine.Code.Components
             return newLines++;
         }
 
-        public string WriteLibrary(Lang.Settings LangSettings)
+        public string WriteLibrary(Lang Lang)
         {
             if (outFileName == null)
             {
@@ -177,7 +177,7 @@ namespace FractalMachine.Code.Components
                     outFileName = Path.GetFullPath(outFileName);
                     if (Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
                     {
-                        var output = WriteTo(LangSettings);
+                        var output = WriteTo(Lang);
                         System.IO.File.WriteAllText(outFileName, output);
                     }
                 }

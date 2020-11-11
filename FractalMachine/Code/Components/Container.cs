@@ -10,12 +10,19 @@ namespace FractalMachine.Code.Components
     {
         internal ContainerTypes containerType;
         internal List<Operation> operations = new List<Operation>();
-        internal InternalVariablesManager ivarMan;
+        internal InternalVariablesManager ivarMan = new InternalVariablesManager();
 
         public Container(Component parent, Linear linear) : base(parent, linear)
         {
             type = Types.Container;
-            ivarMan = new InternalVariablesManager(this);
+            ivarMan.parent = this;
+
+            if (linear != null)
+            {
+                var ots = linear.Lang.GetTypesSet;
+                if (String.IsNullOrEmpty(linear.Return))
+                    returnType = ots.Get(linear.Return);
+            }
         }
 
         public Container Parent
@@ -145,7 +152,7 @@ namespace FractalMachine.Code.Components
                     try { name = (Member)compName; }
                     catch { throw new Exception(instr.Name + " is not assignable"); }
 
-                    var attr = ts.GetAttributeType(instr.Attributes[0]);
+                    var attr = ts.GetAttributeType(instr.Return);
                     if (name.typeToBeDefined)
                     {
                         if (attr.Type == AttributeType.Types.Type)
@@ -328,6 +335,11 @@ namespace FractalMachine.Code.Components
 
         override public string WriteTo(Lang Lang)
         {
+            return WriteTo(Lang, false);
+        }
+
+        public string WriteTo(Lang Lang, bool DontReturn)
+        {
             writeReset();
 
             // Logic is reading instructions by instructions for maintaining original order
@@ -355,6 +367,7 @@ namespace FractalMachine.Code.Components
                     }*/
             }
 
+            if (DontReturn) return null;
             return writeReturn();
         }
 
