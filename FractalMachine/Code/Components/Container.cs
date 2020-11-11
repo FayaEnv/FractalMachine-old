@@ -10,11 +10,12 @@ namespace FractalMachine.Code.Components
     {
         internal ContainerTypes containerType;
         internal List<Operation> operations = new List<Operation>();
-        internal InternalVariablesManager ivarMan = new InternalVariablesManager();
+        internal InternalVariablesManager ivarMan;
 
         public Container(Component parent, Linear linear) : base(parent, linear)
         {
             type = Types.Container;
+            ivarMan = new InternalVariablesManager(this);
         }
 
         public Container Parent
@@ -66,6 +67,7 @@ namespace FractalMachine.Code.Components
         public virtual void ReadSubLinear(Linear lin, int pos)
         {
             var instr = lin[pos];
+            instr.Pos = pos;
             ReadSubLinear(instr);
         }
 
@@ -175,11 +177,13 @@ namespace FractalMachine.Code.Components
 
                     v1 = instr.Attributes[0];
                     t1 = solveAttributeType(v1);
+                    if (v1.IsInternalVariable()) ivarMan.Appears(v1, instr);
 
                     if (instr.Op != "!")
                     {
                         v2 = instr.Attributes[1];
                         t2 = solveAttributeType(v2);
+                        if (v2.IsInternalVariable()) ivarMan.Appears(v2, instr);
                     }
 
                     Type retType = t1;
@@ -212,6 +216,10 @@ namespace FractalMachine.Code.Components
             var op = new Operation(this, instr);
             operations.Add(op);
             ivarMan.Set(instr.Return, op);
+
+            // Check appears
+            foreach(var attr in instr.Attributes)
+                if (attr.IsInternalVariable()) ivarMan.Appears(attr, instr);
         }
 
         internal virtual void readLinear_import(Linear instr)
@@ -361,7 +369,7 @@ namespace FractalMachine.Code.Components
             base.writeReset();
         }
 
-        virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
+        /*virtual public void writeTo_import(Lang.Settings LangSettings, Linear instr)
         {
             throw new Exception("To be overridden");
         }
@@ -376,7 +384,7 @@ namespace FractalMachine.Code.Components
         virtual public void writeTo_compiler(Lang.Settings LangSettings, Linear instr)
         {
             throw new Exception("To be overridden");
-        }
+        }*/
 
         #endregion
 

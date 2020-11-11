@@ -95,6 +95,11 @@ namespace FractalMachine.Code
                 return Types.Where(s => s.Value.LightType == ltype).First().Value;
         }
 
+        public virtual string GetTypeCodeName(Type type)
+        {
+            return type.Name;
+        }
+
         public Type CompareTypeCast(Type t1, Type t2)
         {
             //todo: improve this, this is a temporary solution

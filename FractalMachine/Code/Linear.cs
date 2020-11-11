@@ -33,6 +33,8 @@ namespace FractalMachine.Code
         public Dictionary<string, Linear> Settings = new Dictionary<string, Linear>();
         public Dictionary<string, string> Parameters = new Dictionary<string, string>();
 
+        public int Pos;
+
         public List<string> Attributes = new List<string>();
         public string Op;
         public string Type;
