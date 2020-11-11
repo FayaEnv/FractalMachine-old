@@ -131,6 +131,11 @@ namespace FractalMachine.Code
 
             for (int p = 1; p < Names.Length; p++)
             {
+                if(comp is Components.File)
+                {
+                    ((Components.File)comp).Load();
+                }
+
                 var part = Names[p];
                 if (!comp.components.TryGetValue(part, out comp))
                 {
@@ -153,6 +158,22 @@ namespace FractalMachine.Code
             get
             {
                 return (parent!=null && parent != this) ? parent.Top : this;
+            }
+        }
+
+        public virtual Components.File TopFile
+        {
+            get
+            {
+                return parent.TopFile;
+            }
+        }
+
+        public virtual Project GetProject
+        {
+            get
+            {
+                return parent.GetProject;
             }
         }
 
@@ -180,6 +201,9 @@ namespace FractalMachine.Code
         {
             get
             {
+                if (!(this is Components.Container))
+                    return true;
+
                 if (called) return true;
                 foreach (var comp in components)
                 {

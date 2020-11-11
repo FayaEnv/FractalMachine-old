@@ -14,6 +14,7 @@ namespace FractalMachine.Code.Components
         internal Component parent;
         internal Lang script;
 
+        List<string> includes = new List<string>();
         List<string> usings = new List<string>();
 
         public File(Component Parent, Linear Linear, string FileName) : base(Parent, Linear)
@@ -157,6 +158,16 @@ namespace FractalMachine.Code.Components
 
         #region Properties
 
+        public override File TopFile
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(FileName))
+                    return parent.TopFile;
+                else
+                    return this;
+            }
+        }
 
         #endregion
 
@@ -165,6 +176,13 @@ namespace FractalMachine.Code.Components
         override internal int writeToNewLine()
         {
             return newLines++;
+        }
+
+        public override string WriteTo(Lang Lang)
+        {
+            Load();
+            base.WriteTo(Lang, true);
+            return writeReturn();
         }
 
         public string WriteLibrary(Lang Lang)
@@ -187,6 +205,27 @@ namespace FractalMachine.Code.Components
 
             // non so se l'AssertPath metterlo qui o direttamente in WriteCPP
             return Project.env.Path(outFileName);
+        }
+
+
+        List<string> includedLibraries = new List<string>();
+        public string Include(Lang lang, Component comp)
+        {
+            var ts = lang.GetTypesSet;
+
+            var ofn = Project.Include(lang, comp);
+            if (!includedLibraries.Contains(ofn))
+            {
+                writeToCont("#include");
+                writeToCont(" ");
+                writeToCont("\"");
+                writeToCont(ts.StringFormat(ofn)); //handle formattation
+                writeToCont("\"");
+
+                includedLibraries.Add(ofn);
+            }
+
+            return ofn;
         }
 
         #endregion

@@ -235,7 +235,7 @@ namespace FractalMachine.Code.Components
             var op = new Operation(this, instr);
             operations.Add(op);
 
-            Import(instr.Name, instr.Parameters);
+            var c = instr.component = Import(instr.Name, instr.Parameters); 
         }
 
         internal virtual void readLinear_function(Linear instr)
@@ -319,7 +319,7 @@ namespace FractalMachine.Code.Components
             */
 
             //todo: handle Parameters
-            var comp = Solve(Name);
+            var comp = (Container)Solve(Name);
 
             foreach (var c in comp.components)
             {
@@ -345,7 +345,10 @@ namespace FractalMachine.Code.Components
             // Logic is reading instructions by instructions for maintaining original order
             foreach (var lin in _linear.Instructions)
             {
-                writeToCont(lin.component.WriteTo(Lang));
+                var comp = lin.component;
+
+                if(comp.called)
+                    writeToCont(comp.WriteTo(Lang));
 
                 /*if (lin.Op == "call" || lin.Type == "oprt")
                     writeTo_operation(LangSettings, lin);

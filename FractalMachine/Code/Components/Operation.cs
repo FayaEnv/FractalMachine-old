@@ -23,6 +23,13 @@ namespace FractalMachine.Code.Components
 
         override public string WriteTo(Lang Lang)
         {
+            // Temporary
+            if(_linear.Op == "import")
+            {
+                TopFile.Include(Lang, _linear.component);
+                return "";
+            }
+
             var ts = Lang.GetTypesSet;
 
             // Handle return

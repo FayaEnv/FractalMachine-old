@@ -118,6 +118,14 @@ namespace FractalMachine.Code
 
             return ideal;
         }
+
+        // to improve
+        public virtual string StringFormat(string Str, string Separator="\"")
+        {
+            Str = Str.Replace("\\", "\\\\");
+            Str = Str.Replace(Separator, "\\"+ Separator);
+            return Str;
+        }
     }
 
     public class AttributeType

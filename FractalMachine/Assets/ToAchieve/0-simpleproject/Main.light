@@ -2,5 +2,5 @@ import Other;
 
 function Main(){
 	var str = "2";
-	test(str);
+	test(str); 
 }

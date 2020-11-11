@@ -103,5 +103,32 @@ namespace FractalMachine
             }
         }
 
+        #region Import
+
+        public string Include(Lang Lang, Component Comp)
+        {
+            //todo: handle the case that comp comes from external project
+            var cf = Comp.TopFile;
+
+            if (String.IsNullOrEmpty(cf.outFileName))
+                cf.WriteLibrary(Lang);            
+
+            return cf.outFileName;
+        }
+
+        #endregion
+
+        #region Properties
+
+        public override Project GetProject
+        {
+            get
+            {
+                return this;
+            }
+        }
+
+        #endregion
+
     }
 }
