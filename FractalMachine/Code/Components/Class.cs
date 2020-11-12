@@ -4,11 +4,11 @@ using System.Text;
 
 namespace FractalMachine.Code.Components
 {
-    public class Class : Function
+    public class Class : Container
     {
         public Class(Component parent, Linear linear) : base(parent, linear)
         {
-            //containerType = ContainerTypes.Class;
+            containerType = ContainerTypes.Class;
         }
 
         #region Writer 

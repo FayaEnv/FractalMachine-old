@@ -94,6 +94,14 @@ namespace FractalMachine.Code.Components
                     readLinear_function(instr);
                     break;
 
+                case "class":
+                    readLinear_class(instr);
+                    break;
+
+                case "struct":
+                    readLinear_struct(instr);
+                    break;
+
                 case "namespace":
                     readLinear_namespace(instr);
                     break;
@@ -245,6 +253,16 @@ namespace FractalMachine.Code.Components
             instr.component = op;
 
             op.attached = Import(instr.Name, instr.Parameters); 
+        }
+
+        internal virtual void readLinear_class(Linear instr)
+        {
+            throw new Exception("todo");
+        }
+
+        internal virtual void readLinear_struct(Linear instr)
+        {
+            throw new Exception("todo");
         }
 
         internal virtual void readLinear_function(Linear instr)
