@@ -38,6 +38,16 @@ namespace FractalMachine.Code
             public abstract string StructureImport { get; }
 
         }
+
+        #region InstanceSettings
+
+        public StructInstanceSettings InstanceSettings;
+        public struct StructInstanceSettings
+        {
+            public Project Project;
+        }
+
+        #endregion
     }
 
     public enum Language

@@ -201,8 +201,16 @@ namespace FractalMachine.Code.Components
             {
                 if (script.Language == Language.Light)
                 {
-                    outFileName = GetProject.tempDir + Misc.DirectoryNameToFile(FileName) + ".hpp";
+                    /// outFileName
+                    outFileName = Misc.DirectoryNameToFile(FileName) + ".hpp";
+                    if(Lang.InstanceSettings.Project != null)
+                    {
+                        if (Lang.InstanceSettings.Project != GetProject)
+                            outFileName = GetProject.name + "_" + outFileName; // Set project perspective
+                    }
+                    outFileName = GetProject.tempDir + outFileName;
                     outFileName = Path.GetFullPath(outFileName);
+
                     if (Properties.Debugging || Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
                     {
                         var output = WriteTo(Lang);

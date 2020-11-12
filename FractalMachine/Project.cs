@@ -30,7 +30,6 @@ namespace FractalMachine
     {
         internal Ambiance.Environment env;
 
-        string outName;
         string entryPoint;
         string directory;
 
@@ -57,7 +56,7 @@ namespace FractalMachine
                 entryPoint = ProjectPath +'/'+ Properties.ProjectMainFile;
 
                 var spl = ProjectPath.Replace('\\','/').Split('/');
-                outName = spl[spl.Length-2];
+                name = spl[spl.Length-2];
 
                 mainComp = (Code.Components.File) Solve("Main", false);
                 if (mainComp == null)
@@ -67,7 +66,7 @@ namespace FractalMachine
             {
                 entryPoint = ProjectPath;
                 _fileName = directory = Path.GetDirectoryName(ProjectPath); //tocheck: ends with /?
-                outName = Path.GetFileNameWithoutExtension(entryPoint);
+                name = Path.GetFileNameWithoutExtension(entryPoint);
                 mainComp = this;
             }
 
@@ -80,10 +79,11 @@ namespace FractalMachine
         public void Compile(string Out = null)
         {
             // Name
-            var outPath = directory + (Out==null ? outName : Out);
+            var outPath = directory + (Out==null ? name : Out);
             exeOutPath = outPath + env.exeFormat;
 
             var cpp = new CPP();
+            cpp.InstanceSettings.Project = this;
 
             var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
             if (Properties.Debugging || Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
