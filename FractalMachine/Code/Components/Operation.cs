@@ -73,6 +73,22 @@ namespace FractalMachine.Code.Components
                     var attrType = ts.GetAttributeType(_linear.Name);
                     writeToCont(ts.SolveAttributeType(attrType));
                 }
+                else
+                {
+                    string t1 = null, t2 = _linear.Attributes[0];
+
+                    if (_linear.Op != "!")
+                    {
+                        t1 = t2;
+                        t2 = _linear.Attributes[1];
+                    }
+
+                    if (t1 != null)
+                        writeAttributeVariable(ts, t1);
+
+                    writeToCont(_linear.Op);
+                    writeAttributeVariable(ts, t2);
+                }
             }
             else if (_linear.IsCall)
             {
@@ -87,23 +103,9 @@ namespace FractalMachine.Code.Components
                 {
                     var attr = _linear.Attributes[a];
 
-                    var attrType = _linear.Lang.GetTypesSet.GetAttributeType(attr);
-                    if (attrType.Type == AttributeType.Types.Name)
-                    {
-                        var var = Parent.ivarMan.Get(attr);
-                        if (var != null)
-                            writeToCont(var.realVarName);
-                        else
-                            writeToCont(attr);
-                    }
-                    else
-                    {
-                        // Get type and convert attribute
-                        var val = ts.SolveAttributeType(attrType);
-                        writeToCont(val);
-                    }
+                    writeAttributeVariable(ts, attr);
 
-                    if(a < ac-1)
+                    if (a < ac-1)
                         writeToCont(",");
                 }
 
@@ -114,6 +116,25 @@ namespace FractalMachine.Code.Components
             writeToCont(";");
 
             return writeReturn();
+        }
+
+        void writeAttributeVariable(TypesSet ts, string attr)
+        {
+            var attrType = _linear.Lang.GetTypesSet.GetAttributeType(attr);
+            if (attrType.Type == AttributeType.Types.Name)
+            {
+                var var = Parent.ivarMan.Get(attr);
+                if (var != null)
+                    writeToCont(var.realVarName);
+                else
+                    writeToCont(attr);
+            }
+            else
+            {
+                // Get type and convert attribute
+                var val = ts.SolveAttributeType(attrType);
+                writeToCont(val);
+            }
         }
     }
 }

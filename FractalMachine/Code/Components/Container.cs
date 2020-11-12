@@ -140,6 +140,10 @@ namespace FractalMachine.Code.Components
             var op = new Operation(this, instr);
             operations.Add(op);
 
+            ///
+            /// Pratically: prepare variables involved in the operation
+            ///
+
             switch (instr.Op)
             {
                 case "=":
@@ -183,13 +187,13 @@ namespace FractalMachine.Code.Components
                     Type t1, t2 = null;
 
                     v1 = instr.Attributes[0];
-                    t1 = solveAttributeType(v1);
+                    t1 = solveAttribute_type(v1);
                     if (v1.IsInternalVariable()) ivarMan.Appears(v1, instr);
 
                     if (instr.Op != "!")
                     {
                         v2 = instr.Attributes[1];
-                        t2 = solveAttributeType(v2);
+                        t2 = solveAttribute_type(v2);
                         if (v2.IsInternalVariable()) ivarMan.Appears(v2, instr);
                     }
 
@@ -293,7 +297,7 @@ namespace FractalMachine.Code.Components
 
         #region Methods
 
-        Type solveAttributeType(string attr)
+        Type solveAttribute_type(string attr)
         {
             var ts = _linear.Lang.GetTypesSet;
             var attrType = ts.GetAttributeType(attr);

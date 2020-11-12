@@ -86,7 +86,7 @@ namespace FractalMachine
             var cpp = new CPP();
 
             var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
-            if (Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
+            if (Properties.Debugging || Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
             {
                 //var comp = ExtractComponent(entryPoint);
                 //mainComp.Load();
