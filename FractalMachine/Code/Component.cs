@@ -206,7 +206,7 @@ namespace FractalMachine.Code
 
         #region Methods
 
-        public string GetName(Component relativeTo = null)
+        public virtual string GetName(Component relativeTo = null, bool ignoreBase = false)
         {
             if (relativeTo == this)
                 return null;
@@ -217,10 +217,10 @@ namespace FractalMachine.Code
                 This is a delicate part. The type should be specified if part of a static class or namespace
                 The code below, pratically, is not working for the moment
             */
-            if ((parent is Components.File && TopFile != parent) || parent is Components.Class)
+            if ((parent is Components.File && TopFile != parent) /*|| parent is Components.Class*/)
                 topName = parent?.GetName(relativeTo);
 
-            return (topName != null ? topName + '.' : "") + name;
+            return (topName != null ? topName + '.' : "") + (ignoreBase ? "" : name);
         }
 
         #endregion

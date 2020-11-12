@@ -70,6 +70,8 @@ namespace FractalMachine
                 mainComp = this;
             }
 
+            mainComp.isMain = true;
+
             /// Assets and dirs
             assetsDir = Resources.Solve("Assets");
             libsDir = assetsDir + "/libs";
@@ -95,8 +97,8 @@ namespace FractalMachine
             }
 
             // Compile
-                    // Pay attention to the case of an updated library but not the entry point
-            if (Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
+            // Pay attention to the case of an updated library but not the entry point
+            if (Properties.Debugging || Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
             {
                 var compiler = env.Compiler;
                 compiler.Compile(cppOutPath, exeOutPath);
@@ -105,7 +107,7 @@ namespace FractalMachine
 
         #region Import
 
-        public string Include(Lang Lang, Component Comp)
+        new public string Include(Lang Lang, Component Comp)
         {
             //todo: handle the case that comp comes from external project
             var cf = Comp.TopFile;

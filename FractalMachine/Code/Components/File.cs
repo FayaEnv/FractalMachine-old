@@ -9,7 +9,7 @@ namespace FractalMachine.Code.Components
 {
     public class File : Container
     {
-        internal bool loaded = false;
+        internal bool loaded = false, isMain = false;
         internal string outFileName;
         internal Component parent;
         internal Lang script;

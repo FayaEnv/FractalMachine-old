@@ -28,8 +28,9 @@ namespace FractalMachine
         public static int MaxRepositoryDays = 7;
 
         public static string LightExtension = ".light";
-        public static string ProjectMainFile = "Main"+ LightExtension;
-
+        public static string EntryPointFunction = "Main";
+        public static string ProjectMainFile = EntryPointFunction + LightExtension;
+        
         public static string[] FileImportExtensions = new string[] { ".h", LightExtension };
         public static string InternalVariable = "£";
 

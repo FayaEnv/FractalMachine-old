@@ -4,7 +4,7 @@ using System.Text;
 
 namespace FractalMachine.Code.Components
 {
-    class Function : Component
+    public class Function : Component
     {
         internal List<Overload> overloads = new List<Overload>();
 
@@ -27,6 +27,18 @@ namespace FractalMachine.Code.Components
         }
 
         #endregion
+
+        public override string GetName(Component relativeTo = null, bool ignoreBase = false)
+        {
+            if (parent == null) // in case of native functions
+                return name;
+
+            if (TopFile.isMain && name == Properties.EntryPointFunction)
+                return "main"; //for c++ (todo: make it a property reference)
+
+            var apex = base.GetName(relativeTo, true);
+            return apex + TopFile.name + "_" + name;
+        }
 
         #region Writer 
 
@@ -97,7 +109,7 @@ namespace FractalMachine.Code.Components
             }
                 
             writeToCont(" ");
-            writeToCont(Parent.name);
+            writeToCont(Parent.GetName());
 
             // Write parameters
             var pars = _linear.Settings["parameters"];
