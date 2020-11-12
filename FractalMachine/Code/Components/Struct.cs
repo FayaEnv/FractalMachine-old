@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
     {
         public Struct(Component parent, Linear linear) : base(parent, linear)
         {
-            //containerType = ContainerTypes.Class;
+            containerType = ContainerTypes.Struct;
         }
 
         public override void ReadSubLinear(Linear instr)

@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
     {
         internal List<Overload> overloads = new List<Overload>();
 
-        public Function(Component parent, Linear linear) : base(parent, linear)
+        public Function(Component parent) : base(parent, null)
         {
             type = Types.Function;
         }

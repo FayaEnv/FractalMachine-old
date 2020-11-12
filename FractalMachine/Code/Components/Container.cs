@@ -35,6 +35,7 @@ namespace FractalMachine.Code.Components
             Project,
             File,
             Class,
+            Struct,
             Overload,
             Namespace
         }
@@ -280,7 +281,7 @@ namespace FractalMachine.Code.Components
 
             if (function == null)
             {
-                function = new Function(this, null);
+                function = new Function(this);
                 addComponent(instr.Name, function);
             }
 

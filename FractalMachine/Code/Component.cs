@@ -119,6 +119,9 @@ namespace FractalMachine.Code
             Component comp = this, bcomp = this;
             var tot = "";
 
+            ///
+            /// Native functions
+            ///
             if (Names.Length == 1)
             {
                 // check unique call
@@ -136,13 +139,16 @@ namespace FractalMachine.Code
                         TopFile.IncludeDefault(lib);
 
                         //Create dummy component function
-                        var fun = new Function(null, null);
+                        var fun = new Function(null);
                         fun.name = name;
                         return fun;
                     }
                 }
             }
 
+            ///
+            /// Normal
+            ///
             while (!comp.components.TryGetValue(Names[0], out comp))
             {
                 comp = bcomp.parent;
