@@ -19,11 +19,26 @@ namespace FractalMachine.Code.Components
         public enum MemberType
         {
             Normal // Variable
+            //for the future: Properties
         }
 
         public override string WriteTo(Lang Lang)
         {
-            return ""; //todo?
+            var ts = Lang.GetTypesSet;
+
+            switch (_linear.Op)
+            {
+                case "declare":
+
+                    writeToCont(ts.GetTypeCodeName(returnType));
+                    writeToCont(" ");
+                    writeToCont(_linear.Name);
+                    writeToCont(";");
+
+                    break;
+            }
+
+            return writeReturn(); 
         }
     }
 }

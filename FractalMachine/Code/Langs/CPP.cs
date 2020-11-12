@@ -181,6 +181,9 @@ namespace FractalMachine.Code.Langs
 
                 string ret = AttributeType.AbsValue;
 
+                if (AttributeType.Type == AttributeType.Types.Name)
+                    return ret;
+
                 switch (iType.LightType)
                 {
                     case "string":

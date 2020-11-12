@@ -95,7 +95,7 @@ namespace FractalMachine
             }
 
             // Compile
-            // Pay attention to the case of an updated library but not the entry point
+                    // Pay attention to the case of an updated library but not the entry point
             if (Resources.FilesWriteTimeCompare(cppOutPath, exeOutPath) >= 0)
             {
                 var compiler = env.Compiler;

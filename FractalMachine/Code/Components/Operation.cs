@@ -70,7 +70,8 @@ namespace FractalMachine.Code.Components
             {
                 if (_linear.Op == "=")
                 {
-                    writeToCont(_linear.Name);
+                    var attrType = ts.GetAttributeType(_linear.Name);
+                    writeToCont(ts.SolveAttributeType(attrType));
                 }
             }
             else if (_linear.IsCall)
@@ -90,7 +91,7 @@ namespace FractalMachine.Code.Components
                     if (attrType.Type == AttributeType.Types.Name)
                     {
                         var var = Parent.ivarMan.Get(attr);
-                        if(var != null)
+                        if (var != null)
                             writeToCont(var.realVarName);
                         else
                             writeToCont(attr);
@@ -106,10 +107,11 @@ namespace FractalMachine.Code.Components
                         writeToCont(",");
                 }
 
+                writeToCont(")");
+
             }
 
             writeToCont(";");
-            writeNewLine();
 
             return writeReturn();
         }

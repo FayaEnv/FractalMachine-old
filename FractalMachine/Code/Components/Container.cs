@@ -351,8 +351,11 @@ namespace FractalMachine.Code.Components
             {
                 var comp = lin.component;
 
-                if(comp.Called)
+                if (comp.Called)
+                {
                     writeToCont(comp.WriteTo(Lang));
+                    writeNewLine();
+                }
 
                 /*if (lin.Op == "call" || lin.Type == "oprt")
                     writeTo_operation(LangSettings, lin);

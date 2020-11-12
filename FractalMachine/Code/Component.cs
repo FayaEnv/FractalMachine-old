@@ -210,9 +210,16 @@ namespace FractalMachine.Code
             if (relativeTo == this)
                 return null;
 
-            string topName = parent?.GetName(relativeTo);
+            string topName = null;
 
-            return name + topName != null ? '.' + topName : "";
+            /*
+                This is a delicate part. The type should be specified if part of a static class or namespace
+                The code below, pratically, is not working for the moment
+            */
+            if ((parent is Components.File && TopFile != parent) || parent is Components.Class)
+                topName = parent?.GetName(relativeTo);
+
+            return (topName != null ? topName + '.' : "") + name;
         }
 
         #endregion

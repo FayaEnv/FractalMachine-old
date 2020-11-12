@@ -146,11 +146,16 @@ namespace FractalMachine.Code
             Invalid
         }
 
+        /*public string Solve()
+        {
+            return TypesSet.SolveAttributeType(this);
+        }*/
+
         public Type GetLangType
         {
             get
             {
-                if (Type != Types.Name) return null;
+                if (Type != Types.Type) return null;
                 return TypesSet.Get(TypeRef);
             }
         }
