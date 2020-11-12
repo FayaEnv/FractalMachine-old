@@ -32,6 +32,7 @@ namespace FractalMachine.Code
 {
     abstract public class Component
     {
+        internal Component attached;
         internal string name;
         internal Type returnType;
         internal Types type;
@@ -228,7 +229,7 @@ namespace FractalMachine.Code
 
         internal bool _called = false;
 
-        public bool Called
+        public virtual bool Called
         {
             get
             {
@@ -276,10 +277,10 @@ namespace FractalMachine.Code
             }
         }
 
-        internal virtual int writeNewLine()
+        internal virtual int writeNewLine(Linear instr, bool isBase = true)
         {
-            writeToCont("\r\n");
-            return parent.writeNewLine();
+            if(isBase) writeToCont("\n");
+            return parent.writeNewLine(instr, false);
         }
 
         internal void writeToCont(string str)

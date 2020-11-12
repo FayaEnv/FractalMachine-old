@@ -26,15 +26,6 @@ namespace FractalMachine.Code.Components
             loadFileFamily();
         }
 
-        public Project Project
-        {
-            get
-            {
-                //todo: find project
-                return (Project)parent;
-            }
-        }
-
         internal void Load()
         {
             if (loaded) return;
@@ -172,10 +163,14 @@ namespace FractalMachine.Code.Components
         #endregion
 
         #region Writer 
-        int newLines = 1;
-        override internal int writeNewLine()
+
+        int writtenLines = 1;
+        override internal int writeNewLine(Linear instr, bool isBase = true)
         {
-            return newLines++;
+            if(isBase) writeToCont("\n");
+            // todo: handle linears line number where from different files
+            if(instr != null) instr.DebugLine = writtenLines++;
+            return writtenLines;
         }
 
         public override string WriteTo(Lang Lang)
@@ -197,7 +192,7 @@ namespace FractalMachine.Code.Components
             writeToCont("<");
             writeToCont(libName);
             writeToCont(">");
-            writeNewLine();
+            writeNewLine(null);
         }
 
         public string WriteLibrary(Lang Lang)
@@ -206,9 +201,9 @@ namespace FractalMachine.Code.Components
             {
                 if (script.Language == Language.Light)
                 {
-                    outFileName = Project.tempDir + Misc.DirectoryNameToFile(FileName) + ".hpp";
+                    outFileName = GetProject.tempDir + Misc.DirectoryNameToFile(FileName) + ".hpp";
                     outFileName = Path.GetFullPath(outFileName);
-                    if (Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
+                    if (Properties.Debugging || Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
                     {
                         var output = WriteTo(Lang);
                         System.IO.File.WriteAllText(outFileName, output);
@@ -219,7 +214,7 @@ namespace FractalMachine.Code.Components
             }
 
             // non so se l'AssertPath metterlo qui o direttamente in WriteCPP
-            return Project.env.Path(outFileName);
+            return GetProject.env.Path(outFileName);
         }
 
 
@@ -228,7 +223,7 @@ namespace FractalMachine.Code.Components
         {
             var ts = lang.GetTypesSet;
 
-            var ofn = Project.Include(lang, comp);
+            var ofn = GetProject.Include(lang, comp);
             if (!includedLibraries.Contains(ofn))
             {
                 writeToCont("#include");
@@ -236,7 +231,7 @@ namespace FractalMachine.Code.Components
                 writeToCont("\"");
                 writeToCont(ts.StringFormat(ofn)); //handle formattation
                 writeToCont("\"");
-                writeNewLine();
+                writeNewLine(null);
 
                 includedLibraries.Add(ofn);
             }

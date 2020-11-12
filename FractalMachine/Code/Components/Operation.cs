@@ -30,7 +30,7 @@ namespace FractalMachine.Code.Components
             // Temporary
             if(_linear.Op == "import")
             {
-                TopFile.Include(Lang, _linear.component);
+                TopFile.Include(Lang, _linear.component.attached);
                 return "";
             }
 

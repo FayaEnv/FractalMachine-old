@@ -89,7 +89,7 @@ namespace FractalMachine
             if (Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
             {
                 //var comp = ExtractComponent(entryPoint);
-                mainComp.Load();
+                //mainComp.Load();
                 var output = mainComp.WriteTo(cpp);
                 File.WriteAllText(cppOutPath, output);
             }

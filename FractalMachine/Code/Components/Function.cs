@@ -67,6 +67,15 @@ namespace FractalMachine.Code.Components
 
         #endregion
 
+        public override bool Called
+        {
+            get { return Parent.Called; }
+        }
+
+        #region Properties
+
+        #endregion
+
         #region Writer 
 
         public override string WriteTo(Lang Lang)
@@ -87,8 +96,6 @@ namespace FractalMachine.Code.Components
                 writeToCont(ts.GetTypeCodeName(returnType));
             }
                 
-
-            writeToCont(ret);
             writeToCont(" ");
             writeToCont(Parent.name);
 
@@ -116,6 +123,7 @@ namespace FractalMachine.Code.Components
             writeToCont(")");
 
             writeToCont("{");
+            writeNewLine(_linear);
             base.WriteTo(Lang, true);
             writeToCont("}");
 
