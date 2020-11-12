@@ -19,7 +19,7 @@ namespace FractalMachine.Code.Components
 
         public File(Component Parent, Linear Linear, string FileName) : base(Parent, Linear)
         {
-            usings.Add("namespace std");
+            usings.Add("namespace std"); //todo: create script files for C++ for automatic namespace including
             containerType = ContainerTypes.File;
             _fileName = FileName;
 
@@ -205,13 +205,15 @@ namespace FractalMachine.Code.Components
                     outFileName = Misc.DirectoryNameToFile(FileName) + ".hpp";
                     if(Lang.InstanceSettings.Project != null)
                     {
+                        // to improve, for avoiding same project name conflicts
                         if (Lang.InstanceSettings.Project != GetProject)
                             outFileName = GetProject.name + "_" + outFileName; // Set project perspective
                     }
                     outFileName = GetProject.tempDir + outFileName;
                     outFileName = Path.GetFullPath(outFileName);
 
-                    if (Properties.Debugging || Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0)
+                    // comparing disabled, for the moment, because it doesn't ensure a change of perspective
+                    if (true || Resources.FilesWriteTimeCompare(FileName, outFileName) >= 0) 
                     {
                         var output = WriteTo(Lang);
                         System.IO.File.WriteAllText(outFileName, output);

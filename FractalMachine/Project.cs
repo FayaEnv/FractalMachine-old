@@ -88,13 +88,8 @@ namespace FractalMachine
             cpp.InstanceSettings.Project = this;
 
             var cppOutPath = Properties.TempDir + Misc.DirectoryNameToFile(entryPoint) + ".cpp";
-            if (Properties.Debugging || Resources.FilesWriteTimeCompare(entryPoint, cppOutPath) >= 0)
-            {
-                //var comp = ExtractComponent(entryPoint);
-                //mainComp.Load();
-                var output = mainComp.WriteTo(cpp);
-                File.WriteAllText(cppOutPath, output);
-            }
+            var output = mainComp.WriteTo(cpp);
+            File.WriteAllText(cppOutPath, output);
 
             // Compile
             // Pay attention to the case of an updated library but not the entry point
