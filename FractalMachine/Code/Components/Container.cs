@@ -300,11 +300,20 @@ namespace FractalMachine.Code.Components
 
             var op = new Operation(this, instr);
             operations.Add(op);
-            ivarMan.Set(instr.Return, op);
+            var ivar = ivarMan.Set(instr.Return, op);
 
             // Check appears
             foreach(var attr in instr.Attributes)
                 if (attr.IsInternalVariable()) ivarMan.Appears(attr, instr);
+
+            /// Return type
+            if (comp is Class)
+            {
+                // is class instance
+                ivar.type = new Type(instr.Lang.GetTypesSet, comp.GetPath());
+            }
+            else
+                ivar.type = comp.returnType;
         }
 
         internal virtual void readLinear_import(Linear instr)

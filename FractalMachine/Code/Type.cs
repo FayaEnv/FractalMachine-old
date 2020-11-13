@@ -82,6 +82,11 @@ namespace FractalMachine.Code
 
         public Type Convert(Type from)
         {
+            /// Class
+            if (from.Class)
+                return new Type(this, from.Name);
+
+            /// Value
             // Lazy method
             var ltype = from.LightType;
             var search = Types.Where(s => s.Value.LightType == ltype);
