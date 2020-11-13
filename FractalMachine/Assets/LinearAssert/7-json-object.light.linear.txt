@@ -20,5 +20,5 @@
 ======| Attributes: stai  |  $$*°are you  |  
 ====| 5. =
 ======| Type: oprt
-======| Name: json
-======| Return: £0
+======| Name: £0
+======| Return: json

@@ -8,10 +8,11 @@
 ======| Return: £0
 ====| 2. =
 ======| Type: oprt
-======| Name: arr
-======| Return: £0
+======| Name: £0
+======| Return: arr
 ====| 3. call
-======| Name: arr
+======| Name: []
+======| Return: arr
 ======| Attributes: 0  |  2  |  
 ====| 4. declare
 ======| Name: normal
@@ -23,8 +24,8 @@
 ======| Attributes: 0  |  
 ====| 6. =
 ======| Type: oprt
-======| Name: normal
-======| Return: £1
+======| Name: £1
+======| Return: normal
 ====| 7. declare
 ======| Name: json
 ======| Return: var
@@ -45,5 +46,5 @@
 ======| Attributes: 2  |  va  |  
 ====| 12. =
 ======| Type: oprt
-======| Name: json
-======| Return: £2
+======| Name: £2
+======| Return: json

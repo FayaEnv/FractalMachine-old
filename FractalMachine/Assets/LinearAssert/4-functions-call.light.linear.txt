@@ -26,5 +26,5 @@
 ======| Attributes: $$*°ciao  |  
 ====| 3. =
 ======| Type: oprt
-======| Name: res
-======| Return: £0
+======| Name: £0
+======| Return: res

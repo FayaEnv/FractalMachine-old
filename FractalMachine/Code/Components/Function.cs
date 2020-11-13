@@ -103,9 +103,7 @@ namespace FractalMachine.Code.Components
             var ts = Lang.GetTypesSet;
             var ots = _linear.Lang.GetTypesSet;
 
-            // Handle return type
-            var ret = _linear.Return;
-
+            /// Handle return type
             if (returnType == null)
             {
                 // temporary way
@@ -117,9 +115,11 @@ namespace FractalMachine.Code.Components
             }
                 
             writeToCont(" ");
+
+            /// Function name
             writeToCont(Parent.GetName());
 
-            // Write parameters
+            /// Write parameters
             var pars = _linear.Settings["parameters"];
             writeToCont("(");
             foreach(var par in pars.Instructions)
@@ -142,6 +142,7 @@ namespace FractalMachine.Code.Components
             }
             writeToCont(")");
 
+            /// Write content
             writeToCont("{");
             writeNewLine(_linear);
             base.WriteTo(Lang, true);

@@ -1,0 +1,12 @@
+| 0. 
+==| Instructions:
+====| 0. struct
+======| Name: Test
+======| Return: struct
+======| Instructions:
+========| 0. declare
+==========| Name: number
+==========| Return: int
+========| 1. declare
+==========| Name: words
+==========| Return: string

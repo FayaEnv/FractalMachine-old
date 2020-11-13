@@ -19,7 +19,19 @@ namespace FractalMachine.Code.Components
             Class
         }
 
-        #region ReadLinear
+        #region Write
+
+        public override string WriteTo(Lang Lang)
+        {
+            writeToCont(dataStructureType.ToString().ToLower());
+            writeToCont(" ");
+            writeToCont(name);
+            writeToCont("{");
+            base.WriteTo(Lang);
+            writeToCont("}");
+
+            return writeReturn();
+        }
 
         #endregion
     }

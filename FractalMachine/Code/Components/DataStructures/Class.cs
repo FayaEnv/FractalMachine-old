@@ -11,19 +11,10 @@ namespace FractalMachine.Code.Components
         public Class(Component parent, Linear linear) : base(parent, linear)
         {            
             dataStructureType = DataStructureTypes.Class;
-            Constructor = new Function(this);      
+            Constructor = (Function)Solve(name);
         }
 
         #region ReadLinear
-
-        #endregion
-
-        #region Writer 
-
-        public override string WriteTo(Lang Lang)
-        {
-            throw new NotImplementedException();
-        }
 
         #endregion
     }

@@ -28,14 +28,5 @@ namespace FractalMachine.Code.Components
 
         #endregion
 
-        #region Write
-
-        public override string WriteTo(Lang Lang)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
     }
 }

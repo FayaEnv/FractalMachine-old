@@ -16,5 +16,5 @@
 ======| Attributes: a  |  $$*°test  |  
 ====| 4. =
 ======| Type: oprt
-======| Name: obj
-======| Return: £0
+======| Name: £0
+======| Return: obj

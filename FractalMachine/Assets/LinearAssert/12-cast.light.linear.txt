@@ -5,8 +5,8 @@
 ======| Return: var
 ====| 1. =
 ======| Type: oprt
-======| Name: fl
-======| Return: 2.5
+======| Name: 2.5
+======| Return: fl
 ====| 2. declare
 ======| Name: in
 ======| Return: var
@@ -16,5 +16,5 @@
 ======| Return: £0
 ====| 4. =
 ======| Type: oprt
-======| Name: in
-======| Return: £0
+======| Name: £0
+======| Return: in

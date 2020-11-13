@@ -215,9 +215,10 @@ namespace FractalMachine.Code.Components
                     if(attr.Type == AttributeType.Types.Name && attr.AbsValue.IsInternalVariable())
                     {
                         var iv = ivarMan.Get(attr.AbsValue);
-                        iv.Appears(instr);
 
-                        // Assign iv directly to assigned variable
+                        iv.Appears(instr); // is it still useful with assign shortuct?
+
+                        // Assign shortcut: assign iv directly to assigned variable
                         iv.realVarName = instr.Return;
                         op.disabled = true;
                     }

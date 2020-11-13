@@ -22,6 +22,7 @@ using FractalMachine.Classes;
 using System.Transactions;
 using System.ComponentModel.DataAnnotations;
 using static FractalMachine.Code.Type;
+using System.Security.Cryptography.X509Certificates;
 
 namespace FractalMachine.Code.Langs
 {
@@ -2629,15 +2630,17 @@ namespace FractalMachine.Code.Langs
                             Scheduler.Add(scheduler_0);
                             Scheduler.Add(scheduler_1);
                         }
+
                         internal override bool YourTurn(OrderedAST currentOrderedAst)
                         {
                             decl = (Declaration)parent;
 
-                            switch (decl.Type)
+                            switch (decl.DeclType)
                             {
+                                case "struct":
                                 case "class":
-                                    if (!currentOrderedAst.Right?.IsBlockBrackets ?? true)
-                                        return false;
+                                    if (!currentOrderedAst.Right?.IsBlockBrackets ?? true) 
+                                        return false; // but, so, what is it!?
 
                                     SchedulerPos++; // it jumps parameters
                                     isDefaultType = true;
@@ -2664,7 +2667,15 @@ namespace FractalMachine.Code.Langs
 
                         bool scheduler_0(OrderedAST ast)
                         {
-                            if (ast.Right?.IsBlockBrackets ?? false)
+                            var right = ast.Right;
+
+                            if (right == null)
+                                return false;
+
+                            bool validNext = right.IsBlockBrackets;
+                            validNext = validNext || (right.IsAttribute && right.Subject == ":");
+
+                            if (validNext)
                             {
                                 NextScheduler();
                                 return true;
@@ -2672,9 +2683,27 @@ namespace FractalMachine.Code.Langs
 
                             return false;
                         }
+
+                        CascadeCall cascadeCall;
                         bool scheduler_1(OrderedAST ast)
                         {
-                            var decl = (Declaration)parent;
+                            ///
+                            /// Check cascade call ie Construction(var i):base(i)
+                            ///
+                            if (cascadeCall != null)
+                            {
+                                if (cascadeCall.OnPostCode(ast))
+                                    return true;
+                            }
+                            else if (ast.IsAttribute && ast.Subject == ":")
+                            {
+                                cascadeCall = new CascadeCall(decl.lin);
+                                return true;
+                            }
+
+                            ///
+                            /// Function completed, now complete it
+                            ///
                             var name = decl.Names[0];
 
                             var lin = decl.lin;
@@ -2698,6 +2727,44 @@ namespace FractalMachine.Code.Langs
                             return true;
                         }
 
+                        #region Statements
+
+                        public class CascadeCall : Statement
+                        {
+                            Linear Lin;
+
+                            public CascadeCall(Linear lin)
+                            {
+                                Lin = lin;
+
+                                Scheduler.Add(scheduler_0);
+                                Scheduler.Add(scheduler_1);
+                                Scheduler.Add(scheduler_2);
+                                Scheduler.Add(scheduler_3);
+                            }
+
+                            bool scheduler_0(OrderedAST ast)
+                            {
+                                return ast.IsAttribute && ast.Subject == ":"; 
+                            }
+
+                            bool scheduler_1(OrderedAST ast)
+                            {
+                                throw new Exception("todo");
+                            }
+
+                            bool scheduler_2(OrderedAST ast)
+                            {
+                                return true;
+                            }
+
+                            bool scheduler_3(OrderedAST ast)
+                            {
+                                return false;
+                            }
+                        }
+
+                        #endregion
 
                     }
 
