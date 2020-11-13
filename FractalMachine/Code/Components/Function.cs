@@ -28,7 +28,7 @@ namespace FractalMachine.Code.Components
 
         #endregion
 
-        public override string GetName(Component relativeTo = null, bool ignoreBase = false)
+        public override string GetRealName(Component relativeTo = null)
         {
             if (parent == null) // in case of native functions
                 return name;
@@ -36,8 +36,16 @@ namespace FractalMachine.Code.Components
             if (TopFile.isMain && name == Properties.EntryPointFunction)
                 return "main"; //for c++ (todo: make it a property reference)
 
-            var apex = base.GetName(relativeTo, true);
-            return "_" + apex + TopFile.GetPath("_") + "_" + name;
+            //todo: circa (to improve)
+            string apex = "";
+            if(Parent is File)
+                apex = TopFile.GetPath("_") + "_";
+
+            if (Parent is Class)
+                return name;
+            else
+                return apex + name; 
+
         }
 
         #region Writer 
@@ -123,9 +131,9 @@ namespace FractalMachine.Code.Components
 
             /// Function name
             if (isConstructor)
-                writeToCont(cont.GetName());
+                writeToCont(cont.GetRealName());
             else
-                writeToCont(Parent.GetName());
+                writeToCont(Parent.GetRealName());
 
             /// Write parameters
             var pars = _linear.Settings["parameters"];

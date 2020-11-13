@@ -310,7 +310,7 @@ namespace FractalMachine.Code.Components
             if (comp is Class)
             {
                 // is class instance
-                ivar.type = new Type(instr.Lang.GetTypesSet, comp.GetPath());
+                ivar.type = new Type(instr.Lang.GetTypesSet, comp);
             }
             else
                 ivar.type = comp.returnType;

@@ -83,8 +83,8 @@ namespace FractalMachine.Code
         public Type Convert(Type from)
         {
             /// Class
-            if (from.Class)
-                return new Type(this, from.Name);
+            if (from.IsDataStructure)
+                return new Type(this, from.Component);
 
             /// Value
             // Lazy method
@@ -100,10 +100,15 @@ namespace FractalMachine.Code
                 return Types.Where(s => s.Value.LightType == ltype).First().Value;
         }
 
-        public virtual string GetTypeCodeName(Type type)
+        public virtual string GetTypeCodeName(Type type, Component relativeTo = null)
         {
             if (type.TypesSet != this)
                 type = Convert(type);
+
+            if (type.IsDataStructure)
+            {
+                return type.Component.GetPath(default, relativeTo);
+            }
 
             return type.Name;
         }
@@ -115,8 +120,8 @@ namespace FractalMachine.Code
 
             ideal = t1.Bytes > t2.Bytes ? t1 : t2;
             
-            if(t1.Floating != t2.Floating)
-                ideal = t1.Floating ? t1 : t2;
+            if(t1.IsFloating != t2.IsFloating)
+                ideal = t1.IsFloating ? t1 : t2;
 
             if (t1.LightType == "string" || t2.LightType == "string")
                 ideal = t1.LightType == "string" ? t1 : t2;
@@ -174,23 +179,25 @@ namespace FractalMachine.Code
         public Type Base;
         public string Name;
         public int Bytes;
-        public bool Floating = false;
-        public bool Signed = false;
-        public bool Array = false;
-        public bool Class = false;
+        public bool IsFloating = false;
+        public bool IsSigned = false;
+        public bool IsArray = false;
+        public bool IsDataStructure = false;
+        public Component Component;
 
         public Type(TypesSet TypesSet)
         {
             this.TypesSet = TypesSet;
             Name = "var"; // means generic type
+            //todo: add automatically type to ts (and correct AddType)
         }
 
         public Type(TypesSet TypesSet, string Name, int Bytes, bool Floating, bool Signed) : this(TypesSet)
         {
             this.Name = Name;
             this.Bytes = Bytes;
-            this.Floating = Floating;
-            this.Signed = Signed;
+            this.IsFloating = Floating;
+            this.IsSigned = Signed;
         }
 
         public Type(TypesSet TypesSet, Type Base) : this(TypesSet)
@@ -199,15 +206,22 @@ namespace FractalMachine.Code
             this.Name = "";
         }
 
-        public Type(TypesSet TypesSet, string Name) : this(TypesSet)
+        /*public Type(TypesSet TypesSet, string Name) : this(TypesSet)
         {
             this.Name = Name;
-            Class = true;
+            IsDataStructure = true;
+        }*/
+
+        public Type(TypesSet TypesSet, Component Component) : this(TypesSet)
+        {
+            this.Name = Component.GetPath();
+            this.Component = Component;
+            IsDataStructure = true; 
         }
 
         public void Solve(Component comp)
         {
-            if (Class)
+            if (IsDataStructure)
             {
                 //todo
                 throw new Exception("todo");

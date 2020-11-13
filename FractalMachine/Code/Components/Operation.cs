@@ -103,7 +103,7 @@ namespace FractalMachine.Code.Components
             {
                 var toCall = Parent.Solve(_linear.Name);
 
-                writeToCont(toCall.GetName(parent));
+                writeToCont(toCall.GetRealName(parent));
                 writeToCont("(");
 
                 // Write parameters

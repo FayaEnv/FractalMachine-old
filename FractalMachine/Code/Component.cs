@@ -237,6 +237,17 @@ namespace FractalMachine.Code
             }
         }
 
+        public Components.Container TopContainer
+        {
+            get
+            {
+                if (this is Components.Container)
+                    return (Components.Container)this;
+                else
+                    return parent.TopContainer;
+            }
+        }
+
         public virtual Project GetProject
         {
             get
@@ -249,28 +260,41 @@ namespace FractalMachine.Code
 
         #region Methods
 
-        public virtual string GetName(Component relativeTo = null, bool ignoreBase = false)
+        public virtual string GetRealName(Component relativeTo = null)
         {
-            if (relativeTo == this)
-                return null;
-
             string topName = null;
+
+            bool hasCommonDescending = relativeTo != null && HasCommonDescending(relativeTo);
 
             /*
                 This is a delicate part. The type should be specified if part of a static class or namespace
                 The code below, pratically, is not working for the moment
             */
-            if ((parent is Components.File && TopFile != parent) /*|| parent is Components.Class*/)
-                topName = parent?.GetName(relativeTo);
+            if (TopFile != parent && !hasCommonDescending && !(this is DataStructure))
+                topName = parent?.GetRealName(relativeTo);
 
-            return (topName != null ? topName + '.' : "") + (ignoreBase ? "" : name);
+            return (topName != null ? topName + '.' : "") + name;
         }
 
-        public string GetPath(string Delimiter = ".")
+        public string GetPath(string Delimiter = ".", Component RelativeTo = null)
         {
             var n = "";
-            if (parent != null) n = parent.GetPath(Delimiter) + Delimiter;
+            if (parent != null && parent != TopFile && !HasCommonDescending(RelativeTo)) n = parent.GetPath(Delimiter) + Delimiter;
             return n + name;
+        }
+
+        public bool HasCommonDescending(Component comp)
+        {
+            var p = comp;
+            while(p != null)
+            {
+                if (p == this)
+                    return true;
+
+                p = p.parent;
+            }
+
+            return false;
         }
 
         #endregion

@@ -101,7 +101,7 @@ namespace FractalMachine.Code.Langs
                 /// char
                 var _char = AddType("char");
                 _char.Bytes = 1;
-                _char.Signed = true;
+                _char.IsSigned = true;
 
                 /// uchar
                 var _uchar = AddType("uchar");
@@ -110,7 +110,7 @@ namespace FractalMachine.Code.Langs
                 /// short
                 var _short = AddType("short");
                 _short.Bytes = 2;
-                _short.Signed = true;
+                _short.IsSigned = true;
 
                 /// ushort
                 var _ushort = AddType("ushort");
@@ -119,7 +119,7 @@ namespace FractalMachine.Code.Langs
                 /// int
                 var _int = AddType("int");
                 _int.Bytes = 4;
-                _int.Signed = true;
+                _int.IsSigned = true;
 
                 /// uint
                 var _uint = AddType("uint");
@@ -128,7 +128,7 @@ namespace FractalMachine.Code.Langs
                 /// long
                 var _long = AddType("long");
                 _long.Bytes = 8;
-                _long.Signed = true;
+                _long.IsSigned = true;
 
                 /// ulong
                 var _ulong = AddType("ulong");
@@ -137,22 +137,22 @@ namespace FractalMachine.Code.Langs
                 /// float
                 var _float = AddType("float");
                 _float.Bytes = 4;
-                _float.Floating = true;
+                _float.IsFloating = true;
 
                 /// double
                 var _double = AddType("double");
                 _double.Bytes = 8;
-                _double.Floating = true;
+                _double.IsFloating = true;
 
                 /// decimal
                 var _decimal = AddType("decimal");
                 _decimal.Bytes = 12;
-                _decimal.Floating = true;
+                _decimal.IsFloating = true;
 
                 /// string
                 var _string = AddType("string");
                 _string.Base = _char;
-                _string.Array = true;
+                _string.IsArray = true;
             }
 
             override public AttributeType GetAttributeType(string Name)
