@@ -7,6 +7,7 @@ namespace FractalMachine.Code.Components
 {
     public class Operation : Component
     {
+        internal bool disabled = false;
         internal InternalVariablesManager.InternalVariable returnVar;
 
         public Operation(Container parent, Linear linear) : base(parent, linear)
@@ -24,6 +25,9 @@ namespace FractalMachine.Code.Components
 
         override public string WriteTo(Lang Lang)
         {
+            if (disabled)
+                return "";
+
             ///
             /// Special treatments
             ///

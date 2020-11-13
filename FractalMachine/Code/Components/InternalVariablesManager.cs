@@ -123,6 +123,9 @@ namespace FractalMachine.Code.Components
             {
                 //if (type == null) return; //this shouldn't happen
 
+                if (!String.IsNullOrEmpty(realVarName))
+                    return;
+
                 var ts = lang.GetTypesSet;
                 var newType = ts.Convert(type);
                 var tc = parent.getTypeContainer(type);

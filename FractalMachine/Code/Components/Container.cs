@@ -214,7 +214,12 @@ namespace FractalMachine.Code.Components
 
                     if(attr.Type == AttributeType.Types.Name && attr.AbsValue.IsInternalVariable())
                     {
-                        ivarMan.Appears(attr.AbsValue, instr);
+                        var iv = ivarMan.Get(attr.AbsValue);
+                        iv.Appears(instr);
+
+                        // Assign iv directly to assigned variable
+                        iv.realVarName = instr.Return;
+                        op.disabled = true;
                     }
 
                     break;
