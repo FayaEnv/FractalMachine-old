@@ -37,7 +37,7 @@ namespace FractalMachine.Code.Components
                 return "main"; //for c++ (todo: make it a property reference)
 
             var apex = base.GetName(relativeTo, true);
-            return apex + TopFile.name + "_" + name;
+            return apex + TopFile.GetPath("_") + "_" + name;
         }
 
         #region Writer 

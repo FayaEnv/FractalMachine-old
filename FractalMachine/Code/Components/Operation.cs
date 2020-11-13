@@ -43,7 +43,9 @@ namespace FractalMachine.Code.Components
             // Handle return
             if (!String.IsNullOrEmpty(_linear.Return)) // is it has a sense?
             {
-                // Get return type
+                ///
+                /// Get return type
+                /// 
                 var var = Parent.ivarMan.Get(_linear.Return);
                 if (var != null)
                 {
@@ -66,11 +68,15 @@ namespace FractalMachine.Code.Components
                 }
             }
 
+            ///
+            /// Operation analyzing
+            ///
             if(_linear.HasOperator)
             {
                 if (_linear.Op == "=")
                 {
                     var attrType = ts.GetAttributeType(_linear.Name);
+                    checkAttributeTypeAccessibility(attrType);
                     writeToCont(ts.SolveAttributeType(attrType));
                 }
                 else
@@ -118,9 +124,22 @@ namespace FractalMachine.Code.Components
             return writeReturn();
         }
 
+        void checkAttributeTypeAccessibility(AttributeType attrType)
+        {
+            if (attrType.Type == AttributeType.Types.Name)
+            {
+                // Check modifier
+                var v = Solve(attrType.AbsValue);
+                if (!v.IsPublic && !v.CanAccess(Parent))
+                    throw new Exception("Variable is inaccessible");
+            }
+        }
+
         void writeAttributeVariable(TypesSet ts, string attr)
         {
             var attrType = _linear.Lang.GetTypesSet.GetAttributeType(attr);
+            checkAttributeTypeAccessibility(attrType);
+
             if (attrType.Type == AttributeType.Types.Name)
             {
                 var var = Parent.ivarMan.Get(attr);

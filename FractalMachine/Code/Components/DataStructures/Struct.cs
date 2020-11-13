@@ -4,12 +4,14 @@ using System.Text;
 
 namespace FractalMachine.Code.Components
 {
-    public class Struct : Container
+    public class Struct : DataStructure
     {
         public Struct(Component parent, Linear linear) : base(parent, linear)
         {
-            containerType = ContainerTypes.Struct;
+            dataStructureType = DataStructureTypes.Struct;
         }
+
+        #region ReadLinear
 
         public override void ReadSubLinear(Linear instr)
         {
@@ -24,10 +26,16 @@ namespace FractalMachine.Code.Components
             }
         }
 
+        #endregion
+
+        #region Write
+
         public override string WriteTo(Lang Lang)
         {
             throw new NotImplementedException();
         }
+
+        #endregion
 
     }
 }

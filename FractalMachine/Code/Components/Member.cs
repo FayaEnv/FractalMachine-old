@@ -8,6 +8,7 @@ namespace FractalMachine.Code.Components
     {
         MemberType memberType;
 
+        internal InternalVariablesManager.InternalVariable iVar;
         internal bool typeToBeDefined = false;
 
         public Member(Component parent, Linear linear):base(parent, linear)
@@ -16,11 +17,31 @@ namespace FractalMachine.Code.Components
             memberType = MemberType.Normal;
         }
 
+        public Member(InternalVariablesManager.InternalVariable iVar):base(null, null)
+        {
+            this.iVar = iVar;
+        }
+
         public enum MemberType
         {
             Normal // Variable
             //for the future: Properties
         }
+
+        #region Modifiers
+
+        public override bool IsPublic
+        {
+            get
+            {
+                if (iVar != null)
+                    return true;
+
+                return base.IsPublic; 
+            }
+        }
+
+        #endregion
 
         public override string WriteTo(Lang Lang)
         {

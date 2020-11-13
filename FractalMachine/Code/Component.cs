@@ -124,7 +124,9 @@ namespace FractalMachine.Code
             ///
             if (Names.Length == 1)
             {
-                // check unique call
+                ///
+                /// Check native function call
+                /// 
                 var name = Names[0];
                 if (name.StartsWith(Properties.NativeFunctionPrefix))
                 {
@@ -143,6 +145,17 @@ namespace FractalMachine.Code
                         fun.name = name;
                         return fun;
                     }
+                }
+
+                ///
+                /// Check internal var reference
+                ///
+                if (this is Components.Container)
+                {
+                    var cont = (Components.Container)this;
+                    var ivar = cont.ivarMan.Get(name);
+                    if (ivar != null)
+                        return new Member(ivar);
                 }
             }
 
@@ -178,6 +191,24 @@ namespace FractalMachine.Code
             }
 
             return comp;
+        }
+
+        #endregion
+
+        #region Modifiers
+
+        public virtual bool IsPublic
+        {
+            get
+            {
+                // Light modifiers pespective
+                return _linear.Attributes.Contains("public");
+            }
+        }
+
+        public virtual bool CanAccess(Component from)
+        {
+            throw new Exception("todo");
         }
 
         #endregion
@@ -227,6 +258,13 @@ namespace FractalMachine.Code
                 topName = parent?.GetName(relativeTo);
 
             return (topName != null ? topName + '.' : "") + (ignoreBase ? "" : name);
+        }
+
+        public string GetPath(string Delimiter = ".")
+        {
+            var n = "";
+            if (parent != null) n = parent.GetPath(Delimiter) + Delimiter;
+            return n + name;
         }
 
         #endregion

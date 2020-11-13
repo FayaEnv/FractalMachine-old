@@ -34,8 +34,7 @@ namespace FractalMachine.Code.Components
         {
             Project,
             File,
-            Class,
-            Struct,
+            DataStructure,
             Overload,
             Namespace
         }

@@ -4,16 +4,19 @@ using System.Text;
 
 namespace FractalMachine.Code.Components
 {
-    public class Class : Container
+    public class Class : DataStructure
     {
         Function Constructor;
 
         public Class(Component parent, Linear linear) : base(parent, linear)
         {            
-            containerType = ContainerTypes.Class;
-
-            Constructor = new Function(this);
+            dataStructureType = DataStructureTypes.Class;
+            Constructor = new Function(this);      
         }
+
+        #region ReadLinear
+
+        #endregion
 
         #region Writer 
 
