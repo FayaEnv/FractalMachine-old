@@ -2,14 +2,14 @@
 
 function Main(){
 	var test = Test();
+	test.stampa("ciao");
 }
 
 class Test {
 	function Test(){
-		test("ciao");
 	}
 
-	function test(string str){
+	function stampa(string str){
 		___c_cstdio_printf("%s", str);
 	}
 }

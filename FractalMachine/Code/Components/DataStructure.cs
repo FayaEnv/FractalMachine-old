@@ -27,6 +27,7 @@ namespace FractalMachine.Code.Components
             writeToCont(" ");
             writeToCont(name);
             writeToCont("{");
+            writeNewLine(_linear);
             base.WriteTo(Lang);
             writeToCont("}");
 

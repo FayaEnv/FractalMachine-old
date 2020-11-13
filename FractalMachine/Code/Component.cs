@@ -39,6 +39,9 @@ namespace FractalMachine.Code
         internal Linear _linear;
         internal Component parent;
 
+        /// Compiling purposes
+        internal string lastPath;
+
         public Dictionary<string, Component> components = new Dictionary<string, Component>();
         internal Dictionary<string, string> parameters = new Dictionary<string, string>();
 
@@ -176,19 +179,32 @@ namespace FractalMachine.Code
                 bcomp = comp;
             }
 
+            string path = Names[0];
+
             for (int p = 1; p < Names.Length; p++)
             {
+                /// Validate component
                 if(comp is Components.File)
-                {
                     ((Components.File)comp).Load();
+
+                if(comp is Components.Member)
+                {
+                    var retType = comp.returnType;
+                    if (retType.IsDataStructure)
+                        comp = retType.Component;
+                    //todo: handle extensions properties for value types
                 }
 
+                /// Seek component
                 var part = Names[p];
                 if (!comp.components.TryGetValue(part, out comp))
                 {
                     if (!DontPanic) throw new Exception("Error, " + tot + part + " not found");
                     return null;
                 }
+
+                comp.lastPath = path;
+                path += "." + part;
 
                 tot += part + ".";
             }

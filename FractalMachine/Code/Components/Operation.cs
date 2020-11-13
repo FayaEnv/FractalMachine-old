@@ -103,10 +103,12 @@ namespace FractalMachine.Code.Components
             {
                 var toCall = Parent.Solve(_linear.Name);
 
-                writeToCont(toCall.GetRealName(parent));
-                writeToCont("(");
+                var name = toCall.GetRealName(parent);
+
+                writeToCont(name);
 
                 // Write parameters
+                writeToCont("(");
                 var ac = _linear.Attributes.Count;
                 for (var a=0; a<ac; a++)
                 {
