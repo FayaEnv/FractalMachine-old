@@ -29,6 +29,16 @@ namespace FractalMachine.Code.Components
             //for the future: Properties
         }
 
+        public override Component Solve(string[] Names, bool DontPanic = false, int Level = 0)
+        {
+            var name = Names[Level];
+
+            if (returnType.IsDataStructure)
+                return returnType.Component.Solve(Names, DontPanic, Level);
+            else 
+                return base.Solve(Names, DontPanic, Level);
+        }
+
         #region Modifiers
 
         public override bool IsPublic

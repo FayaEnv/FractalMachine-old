@@ -114,102 +114,93 @@ namespace FractalMachine.Code
 
         #region SubComponents
 
-        public virtual Component Solve(string Name, bool DontPanic = false)
+        public Component SolveNativeFunction(string Name)
+        {
+            ///
+            /// Check native function call
+            /// 
+            if (Name.StartsWith(Properties.NativeFunctionPrefix))
+            {
+                // Is C function
+                if (Name.StartsWith(Properties.NativeFunctionPrefix + "c_"))
+                {
+                    Name = Name.Substring(5);
+                    var spl = Name.Split('_');
+                    var lib = spl[0];
+                    Name = spl[1];
+
+                    TopFile.IncludeDefault(lib);
+
+                    //Create dummy component function
+                    var fun = new Function(null, null);
+                    fun.name = Name;
+                    return fun;
+                }
+            }
+
+            ///
+            /// Check internal var reference
+            ///
+            if (this is Components.Container)
+            {
+                var cont = (Components.Container)this;
+                var ivar = cont.ivarMan.Get(Name);
+                if (ivar != null)
+                    return new Member(ivar);
+            }
+
+            return null;
+        }
+
+        public Component Solve(string Name, bool DontPanic = false)
         {
             var parts = Name.Split('.');
             return Solve(parts, DontPanic);
         }
 
-        public Component Solve(string[] Names, bool DontPanic = false)
+        public virtual Component Solve(string[] Names, bool DontPanic = false, int Level = 0)
         {
-            Component comp = this, bcomp = this;
-            var tot = "";
+            var name = Names[Level];
 
-            ///
-            /// Native functions
-            ///
             if (Names.Length == 1)
             {
-                ///
-                /// Check native function call
-                /// 
-                var name = Names[0];
-                if (name.StartsWith(Properties.NativeFunctionPrefix))
+                var comp = SolveNativeFunction(name);
+                if (comp != null) return comp;
+            }
+
+            Component ground = this, outComp;
+
+            if (Level == 0) // Seek ground
+            {
+                Component bcomp = this;
+                while (!ground.components.TryGetValue(name, out ground))
                 {
-                    // Is C function
-                    if (name.StartsWith(Properties.NativeFunctionPrefix+"c_"))
+                    ground = bcomp.parent;
+                    if (ground == null)
                     {
-                        name = name.Substring(5);
-                        var spl = name.Split('_');
-                        var lib = spl[0];
-                        name = spl[1];
-
-                        TopFile.IncludeDefault(lib);
-
-                        //Create dummy component function
-                        var fun = new Function(null, null);
-                        fun.name = name;
-                        return fun;
+                        if (!DontPanic) throw new Exception("Error, " + name + " not found");
+                        return null;
                     }
-                }
-
-                ///
-                /// Check internal var reference
-                ///
-                if (this is Components.Container)
-                {
-                    var cont = (Components.Container)this;
-                    var ivar = cont.ivarMan.Get(name);
-                    if (ivar != null)
-                        return new Member(ivar);
+                    bcomp = ground;
                 }
             }
 
-            ///
-            /// Normal
-            ///
-            while (!comp.components.TryGetValue(Names[0], out comp))
+            if (ground.components.TryGetValue(name, out outComp))
             {
-                comp = bcomp.parent;
-                if (comp == null)
-                {
-                    if (!DontPanic) throw new Exception("Error, " + Names[0] + " not found");
-                    return null;
-                }
-                bcomp = comp;
+                if (Level == Names.Length)
+                    return outComp;
+
+                return outComp.Solve(Names, DontPanic, Level + 1);
             }
 
-            string path = Names[0];
-
-            for (int p = 1; p < Names.Length; p++)
+            if (!DontPanic)
             {
-                /// Validate component
-                if(comp is Components.File)
-                    ((Components.File)comp).Load();
-
-                if(comp is Components.Member)
-                {
-                    var retType = comp.returnType;
-                    if (retType.IsDataStructure)
-                        comp = retType.Component;
-                    //todo: handle extensions properties for value types
-                }
-
-                /// Seek component
-                var part = Names[p];
-                if (!comp.components.TryGetValue(part, out comp))
-                {
-                    if (!DontPanic) throw new Exception("Error, " + tot + part + " not found");
-                    return null;
-                }
-
-                comp.lastPath = path;
-                path += "." + part;
-
-                tot += part + ".";
+                string path = Names[0];
+                for (int i = 1; i < Names.Length - 1; i++) path += "." + Names[i];
+                throw new Exception("Error, " + path + " not found");
             }
 
-            return comp;
+            return null;
         }
 
         #endregion

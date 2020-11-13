@@ -168,9 +168,9 @@ namespace FractalMachine.Code.Components
 
         #region Override
 
-        public override Component Solve(string str, bool DontPanic = false)
+        public override Component Solve(string[] Names, bool DontPanic = false, int Level = 0)
         {
-            return parent.Solve(str, DontPanic);
+            return parent.Solve(Names, DontPanic, Level);
         }
 
         #endregion
