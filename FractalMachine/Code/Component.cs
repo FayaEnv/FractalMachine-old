@@ -42,15 +42,18 @@ namespace FractalMachine.Code
         public Dictionary<string, Component> components = new Dictionary<string, Component>();
         internal Dictionary<string, string> parameters = new Dictionary<string, string>();
 
-        public Component(Component parent, Linear Linear) 
+        public Component(Component parent, string Name, Linear Linear) 
         {
             this.parent = parent;
             _linear = Linear;
 
+            if (parent != null && Name != null)
+                parent.addComponent(Name, this);
+
             if (_linear != null)
             {
                 _linear.component = this;
-                ReadLinear();
+                if(!(this is Components.Container)) ReadLinear();
             }
         }
 
@@ -141,7 +144,7 @@ namespace FractalMachine.Code
                         TopFile.IncludeDefault(lib);
 
                         //Create dummy component function
-                        var fun = new Function(null);
+                        var fun = new Function(null, null);
                         fun.name = name;
                         return fun;
                     }

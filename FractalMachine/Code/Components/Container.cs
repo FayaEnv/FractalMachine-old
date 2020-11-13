@@ -13,7 +13,7 @@ namespace FractalMachine.Code.Components
         internal List<Operation> operations = new List<Operation>();
         internal InternalVariablesManager ivarMan = new InternalVariablesManager();
 
-        public Container(Component parent, Linear linear) : base(parent, linear)
+        public Container(Component parent, string Name, Linear linear) : base(parent, Name, linear)
         {
             type = Types.Container;
             ivarMan.parent = this;
@@ -66,79 +66,104 @@ namespace FractalMachine.Code.Components
 
         public virtual void ReadLinear(Linear lin)
         {
-            // Divided in two phases
-
+            /// Divided in two phases
             // First analyze structures
+            ReadLinear_Struct(lin);
+            // Then operations
+            ReadLinear_Operation(lin);
+        }
+
+        public void ReadLinear_Struct()
+        {
+            ReadLinear_Struct(_linear);
+        }
+
+        public virtual void ReadLinear_Struct(Linear lin)
+        {
             for (int i = 0; i < lin.Instructions.Count; i++)
             {
                 var instr = lin[i];
                 instr.Pos = i;
-                ReadSubLinear_Struct(instr);
-            }
 
-            // Then operations
+                switch (instr.Op)
+                {
+                    case "import":
+                        readLinear_import(instr);
+                        break;
+
+                    case "declare":
+                        readLinear_declare(instr);
+                        break;
+
+                    case "function":
+                        readLinear_function(instr);
+                        break;
+
+                    case "class":
+                        readLinear_class(instr);
+                        break;
+
+                    case "struct":
+                        readLinear_struct(instr);
+                        break;
+
+                    case "namespace":
+                        readLinear_namespace(instr);
+                        break;
+                }
+
+                if(instr.component != null && instr.component is Container)
+                {
+                    var cont = (Container)instr.component;
+                    cont.ReadLinear_Struct();
+                }
+            }
+        }
+
+
+        public void ReadLinear_Operation()
+        {
+            ReadLinear_Operation(_linear);
+        }
+
+        public virtual void ReadLinear_Operation(Linear lin)
+        {
             for (int i = 0; i < lin.Instructions.Count; i++)
             {
-                ReadSubLinear_Operation(lin[i]);
-            }
-        }
+                var instr = lin[i];
+                instr.Pos = i;
 
-        public virtual void ReadSubLinear_Struct(Linear instr)
-        {
-            switch (instr.Op)
-            {
-                case "function":
-                case "class":
-                case "struct":
-                case "namespace":
-                    var pl = new Preload();
-                    addComponent(instr.Name, pl);
-                    break;
-            }
-        }
+                switch (instr.Op)
+                {        
+                    /// Post Struct
+                    case "function":
+                    case "class":
+                    case "struct":
+                    case "namespace":
+                        var cont = (Container)instr.component;
+                        cont.ReadLinear_Operation();
+                        break;
 
-        public virtual void ReadSubLinear_Operation(Linear instr)
-        {
-            switch (instr.Op)
-            {
-                case "import":
-                    readLinear_import(instr);
-                    break;
+                    case "declare":
+                    case "import":
+                        break;
 
-                case "declare":
-                    readLinear_declare(instr);
-                    break;
+                    /// Only operations
+                    case "call":
+                        readLinear_call(instr);
+                        break;
 
-                case "function":
-                    readLinear_function(instr);
-                    break;
+                    case "cast":
+                        readLinear_cast(instr);
+                        break;
 
-                case "class":
-                    readLinear_class(instr);
-                    break;
-
-                case "struct":
-                    readLinear_struct(instr);
-                    break;
-
-                case "namespace":
-                    readLinear_namespace(instr);
-                    break;
-
-                case "call":
-                    readLinear_call(instr);
-                    break;
-
-                case "cast":
-                    readLinear_cast(instr);
-                    break;
-
-                default:
-                    if (instr.Type == "oprt")
-                        readLinear_operator(instr);
-                    else
-                        throw new Exception("Unassigned operation");
-                    break;
+                    default:
+                        if (instr.Type == "oprt")
+                            readLinear_operator(instr);
+                        else
+                            throw new Exception("Unassigned operation");
+                        break;
+                }
             }
         }
 
@@ -153,15 +178,12 @@ namespace FractalMachine.Code.Components
 
         internal virtual void readLinear_declare(Linear instr)
         {
-            var member = new Member(this, instr);
+            var member = new Member(this, instr.Name, instr);
 
             if (instr.Return == "var")
                 member.typeToBeDefined = true;
             else
                 member.returnType = instr.Lang.GetTypesSet.Get(instr.Return);
-
-            addComponent(instr.Name, member);
-
         }
 
         internal virtual void readLinear_operator(Linear instr)
@@ -297,7 +319,7 @@ namespace FractalMachine.Code.Components
 
         internal virtual void readLinear_class(Linear instr)
         {
-            throw new Exception("todo");
+            var cl = new Class(this, instr.Name, instr);
         }
 
         internal virtual void readLinear_struct(Linear instr)
@@ -323,8 +345,7 @@ namespace FractalMachine.Code.Components
 
             if (function == null)
             {
-                function = new Function(this);
-                addComponent(instr.Name, function);
+                function = new Function(this, instr.Name);
             }
 
             function.addOverload(instr);
@@ -345,8 +366,7 @@ namespace FractalMachine.Code.Components
 
             if (ns == null)
             {
-                ns = new Components.File(this, instr, null);
-                addComponent(instr.Name, ns);
+                ns = new Components.File(this, instr.Name, instr, null);
             }
             else
             {

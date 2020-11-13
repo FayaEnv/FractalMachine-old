@@ -1,11 +1,15 @@
 //import Other;
 
 function Main(){
-	var str = "2";
-	var ciao = str + 2;
-	test(ciao); 
+	var test = Test();
 }
 
-function test(string str){
-	___c_cstdio_printf("%s", str);
+class Test {
+	function Test(){
+		test("ciao");
+	}
+
+	function test(string str){
+		___c_cstdio_printf("%s", str);
+	}
 }

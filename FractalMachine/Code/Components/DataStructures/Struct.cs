@@ -6,23 +6,29 @@ namespace FractalMachine.Code.Components
 {
     public class Struct : DataStructure
     {
-        public Struct(Component parent, Linear linear) : base(parent, linear)
+        public Struct(Component parent, string name, Linear linear) : base(parent, name, linear)
         {
             dataStructureType = DataStructureTypes.Struct;
         }
 
         #region ReadLinear
 
-        public override void ReadSubLinear_Struct(Linear instr)
+        public override void ReadLinear(Linear lin)
         {
-            switch (instr.Op)
+            for (int i = 0; i < lin.Instructions.Count; i++)
             {
-                case "declare":
-                    readLinear_declare(instr);
-                    break;
+                var instr = lin[i];
+                instr.Pos = i;
 
-                default:
-                    throw new Exception("Operation not permitted");
+                switch (instr.Op)
+                {
+                    case "declare":
+                        readLinear_declare(instr);
+                        break;
+
+                    default:
+                        throw new Exception("Operation not permitted");
+                }
             }
         }
 

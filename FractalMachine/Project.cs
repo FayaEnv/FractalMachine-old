@@ -41,7 +41,7 @@ namespace FractalMachine
         internal Dictionary<string, Component> imports = new Dictionary<string, Component>();
         internal Dictionary<string, Component> importLink = new Dictionary<string, Component>();
 
-        public Project(string ProjectPath) : base(null, null, ProjectPath)
+        public Project(string ProjectPath) : base(null, null, null, ProjectPath)
         { 
             env = Ambiance.Environment.GetEnvironment;
             containerType = ContainerTypes.Project;

@@ -17,7 +17,7 @@ namespace FractalMachine.Code.Components
         List<string> includes = new List<string>();
         List<string> usings = new List<string>();
 
-        public File(Component Parent, Linear Linear, string FileName) : base(Parent, Linear)
+        public File(Component Parent, string Name, Linear Linear, string FileName) : base(Parent, Name, Linear)
         {
             usings.Add("namespace std"); //todo: create script files for C++ for automatic namespace including
             containerType = ContainerTypes.File;
@@ -132,16 +132,14 @@ namespace FractalMachine.Code.Components
                 if (file.Extension == Properties.LightExtension)
                 {
                     string name = Path.GetFileNameWithoutExtension(file.Name);
-                    var comp = new File(this, null, file.FullName);
-                    addComponent(name, comp);
+                    var comp = new File(this, name, null, file.FullName);
                 }
             }
 
             var dirs = dirInfo.GetDirectories();
             foreach (var dir in dirs)
             {
-                var comp = new File(this, null, dir.FullName);
-                addComponent(dir.Name, comp);
+                var comp = new File(this, dir.Name, null, dir.FullName);
             }
         }
 

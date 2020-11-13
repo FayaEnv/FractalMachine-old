@@ -8,14 +8,23 @@ namespace FractalMachine.Code.Components
     {
         Function Constructor;
 
-        public Class(Component parent, Linear linear) : base(parent, linear)
+        public Class(Component parent, string name, Linear linear) : base(parent, name, linear)
         {            
             dataStructureType = DataStructureTypes.Class;
-            Constructor = (Function)Solve(name);
         }
 
         #region ReadLinear
 
+        public override void ReadLinear_Operation(Linear lin)
+        {
+            base.ReadLinear_Operation(lin);
+            
+            // Extract constructor (for the moment for educational purposes)
+            var constr = Solve(name);
+            if (constr != null)
+                Constructor = (Function)constr;
+        }
+
         #endregion
-    }
+        }
 }

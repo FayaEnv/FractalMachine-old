@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
     {
         internal List<Overload> overloads = new List<Overload>();
 
-        public Function(Component parent) : base(parent, null)
+        public Function(Component parent, string Name) : base(parent, Name, null)
         {
             type = Types.Function;
         }
@@ -55,7 +55,7 @@ namespace FractalMachine.Code.Components
 
     class Overload : Container
     {
-        public Overload(Function parent, Linear linear) : base(parent, linear)
+        public Overload(Function parent, Linear linear) : base(parent, null, linear)
         {
             containerType = ContainerTypes.Overload;
 
@@ -100,24 +100,32 @@ namespace FractalMachine.Code.Components
 
         public override string WriteTo(Lang Lang)
         {
+            var cont = Parent.Parent;
             var ts = Lang.GetTypesSet;
             var ots = _linear.Lang.GetTypesSet;
 
+            bool isConstructor = cont is Class && name == cont.name;
+
             /// Handle return type
-            if (returnType == null)
+            if (!isConstructor)
             {
-                // temporary way
-                writeToCont("void");
-            }
-            else
-            {
-                writeToCont(ts.GetTypeCodeName(returnType));
+                if (returnType == null)
+                {
+                    // temporary way
+                    writeToCont("void");
+                    //todo: check if there is a return 
+                }
+                else
+                    writeToCont(ts.GetTypeCodeName(returnType));
             }
                 
             writeToCont(" ");
 
             /// Function name
-            writeToCont(Parent.GetName());
+            if (isConstructor)
+                writeToCont(cont.GetName());
+            else
+                writeToCont(Parent.GetName());
 
             /// Write parameters
             var pars = _linear.Settings["parameters"];

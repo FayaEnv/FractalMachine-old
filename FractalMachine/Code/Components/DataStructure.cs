@@ -8,7 +8,7 @@ namespace FractalMachine.Code.Components
     {
         internal DataStructureTypes dataStructureType;
 
-        public DataStructure(Component parent, Linear linear) : base(parent, linear)
+        public DataStructure(Component parent, string name, Linear linear) : base(parent, name, linear)
         {
             containerType = ContainerTypes.DataStructure;
         }

@@ -6,7 +6,7 @@ namespace FractalMachine.Code.Components
 {
     public class Preload : Component
     {
-        public Preload():base(null, null)
+        public Preload():base(null, null, null)
         {
 
         }

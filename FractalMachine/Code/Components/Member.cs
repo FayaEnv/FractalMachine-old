@@ -11,13 +11,13 @@ namespace FractalMachine.Code.Components
         internal InternalVariablesManager.InternalVariable iVar;
         internal bool typeToBeDefined = false;
 
-        public Member(Component parent, Linear linear):base(parent, linear)
+        public Member(Component parent, string name, Linear linear):base(parent, name, linear)
         {
             type = Types.Member;
             memberType = MemberType.Normal;
         }
 
-        public Member(InternalVariablesManager.InternalVariable iVar):base(null, null)
+        public Member(InternalVariablesManager.InternalVariable iVar):base(null, null, null)
         {
             this.iVar = iVar;
             returnType = iVar.type;

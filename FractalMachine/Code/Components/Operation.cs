@@ -10,7 +10,7 @@ namespace FractalMachine.Code.Components
         internal bool disabled = false;
         internal InternalVariablesManager.InternalVariable returnVar;
 
-        public Operation(Container parent, Linear linear) : base(parent, linear)
+        public Operation(Container parent, Linear linear) : base(parent, null, linear)
         {
             type = Types.Operation;
         }
