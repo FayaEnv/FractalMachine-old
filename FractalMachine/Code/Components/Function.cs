@@ -37,7 +37,7 @@ namespace FractalMachine.Code.Components
                 return "main"; //for c++ (todo: make it a property reference)
 
             var apex = base.GetName(relativeTo, true);
-            return apex + TopFile.GetPath("_") + "_" + name;
+            return "_" + apex + TopFile.GetPath("_") + "_" + name;
         }
 
         #region Writer 
@@ -58,8 +58,16 @@ namespace FractalMachine.Code.Components
         public Overload(Function parent, Linear linear) : base(parent, linear)
         {
             containerType = ContainerTypes.Overload;
-        }
 
+            ///
+            /// Analyze parameters
+            /// 
+            var pars = linear.Settings["parameters"];
+            foreach (var par in pars.Instructions)
+            {
+                readLinear_declare(par);
+            }
+        }
         new public Function Parent
         {
             get

@@ -1,6 +1,7 @@
 ﻿using FractalMachine.Classes;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -65,20 +66,38 @@ namespace FractalMachine.Code.Components
 
         public virtual void ReadLinear(Linear lin)
         {
+            // Divided in two phases
+
+            // First analyze structures
             for (int i = 0; i < lin.Instructions.Count; i++)
             {
-                ReadSubLinear(lin, i);
+                var instr = lin[i];
+                instr.Pos = i;
+                ReadSubLinear_Struct(instr);
+            }
+
+            // Then operations
+            for (int i = 0; i < lin.Instructions.Count; i++)
+            {
+                ReadSubLinear_Operation(lin[i]);
             }
         }
 
-        public virtual void ReadSubLinear(Linear lin, int pos)
+        public virtual void ReadSubLinear_Struct(Linear instr)
         {
-            var instr = lin[pos];
-            instr.Pos = pos;
-            ReadSubLinear(instr);
+            switch (instr.Op)
+            {
+                case "function":
+                case "class":
+                case "struct":
+                case "namespace":
+                    var pl = new Preload();
+                    addComponent(instr.Name, pl);
+                    break;
+            }
         }
 
-        public virtual void ReadSubLinear(Linear instr)
+        public virtual void ReadSubLinear_Operation(Linear instr)
         {
             switch (instr.Op)
             {
@@ -118,14 +137,18 @@ namespace FractalMachine.Code.Components
                     if (instr.Type == "oprt")
                         readLinear_operator(instr);
                     else
-                        throw new Exception("Unexpected instruction");
+                        throw new Exception("Unassigned operation");
                     break;
             }
         }
 
         internal virtual void readLinear_cast(Linear instr)
         {
-            throw new Exception("todo");
+            var ts = instr.Lang.GetTypesSet;
+            var op = new Operation(this, instr);
+            operations.Add(op);
+            op.returnType = ts.Get(instr.Type);
+            ivarMan.Set(instr.Return, op);
         }
 
         internal virtual void readLinear_declare(Linear instr)
@@ -167,6 +190,7 @@ namespace FractalMachine.Code.Components
                     var attr = ts.GetAttributeType(instr.Name);
                     if (name.typeToBeDefined)
                     {
+                        /// Assign probable type 
                         if (attr.Type == AttributeType.Types.Type)
                         {
                             name.returnType = ts.Get(attr.TypeRef);
@@ -188,6 +212,11 @@ namespace FractalMachine.Code.Components
                         }
                     }
 
+                    if(attr.Type == AttributeType.Types.Name && attr.AbsValue.IsInternalVariable())
+                    {
+                        ivarMan.Appears(attr.AbsValue, instr);
+                    }
+
                     break;
 
                 default:
@@ -207,19 +236,24 @@ namespace FractalMachine.Code.Components
 
                     Type retType = t1;
 
-                    // Study return variable (it's always an InternalVariable)
-                    var ret = instr.Return;
-
                     if (t2 != null)
                     {
                         retType = ts.CompareTypeCast(t1, t2);
 
                         if (v2.IsInternalVariable())
-                            ivarMan.ReverseSet(v2, retType);
+                        {
+                            var iv = ivarMan.Get(v2);
+                            iv.ReverseSet(retType);
+                            iv.Appears(instr);
+                        }
                     }
 
                     if (v1.IsInternalVariable())
-                        ivarMan.ReverseSet(v1, retType);
+                    {
+                        var iv = ivarMan.Get(v1);
+                        iv.ReverseSet(retType);
+                        iv.Appears(instr);
+                    }
 
                     op.returnType = retType;
 
@@ -267,11 +301,14 @@ namespace FractalMachine.Code.Components
 
         internal virtual void readLinear_function(Linear instr)
         {
-            Function function;
+            Function function = null;
 
             try
             {
-                function = (Function)getComponent(instr.Name);
+                var comp = getComponent(instr.Name);
+
+                if(comp != null && !(comp is Preload))
+                    function = (Function)comp;
             }
             catch (Exception ex)
             {

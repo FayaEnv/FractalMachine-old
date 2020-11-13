@@ -20,6 +20,7 @@ namespace FractalMachine.Code.Components
         public Member(InternalVariablesManager.InternalVariable iVar):base(null, null)
         {
             this.iVar = iVar;
+            returnType = iVar.type;
         }
 
         public enum MemberType

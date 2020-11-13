@@ -34,7 +34,7 @@ namespace FractalMachine.Code
 
         internal abstract void init();
         public abstract AttributeType GetAttributeType(string Name);
-        public abstract string SolveAttributeType(AttributeType AttributeType);
+        public abstract string SolveAttributeType(AttributeType AttributeType, Type As);
 
         internal Type AddType(string Name)
         {

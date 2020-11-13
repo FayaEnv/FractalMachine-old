@@ -108,7 +108,7 @@ namespace FractalMachine.Code
 
         #region SubComponents
 
-        public Component Solve(string Name, bool DontPanic = false)
+        public virtual Component Solve(string Name, bool DontPanic = false)
         {
             var parts = Name.Split('.');
             return Solve(parts, DontPanic);
@@ -208,6 +208,9 @@ namespace FractalMachine.Code
 
         public virtual bool CanAccess(Component from)
         {
+            if (parent == from)
+                return true;
+
             throw new Exception("todo");
         }
 

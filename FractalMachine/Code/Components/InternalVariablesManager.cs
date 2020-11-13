@@ -27,16 +27,14 @@ namespace FractalMachine.Code.Components
 
         public void ReverseSet(string ivar, Type t)
         {
-            int n = getN(ivar);
-            var iv = vars[n];
-            iv.type = t;
+            var iv = Get(ivar);
+            iv.ReverseSet(t);
         }
 
         public void Appears(string ivar, Linear instr)
         {
-            int n = getN(ivar);
-            var iv = vars[n];
-            iv.lastAppearance = instr.Pos;
+            var iv = Get(ivar);
+            iv.Appears(instr);
         }
 
         public InternalVariable Get(string var)
@@ -108,7 +106,7 @@ namespace FractalMachine.Code.Components
             public Operation op;
 
             public Type type;
-            public int lastAppearance;
+            public int lastAppearance = -1;
 
             public string realVarType;
             public string realVarName;
@@ -118,10 +116,13 @@ namespace FractalMachine.Code.Components
                 op = Op;
                 parent = Parent;
                 type = op.returnType;
+                //lastAppearance = Op._linear.Pos;
             }
 
             public void setRealVar(Lang lang)
             {
+                //if (type == null) return; //this shouldn't happen
+
                 var ts = lang.GetTypesSet;
                 var newType = ts.Convert(type);
                 var tc = parent.getTypeContainer(type);
@@ -133,9 +134,20 @@ namespace FractalMachine.Code.Components
                 realVarName = inst.name;
             }
 
+            public void Appears(Linear instr)
+            {
+                lastAppearance = instr.Pos;
+            }
+
+            public void ReverseSet(Type t)
+            {
+                // pay attention, could cause confusion
+                type = t;
+            }
+
             public bool IsUsed(Linear instr)
             {
-                return lastAppearance > instr.Pos;
+                return lastAppearance >= instr.Pos;
             }
         }
     }

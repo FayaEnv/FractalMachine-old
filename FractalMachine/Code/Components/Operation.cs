@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FractalMachine.Classes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -75,9 +76,7 @@ namespace FractalMachine.Code.Components
             {
                 if (_linear.Op == "=")
                 {
-                    var attrType = ts.GetAttributeType(_linear.Name);
-                    checkAttributeTypeAccessibility(attrType);
-                    writeToCont(ts.SolveAttributeType(attrType));
+                    writeAttributeVariable(ts, _linear.Name, returnType);
                 }
                 else
                 {
@@ -90,10 +89,10 @@ namespace FractalMachine.Code.Components
                     }
 
                     if (t1 != null)
-                        writeAttributeVariable(ts, t1);
+                        writeAttributeVariable(ts, t1, returnType);
 
                     writeToCont(_linear.Op);
-                    writeAttributeVariable(ts, t2);
+                    writeAttributeVariable(ts, t2, returnType);
                 }
             }
             else if (_linear.IsCall)
@@ -118,6 +117,10 @@ namespace FractalMachine.Code.Components
                 writeToCont(")");
 
             }
+            else if (_linear.IsCast)
+            {
+                throw new Exception("todo");
+            }
 
             writeToCont(";");
 
@@ -135,26 +138,36 @@ namespace FractalMachine.Code.Components
             }
         }
 
-        void writeAttributeVariable(TypesSet ts, string attr)
+        void writeAttributeVariable(TypesSet ts, string attr, Type requestedType = null)
         {
             var attrType = _linear.Lang.GetTypesSet.GetAttributeType(attr);
             checkAttributeTypeAccessibility(attrType);
 
             if (attrType.Type == AttributeType.Types.Name)
             {
-                var var = Parent.ivarMan.Get(attr);
-                if (var != null)
-                    writeToCont(var.realVarName);
+                checkAttributeTypeAccessibility(attrType);
+                if (attrType.AbsValue.IsInternalVariable())
+                {
+                    var iv = Parent.ivarMan.Get(attrType.AbsValue);
+                    writeToCont(iv.realVarName);
+                }
                 else
-                    writeToCont(attr);
+                    writeToCont(attrType.AbsValue); //todo: handle complex var tree (ie Namespace.Var)
             }
             else
             {
-                // Get type and convert attribute
-                var val = ts.SolveAttributeType(attrType);
-                writeToCont(val);
+                writeToCont(ts.SolveAttributeType(attrType, requestedType));
             }
         }
+
+        #region Override
+
+        public override Component Solve(string str, bool DontPanic = false)
+        {
+            return parent.Solve(str, DontPanic);
+        }
+
+        #endregion
     }
 }
   

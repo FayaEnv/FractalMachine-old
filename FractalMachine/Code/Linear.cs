@@ -43,6 +43,7 @@ namespace FractalMachine.Code
 
         public bool Continuous = false;
 
+        /// Compiler fields
         internal int DebugLine = -1;
 
         public Linear(Lang lang, AST ast)
@@ -104,6 +105,14 @@ namespace FractalMachine.Code
             get
             {
                 return Op == "call";
+            }
+        }
+
+        public bool IsCast
+        {
+            get
+            {
+                return Op == "cast";
             }
         }
 

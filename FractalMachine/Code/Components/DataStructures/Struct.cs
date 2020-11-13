@@ -13,7 +13,7 @@ namespace FractalMachine.Code.Components
 
         #region ReadLinear
 
-        public override void ReadSubLinear(Linear instr)
+        public override void ReadSubLinear_Struct(Linear instr)
         {
             switch (instr.Op)
             {

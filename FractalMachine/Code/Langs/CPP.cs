@@ -140,6 +140,7 @@ namespace FractalMachine.Code.Langs
             {
                 var atype = new AttributeType(this);
                 atype.Type = AttributeType.Types.Name;
+                atype.AbsValue = Name;
 
                 if (Name.HasStringMark())
                 {
@@ -155,16 +156,17 @@ namespace FractalMachine.Code.Langs
 
                     for (int c = 0; c < Name.Length; c++)
                     {
-                        if (!Char.IsLetter(Name[c]))
+                        var cc = Name[c];
+                        if (!Char.IsDigit(cc) && cc != '.')
                         {
                             atype.Type = AttributeType.Types.Invalid;
                             break;
                         }
 
-                        if (Name[c] == '.')
+                        if (cc == '.')
                             atype.TypeRef = "double";
 
-                        if (c == Name.Length - 1 && Name[c] == 'f')
+                        if (c == Name.Length - 1 && cc == 'f')
                         {
                             atype.TypeRef = "float";
                             atype.AbsValue = atype.AbsValue.Substring(0, atype.AbsValue.Length - 1);
@@ -175,9 +177,9 @@ namespace FractalMachine.Code.Langs
                 return atype;
             }
 
-            public override string SolveAttributeType(AttributeType AttributeType)
+            public override string SolveAttributeType(AttributeType AttributeType, Type As = null)
             {
-                var iType = AttributeType.GetLangType;
+                var iType = As ?? AttributeType.GetLangType;
 
                 string ret = AttributeType.AbsValue;
 
