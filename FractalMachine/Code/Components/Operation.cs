@@ -70,6 +70,7 @@ namespace FractalMachine.Code.Components
                 }
                 else // is normal variable
                 {
+                    //todo: handle getter and setter
                     var varPath = Parent.CalculateRealPath(_linear.Return, Lang);
                     writeToCont(varPath);
                     writeToCont("=");

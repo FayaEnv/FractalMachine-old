@@ -1536,7 +1536,7 @@ namespace FractalMachine.Code.Langs
                 var completedStatement = firstStatement.GetCompletedStatement;
                 var csType = completedStatement.Type;
 
-                if (csType == "Declaration.Function" || csType == "Block")
+                if (csType.StartsWith("Declaration.") || csType == "Block")
                 {
                     bag = bag.subBag();
                 }
@@ -2510,6 +2510,8 @@ namespace FractalMachine.Code.Langs
                     public Declaration()
                     {
                         AddDisk(new Function());
+                        AddDisk(new Property());
+                        AddDisk(new DataStructure());
 
                         Scheduler.Add(scheduler_0);
                         Scheduler.Add(scheduler_1);
@@ -2621,6 +2623,68 @@ namespace FractalMachine.Code.Langs
 
                     #region Statements
 
+                    public class Property : Statement
+                    {
+                        Declaration decl;
+
+                        public Property()
+                        {
+                            Scheduler.Add(scheduler_0);
+                        }
+
+                        bool scheduler_0(OrderedAST ast)
+                        {
+                            decl = (Declaration)parent;
+
+                            if (ast.IsBlockBrackets)
+                            {
+                                AbsoluteWinner();
+                                decl.lin.Type = "property";
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    public class DataStructure : Statement
+                    {
+                        Declaration decl;
+
+                        string[] dataStructures = new string[] { "struct", "class" };
+
+                        public DataStructure()
+                        {
+                            Scheduler.Add(scheduler_0);
+                        }
+
+                        internal override bool YourTurn(OrderedAST currentOrderedAst)
+                        {
+                            decl = (Declaration)parent;
+
+                            if (dataStructures.Contains(decl.DeclType))
+                            {
+                                var oa = OrderedAST;
+                                oa.bag = oa.bag.subBag();
+                                oa.bag.EnterLastLinear();
+
+                                decl.lin.Op = decl.DeclType;
+
+                                AbsoluteWinner();
+
+                                return true;
+                            }
+
+                            return false;
+                        }
+
+                        bool scheduler_0(OrderedAST ast)
+                        {
+                            return true;
+                        }
+                    }
+
+
                     /// <summary>
                     /// The "static" converter in OrderedAst could afford the function without problems
                     /// This class is used mostly for handle grammar errors
@@ -2641,28 +2705,24 @@ namespace FractalMachine.Code.Langs
                         {
                             decl = (Declaration)parent;
 
-                            switch (decl.DeclType)
+                            Tetris<OrderedAST> tetris = new Tetris<OrderedAST>();
+                            tetris.Check(delegate (OrderedAST oAst)
                             {
-                                case "struct":
-                                case "class":
-                                    if (!currentOrderedAst.Right?.IsBlockBrackets ?? true) 
-                                        return false; // but, so, what is it!?
+                                return oAst.IsBlockParenthesis;
+                            });
+                            tetris.Check(delegate (OrderedAST oAst)
+                            {
+                                return oAst.IsBlockBrackets;
+                            });
 
-                                    SchedulerPos++; // it jumps parameters
-                                    isDefaultType = true;
+                            // by default is a function (if has parenthesis)
+                            if (!tetris.Ensure(OrderedAST.codes)) 
+                                return false;
 
-                                    break;
+                            AbsoluteWinner();
 
-                                default:
-                                    // by default is a function (if has parenthesis)
-                                    if (!currentOrderedAst.Right?.IsBlockParenthesis ?? true)
-                                        return false;
-
-                                    if (decl.Type == "function")
-                                        isDefaultType = true;
-
-                                    break;
-                            }
+                            if (decl.DeclType == "function")
+                                isDefaultType = true;
 
                             var oa = OrderedAST;
                             oa.bag = oa.bag.subBag();
@@ -2671,6 +2731,9 @@ namespace FractalMachine.Code.Langs
                             return true;
                         }
 
+                        /// 
+                        /// Block parenthesis
+                        ///
                         bool scheduler_0(OrderedAST ast)
                         {
                             var right = ast.Right;
@@ -2690,11 +2753,14 @@ namespace FractalMachine.Code.Langs
                             return false;
                         }
 
+                        /// 
+                        /// Block brackets
+                        /// 
                         CascadeCall cascadeCall;
                         bool scheduler_1(OrderedAST ast)
                         {
                             ///
-                            /// Check cascade call ie Construction(var i):base(i)
+                            /// Check cascade call 
                             ///
                             if (cascadeCall != null)
                             {
@@ -2735,6 +2801,7 @@ namespace FractalMachine.Code.Langs
 
                         #region Statements
 
+                        /// ie Constructor(var i):base(i)
                         public class CascadeCall : Statement
                         {
                             Linear Lin;

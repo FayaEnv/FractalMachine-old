@@ -26,7 +26,7 @@ namespace FractalMachine.Develop
             {
                 if (file.Extension == ".light")
                 {
-                    if(file.Name == "13-class.light" || true) // Debug purposes
+                    if(file.Name == "15-getter-setter.light" || false) // Debug purposes
                         elaborateFile(file.FullName);
                 }
             }
