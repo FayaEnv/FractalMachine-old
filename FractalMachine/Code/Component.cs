@@ -162,35 +162,37 @@ namespace FractalMachine.Code
         {
             var name = Names[Level];
 
-            if (Names.Length == 1)
-            {
-                var comp = SolveNativeFunction(name);
-                if (comp != null) return comp;
-            }
-
             Component ground = this, outComp;
-
-            if (Level == 0) // Seek ground
+            if (Level == 0) 
             {
-                Component bcomp = this;
-                while (!ground.components.TryGetValue(name, out ground))
+                // Look for native function
+                if (Names.Length == 1)
                 {
-                    ground = bcomp.parent;
+                    var comp = SolveNativeFunction(name);
+                    if (comp != null) return comp;
+                }
+
+                // Seek ground
+                Component bcomp;
+                while (!ground.components.TryGetValue(name, out bcomp)) //check if ground has requested component
+                {
+                    ground = ground.parent;
                     if (ground == null)
                     {
                         if (!DontPanic) throw new Exception("Error, " + name + " not found");
                         return null;
                     }
-                    bcomp = ground;
                 }
             }
 
             if (ground.components.TryGetValue(name, out outComp))
             {
+                Level++;
+
                 if (Level == Names.Length)
                     return outComp;
-
-                return outComp.Solve(Names, DontPanic, Level + 1);
+                else
+                    return outComp.Solve(Names, DontPanic, Level);
             }
 
             if (!DontPanic)
@@ -269,6 +271,9 @@ namespace FractalMachine.Code
 
         public virtual string GetRealName(Component relativeTo = null)
         {
+            return name;
+
+            // to think...
             string topName = null;
 
             bool hasCommonDescending = relativeTo != null && HasCommonDescending(relativeTo);
@@ -281,6 +286,34 @@ namespace FractalMachine.Code
                 topName = parent?.GetRealName(relativeTo);
 
             return (topName != null ? topName + '.' : "") + name;
+        }
+
+        public string CalculateRealPath(string Path, Lang Lang = null)
+        {
+            var ls = Lang?.GetSettings;
+
+            string rp = "";
+            var parts = Path.Split('.');
+
+            Component comp = this, lastComp = null;
+            foreach(var part in parts)
+            {
+                comp = comp.Solve(part);
+
+                if (lastComp != null)
+                {
+                    if (ls != null)
+                        rp += ls.VarsDelimiter(lastComp, comp);
+                    else
+                        rp += ".";
+                }
+               
+                rp += comp.GetRealName();
+
+                lastComp = comp;
+            }
+
+            return rp;
         }
 
         public string GetPath(string Delimiter = ".", Component RelativeTo = null)

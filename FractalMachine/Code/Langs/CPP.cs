@@ -252,6 +252,12 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public override string VarsDelimiter(Component c1, Component c2)
+            {
+                //todo
+                return ".";
+            }
+
         }
 
         static Settings _settings;

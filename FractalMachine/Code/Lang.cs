@@ -37,6 +37,8 @@ namespace FractalMachine.Code
             public abstract string CloseBlock { get; }
             public abstract string StructureImport { get; }
 
+            public abstract string VarsDelimiter(Component c1, Component c2);
+
         }
 
         #region InstanceSettings

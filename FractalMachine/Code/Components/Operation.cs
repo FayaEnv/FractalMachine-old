@@ -52,7 +52,7 @@ namespace FractalMachine.Code.Components
                 /// Get return type
                 /// 
                 var var = Parent.ivarMan.Get(_linear.Return);
-                if (var != null)
+                if (var != null) // Is InternalVariable
                 {
                     if (var.IsUsed(_linear))
                     {
@@ -66,9 +66,10 @@ namespace FractalMachine.Code.Components
                         writeToCont("=");
                     }
                 }
-                else
+                else // is normal variable
                 {
-                    writeToCont(_linear.Return);
+                    var varPath = Parent.CalculateRealPath(_linear.Return, Lang);
+                    writeToCont(varPath);
                     writeToCont("=");
                 }
             }
@@ -80,7 +81,7 @@ namespace FractalMachine.Code.Components
             {
                 if (_linear.Op == "=")
                 {
-                    writeAttributeVariable(ts, _linear.Name, returnType);
+                    writeAttributeVariable(Lang, _linear.Name, returnType);
                 }
                 else
                 {
@@ -93,18 +94,17 @@ namespace FractalMachine.Code.Components
                     }
 
                     if (t1 != null)
-                        writeAttributeVariable(ts, t1, returnType);
+                        writeAttributeVariable(Lang, t1, returnType);
 
                     writeToCont(_linear.Op);
-                    writeAttributeVariable(ts, t2, returnType);
+                    writeAttributeVariable(Lang, t2, returnType);
                 }
             }
             else if (_linear.IsCall)
             {
-                var toCall = Parent.Solve(_linear.Name);
+                //var toCall = Parent.Solve(_linear.Name);
 
-                var name = toCall.GetRealName(parent);
-
+                var name = Parent.CalculateRealPath(_linear.Name, Lang);
                 writeToCont(name);
 
                 // Write parameters
@@ -114,7 +114,7 @@ namespace FractalMachine.Code.Components
                 {
                     var attr = _linear.Attributes[a];
 
-                    writeAttributeVariable(ts, attr);
+                    writeAttributeVariable(Lang, attr);
 
                     if (a < ac-1)
                         writeToCont(",");
@@ -144,8 +144,9 @@ namespace FractalMachine.Code.Components
             }
         }
 
-        void writeAttributeVariable(TypesSet ts, string attr, Type requestedType = null)
+        void writeAttributeVariable(Lang Lang, string attr, Type requestedType = null)
         {
+            var ts = Lang.GetTypesSet;
             var attrType = _linear.Lang.GetTypesSet.GetAttributeType(attr);
             checkAttributeTypeAccessibility(attrType);
 
@@ -158,7 +159,10 @@ namespace FractalMachine.Code.Components
                     writeToCont(iv.realVarName);
                 }
                 else
-                    writeToCont(attrType.AbsValue); //todo: handle complex var tree (ie Namespace.Var)
+                {
+                    var varPath = Parent.CalculateRealPath(attrType.AbsValue, Lang);
+                    writeToCont(varPath); //todo: handle complex var tree (ie Namespace.Var)
+                }
             }
             else
             {
