@@ -1,0 +1,17 @@
+| 0. 
+==| Instructions:
+====| 0. class
+======| Name: Test
+======| Return: class
+======| Instructions:
+========| 0. declare
+==========| Type: property
+==========| Name: Property
+==========| Return: int
+==========| Attributes: public  |  
+==========| Instructions:
+============| 0. get
+==============| Type: block
+==============| Instructions:
+================| 0. return
+==================| Return: 0

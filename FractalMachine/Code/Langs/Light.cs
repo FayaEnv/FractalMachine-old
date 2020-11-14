@@ -2247,6 +2247,7 @@ namespace FractalMachine.Code.Langs
                 public class Block : Statement
                 {
                     string[] Blocks = new string[] { "if", "else", "for" };
+                    string[] PropertyBlocks = new string[] { "get", "set" };
                     //string[] BlocksWithoutParameters = new string[] { "else" };
 
                     string Name;
@@ -2266,6 +2267,14 @@ namespace FractalMachine.Code.Langs
                         Name = bag.Params.LastParam.StrValue;
 
                         bool isBlock = Blocks.Contains(Name);
+
+                        if(!isBlock && PropertyBlocks.Contains(Name))
+                        {
+                            if (!bag.Linear.IsProperty)
+                                throw new Exception("Get/Set not allowed outside a property");
+
+                            isBlock = true;
+                        }
                         
                         //if(!isBlock && (isBlock = BlocksWithoutParameters.Contains(Name))) IncreasePos();
                       
@@ -2510,7 +2519,6 @@ namespace FractalMachine.Code.Langs
                     public Declaration()
                     {
                         AddDisk(new Function());
-                        AddDisk(new Property());
                         AddDisk(new DataStructure());
 
                         Scheduler.Add(scheduler_0);
@@ -2623,30 +2631,6 @@ namespace FractalMachine.Code.Langs
 
                     #region Statements
 
-                    public class Property : Statement
-                    {
-                        Declaration decl;
-
-                        public Property()
-                        {
-                            Scheduler.Add(scheduler_0);
-                        }
-
-                        bool scheduler_0(OrderedAST ast)
-                        {
-                            decl = (Declaration)parent;
-
-                            if (ast.IsBlockBrackets)
-                            {
-                                AbsoluteWinner();
-                                decl.lin.Type = "property";
-                                return true;
-                            }
-
-                            return false;
-                        }
-                    }
-
                     public class DataStructure : Statement
                     {
                         Declaration decl;
@@ -2655,33 +2639,29 @@ namespace FractalMachine.Code.Langs
 
                         public DataStructure()
                         {
-                            Scheduler.Add(scheduler_0);
                         }
 
                         internal override bool YourTurn(OrderedAST currentOrderedAst)
                         {
                             decl = (Declaration)parent;
 
+                            if ((!currentOrderedAst.next?.IsBlockBrackets) ?? false)
+                                return false;
+
                             if (dataStructures.Contains(decl.DeclType))
-                            {
-                                var oa = OrderedAST;
-                                oa.bag = oa.bag.subBag();
-                                oa.bag.EnterLastLinear();
-
                                 decl.lin.Op = decl.DeclType;
+                            else
+                                decl.lin.Type = "property";
 
-                                AbsoluteWinner();
+                            var oa = OrderedAST;
+                            oa.bag = oa.bag.subBag();
+                            oa.bag.EnterLastLinear();
 
-                                return true;
-                            }
+                            AbsoluteWinner();
 
-                            return false;
-                        }
-
-                        bool scheduler_0(OrderedAST ast)
-                        {
                             return true;
                         }
+
                     }
 
 
@@ -2715,7 +2695,7 @@ namespace FractalMachine.Code.Langs
                                 return oAst.IsBlockBrackets;
                             });
 
-                            // by default is a function (if has parenthesis)
+                            // by default is a function (if has parenthesis and block brackets)
                             if (!tetris.Ensure(OrderedAST.codes)) 
                                 return false;
 

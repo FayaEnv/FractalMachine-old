@@ -116,6 +116,14 @@ namespace FractalMachine.Code
             }
         }
 
+        public bool IsProperty
+        {
+            get
+            {
+                return Op == "declare" && Type == "property";
+            }
+        }
+
         #endregion
 
         #region Parent
