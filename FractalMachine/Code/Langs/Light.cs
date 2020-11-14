@@ -2532,7 +2532,7 @@ namespace FractalMachine.Code.Langs
                         }
                         else // with an else if you could put differnt type of modifier without enforcing the order of entry
                         {
-                            ReversePull();
+                            ReversePull(); // the pull is reversed for allowing next schedule to reobtain the parameter
                             return Scheduler[++SchedulerPos].Invoke(ast);
                         }
 
@@ -2548,6 +2548,12 @@ namespace FractalMachine.Code.Langs
                             return false;
 
                         var spar = Pull().StrValue;
+
+                        if(bag.Linear.Op == "class" && spar == bag.Linear.Name)
+                        {
+                            //Is fast constructor declaration
+                            throw new Exception("todo");
+                        }
 
                         DeclType = spar;              
                         NextScheduler();
