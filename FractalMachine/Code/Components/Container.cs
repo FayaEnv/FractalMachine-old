@@ -11,19 +11,19 @@ namespace FractalMachine.Code.Components
     {
         internal ContainerTypes containerType;
         internal List<Operation> operations = new List<Operation>();
-        internal InternalVariablesManager ivarMan = new InternalVariablesManager();
+        internal InternalVariablesManager ivarMan;
 
         public Container(Component parent, string Name, Linear linear) : base(parent, Name, linear)
         {
             type = Types.Container;
-            ivarMan.parent = this;
+            ivarMan = new InternalVariablesManager(this);
 
             if (linear != null)
             {
                 var ots = linear.Lang.GetTypesSet;
                 if (String.IsNullOrEmpty(linear.Return))
                     returnType = ots.Get(linear.Return);
-            }
+            }  
         }
 
         public Container Parent

@@ -1,6 +1,7 @@
 //import Other;
 
 function Main(){
+	var str = "ciao";
 	var test = Test();
 	test.stampa("ciao");
 }

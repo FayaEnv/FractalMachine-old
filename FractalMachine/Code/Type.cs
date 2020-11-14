@@ -185,6 +185,9 @@ namespace FractalMachine.Code
         public bool IsDataStructure = false;
         public Component Component;
 
+        // Compiling purposes
+        public string lib, ns;
+
         public Type(TypesSet TypesSet)
         {
             this.TypesSet = TypesSet;

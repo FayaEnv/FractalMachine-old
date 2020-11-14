@@ -134,6 +134,8 @@ namespace FractalMachine.Code.Langs
                 _string.Base = _char;
                 _string.IsArray = true;
                 _string.LightType = "string";
+                _string.lib = "string";
+                _string.ns = "std";
             }
 
             override public AttributeType GetAttributeType(string Name)

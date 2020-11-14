@@ -34,7 +34,6 @@ namespace FractalMachine.Code
     {
         internal Component attached;
         internal string name;
-        internal Type returnType;
         internal Types type;
         internal Linear _linear;
         internal Component parent;
@@ -74,6 +73,22 @@ namespace FractalMachine.Code
             Function,
             Member,
             Operation
+        }
+
+        #endregion
+
+        #region Type
+
+        Type _returnType;
+
+        internal Type returnType
+        {
+            get { return _returnType; }
+            set
+            {
+                _returnType = value;
+                TopFile?.UsedType(value);
+            }
         }
 
         #endregion
@@ -242,7 +257,7 @@ namespace FractalMachine.Code
         {
             get
             {
-                return parent.TopFile;
+                return parent?.TopFile;
             }
         }
 

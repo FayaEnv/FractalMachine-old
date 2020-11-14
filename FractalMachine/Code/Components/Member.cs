@@ -15,6 +15,8 @@ namespace FractalMachine.Code.Components
         {
             type = Types.Member;
             memberType = MemberType.Normal;
+
+            TopFile.UsedType(returnType);
         }
 
         public Member(InternalVariablesManager.InternalVariable iVar):base(null, null, null)

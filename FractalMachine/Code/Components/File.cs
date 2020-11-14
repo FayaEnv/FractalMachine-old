@@ -57,49 +57,6 @@ namespace FractalMachine.Code.Components
             loaded = true;
         }
 
-
-        #region Types
-
-        public void CheckType(string subject, string request, int linearPos)
-        {
-            var types = script.GetTypesSet;
-            Type reqType = types.Get(request);
-            Type subjType;
-
-            var attrType = types.GetAttributeType(subject);
-
-            if (attrType.Type == Code.AttributeType.Types.Invalid)
-            {
-                throw new Exception("Invalid type");
-            }
-
-            if (attrType.Type == Code.AttributeType.Types.Name)
-            {
-                // get component info    
-                var comp = Solve(subject);
-                subjType = types.Get(comp.Linear.Return);
-                subjType.Solve(this); // or comp?
-
-                if (subjType.Name != reqType.Name)
-                {
-                    //todo
-                    throw new Exception("todo");
-                }
-            }
-            else
-            {
-                if (attrType.TypeRef != reqType.AttributeReference)
-                {
-                    //subject = types.ConvertAttributeTo(subject, reqType, attrType);
-                    Linear[linearPos].Name = subject;
-                }
-            }
-
-            string done = "";
-        }
-
-        #endregion
-
         #region FileName
 
         internal string _fileName;
@@ -145,6 +102,20 @@ namespace FractalMachine.Code.Components
 
         #endregion
 
+        #region Types
+
+        List<Type> usedTypes = new List<Type>();
+        public void UsedType(Type type)
+        {
+            if (type == null)
+                return;
+
+            if (!usedTypes.Contains(type))
+                usedTypes.Add(type);
+        }
+
+        #endregion
+
         #region Properties
 
         public override File TopFile
@@ -175,10 +146,25 @@ namespace FractalMachine.Code.Components
         {
             Load();
 
-            // Check default libraries
-            foreach (var libName in includeDefaults)
-                writeToIncludeDefault(Lang, libName);
+            var ts = Lang.GetTypesSet;
 
+            /// Check default libraries
+            foreach (var libName in includeDefaults)
+                writeToIncludeDefault(Lang, libName);            
+
+            /// Check requested libraries by used types
+            foreach(var type in usedTypes)
+            {
+                var convType = ts.Convert(type);
+
+                if (!String.IsNullOrEmpty(convType.lib))
+                    writeToIncludeDefault(Lang, convType.lib);
+
+                if (!String.IsNullOrEmpty(convType.ns))
+                    writeToUsingNamespace(convType.ns);
+            }
+
+            /// Begin to write
             base.WriteTo(Lang, true);
             return writeReturn();
         }
@@ -190,6 +176,14 @@ namespace FractalMachine.Code.Components
             writeToCont("<");
             writeToCont(libName);
             writeToCont(">");
+            writeNewLine(null);
+        }
+
+        void writeToUsingNamespace(string Namespace)
+        {
+            writeToCont("using namespace ");
+            writeToCont(Namespace);
+            writeToCont(";");
             writeNewLine(null);
         }
 
@@ -231,8 +225,8 @@ namespace FractalMachine.Code.Components
         {
             var ts = lang.GetTypesSet;
 
-            var ofn = GetProject.Include(lang, comp);
-            if (!includedLibraries.Contains(ofn))
+            var ofn = GetProject.Include(lang, comp); // retrieve path from Project
+            if (!includedLibraries.Contains(ofn)) // if not yet included
             {
                 writeToCont("#include");
                 writeToCont(" ");

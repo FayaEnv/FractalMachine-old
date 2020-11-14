@@ -12,8 +12,9 @@ namespace FractalMachine.Code.Components
         Dictionary<int, InternalVariable> vars = new Dictionary<int, InternalVariable>();
         Dictionary<Type, TypeContainer> typeContainers = new Dictionary<Type, TypeContainer>();
 
-        public InternalVariablesManager()
+        public InternalVariablesManager(Container Parent)
         {
+            parent = Parent;
         }
 
         public InternalVariable Set(string ivar, Operation op)
@@ -105,7 +106,7 @@ namespace FractalMachine.Code.Components
             public InternalVariablesManager parent;
             public Operation op;
 
-            public Type type;
+            public Type _type;
             public int lastAppearance = -1;
 
             public string realVarType;
@@ -135,6 +136,16 @@ namespace FractalMachine.Code.Components
                     realVarType = ts.GetTypeCodeName(newType);
 
                 realVarName = inst.name;
+            }
+
+            public Type type
+            {
+                get { return _type; }
+                set
+                {
+                    _type = value;
+                    parent.parent.TopFile.UsedType(value);
+                }
             }
 
             public void Appears(Linear instr)

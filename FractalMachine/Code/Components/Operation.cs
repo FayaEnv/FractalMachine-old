@@ -45,7 +45,9 @@ namespace FractalMachine.Code.Components
 
             var ts = Lang.GetTypesSet;
 
-            // Handle return
+            ///
+            /// Handle return - ie string var = ...
+            /// 
             if (!String.IsNullOrEmpty(_linear.Return)) // is it has a sense?
             {
                 ///

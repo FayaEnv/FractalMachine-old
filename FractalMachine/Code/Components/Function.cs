@@ -7,10 +7,17 @@ namespace FractalMachine.Code.Components
     public class Function : Component
     {
         internal List<Overload> overloads = new List<Overload>();
+        internal bool isEntryPoint = false;
 
         public Function(Component parent, string Name) : base(parent, Name, null)
         {
             type = Types.Function;
+
+            if (name == Properties.EntryPointFunction && TopFile.isMain)
+            {
+                name = "main"; //for c++ (todo: make it a property reference)
+                isEntryPoint = true;
+            }
         }
 
         public Container Parent
@@ -30,11 +37,8 @@ namespace FractalMachine.Code.Components
 
         public override string GetRealName(Component relativeTo = null)
         {
-            if (parent == null) // in case of native functions
+            if (parent == null || isEntryPoint) // in case of native functions
                 return name;
-
-            if (TopFile.isMain && name == Properties.EntryPointFunction)
-                return "main"; //for c++ (todo: make it a property reference)
 
             //todo: circa (to improve)
             string apex = "";
@@ -75,6 +79,10 @@ namespace FractalMachine.Code.Components
             {
                 readLinear_declare(par);
             }
+
+            /// Analyze function
+            if(Parent.isEntryPoint)
+                returnType = linear.Lang.GetTypesSet.Get("int"); 
         }
         new public Function Parent
         {
