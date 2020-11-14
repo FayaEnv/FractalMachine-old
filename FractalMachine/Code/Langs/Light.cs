@@ -23,6 +23,7 @@ using System.Transactions;
 using System.ComponentModel.DataAnnotations;
 using static FractalMachine.Code.Type;
 using System.Security.Cryptography.X509Certificates;
+using System.Xml.XPath;
 
 namespace FractalMachine.Code.Langs
 {
@@ -256,7 +257,6 @@ namespace FractalMachine.Code.Langs
                 var statusDefault = statusSwitcher.Define("default");
 
                 var trgString = statusDefault.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "inString" });
-                var trgAngularBrackets = statusDefault.Add(new Triggers.Trigger { Delimiter = "<", ActivateStatus = "inAngularBrackets" });
                 var trgSpace = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { " ", "\t", "," } });
                 var trgNewInstruction = statusDefault.Add(new Triggers.Trigger { Delimiters = new string[] { ";", "," } }); // technically the , is a new instruction
                 var trgNewLine = statusDefault.Add(new Triggers.Trigger { Delimiter = "\n" });
@@ -275,10 +275,6 @@ namespace FractalMachine.Code.Langs
                 var statusInString = statusSwitcher.Define("inString");
                 var trgEscapeString = statusInString.Add(new Triggers.Trigger { Delimiter = "\\" });
                 var trgExitString = statusInString.Add(new Triggers.Trigger { Delimiter = "\"", ActivateStatus = "default" });
-
-                // InAngularBrackets
-                var statusInAngularBrackets = statusSwitcher.Define("inAngularBrackets");
-                var trgExitAngularBrackets = statusInAngularBrackets.Add(new Triggers.Trigger { Delimiter = ">", ActivateStatus = "default" });
 
                 /// InlineComment
                 var statusInInlineComment = statusSwitcher.Define("inInlineComment");
@@ -439,13 +435,6 @@ namespace FractalMachine.Code.Langs
                 {
                     var ret = eatBufferAndClear();
                     if (ret != null) ret.aclass = "string";
-                };
-
-                /// Angular bracket
-                trgExitAngularBrackets.OnTriggered = delegate
-                {
-                    var ret = eatBufferAndClear();
-                    if (ret != null) ret.aclass = "angularBracket";
                 };
 
                 ///
@@ -945,6 +934,28 @@ namespace FractalMachine.Code.Langs
                 }
 
                 codes.Add(oAst);
+            }
+
+            void CloseAngularBrackets()
+            {
+                if (Subject == "<")
+                {
+                    OrderedAST nav = this;
+                    while (nav.Subject != ">") 
+                    {
+                        nav = nav.LastCode;
+                        if (nav == null)
+                            throw new Exception("This angular bracket is not closing");
+                    }
+
+                    int pos = Parent.codes.IndexOf(this)+1;
+                    foreach (var c in nav.codes)
+                        Parent.codes.Insert(pos, c);
+
+                    nav.Parent.codes.Remove(nav);
+                }
+                else
+                    throw new Exception("Marcello, what are you doing?");
             }
 
             #endregion
