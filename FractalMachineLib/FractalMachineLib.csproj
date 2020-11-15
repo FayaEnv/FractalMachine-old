@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Version>0.0.1</Version>
+    <Copyright>Riccardo Cecchini 2020</Copyright>
+    <StartupObject></StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="gOld\**" />
+    <Compile Remove="g_old\**" />
+    <EmbeddedResource Remove="gOld\**" />
+    <EmbeddedResource Remove="g_old\**" />
+    <None Remove="gOld\**" />
+    <None Remove="g_old\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+</Project>

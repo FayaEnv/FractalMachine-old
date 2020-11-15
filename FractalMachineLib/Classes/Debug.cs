@@ -20,7 +20,7 @@ using System.Text;
 
 namespace FractalMachine
 {
-    class Debug
+    public class Debug
     {
         static public void Print(string str)
         {

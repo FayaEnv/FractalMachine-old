@@ -67,7 +67,7 @@ namespace FractalMachine
                     break;
 
                 case "project":
-                    proj = new Project(assetsDir+"/proj_example");
+                    proj = new Project(assetsDir + "/proj_example");
                     proj.Compile();
 
                     read = "";
@@ -85,7 +85,7 @@ namespace FractalMachine
                     break;
             }
 
-            
+
 
             Debug.Print("leggi qui");
         }
