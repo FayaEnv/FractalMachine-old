@@ -15,11 +15,11 @@
 */
 
 using System;
-using FractalMachine.Code;
-using FractalMachine.Code.Langs;
-using FractalMachine.Ambiance;
+using FractalMachineLib.Code;
+using FractalMachineLib.Code.Langs;
+using FractalMachineLib.Ambiance;
 
-namespace FractalMachine
+namespace FractalMachineLib
 {
     class Program
     {

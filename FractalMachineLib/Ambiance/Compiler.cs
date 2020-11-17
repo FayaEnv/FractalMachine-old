@@ -14,12 +14,12 @@
    limitations under the License.
 */
 
-using FractalMachine.Ambiance.Repositories;
+using FractalMachineLib.Ambiance.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Ambiance
+namespace FractalMachineLib.Ambiance
 {
     public abstract class Compiler
     {

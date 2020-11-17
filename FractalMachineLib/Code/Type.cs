@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-using FractalMachine.Classes;
+using FractalMachineLib.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Linq;
 
 // think about it https://en.wikipedia.org/wiki/IEC_61131-3
-namespace FractalMachine.Code
+namespace FractalMachineLib.Code
 {
     public abstract class TypesSet
     {

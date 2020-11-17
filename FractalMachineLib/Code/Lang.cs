@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Code
+namespace FractalMachineLib.Code
 {
     /// <summary>
     /// This abstract class makes a language Linear compatible

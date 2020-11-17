@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace FractalMachine
+namespace FractalMachineLib
 {
     public class CharType
     {

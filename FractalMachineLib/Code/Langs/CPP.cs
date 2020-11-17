@@ -14,15 +14,15 @@
    limitations under the License.
 */
 
-using FractalMachine.Classes;
-using FractalMachine.Code.Components;
+using FractalMachineLib.Classes;
+using FractalMachineLib.Code.Components;
 using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 
-namespace FractalMachine.Code.Langs
+namespace FractalMachineLib.Code.Langs
 {
     public class CPP : Lang
     {

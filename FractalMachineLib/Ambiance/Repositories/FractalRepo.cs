@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Ambiance.Repositories
+namespace FractalMachineLib.Ambiance.Repositories
 {
     /// <summary>
     /// FractalRepo will be the only repository not linked to an Environment but to the Compiler

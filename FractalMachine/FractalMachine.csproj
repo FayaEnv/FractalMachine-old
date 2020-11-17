@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FractalMachine\FractalMachineLib.csproj" />
+    <ProjectReference Include="..\FractalMachineLib\FractalMachineLib.csproj" />
   </ItemGroup>
 
 </Project>

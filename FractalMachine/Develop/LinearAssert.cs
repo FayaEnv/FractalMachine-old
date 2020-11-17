@@ -1,12 +1,12 @@
-﻿using FractalMachine.Code;
-using FractalMachine.Code.Langs;
+﻿using FractalMachineLib.Code;
+using FractalMachineLib.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
 
-namespace FractalMachine.Develop
+namespace FractalMachineLib.Develop
 {
     public class LinearAssert
     {
@@ -26,7 +26,7 @@ namespace FractalMachine.Develop
             {
                 if (file.Extension == ".light")
                 {
-                    if(file.Name == "15-getter-setter.light" || false) // Debug purposes
+                    if(file.Name == "16-generic-types.light" || false) // Debug purposes
                         elaborateFile(file.FullName);
                 }
             }

@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Ambiance.Environments.Unix
+namespace FractalMachineLib.Ambiance.Environments.Unix
 {
     public class Unix : Environment
     {

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-using FractalMachine.Classes;
+using FractalMachineLib.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,7 +22,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace FractalMachine.Code
+namespace FractalMachineLib.Code
 {
 
     class Switch

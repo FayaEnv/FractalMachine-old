@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Classes
+namespace FractalMachineLib.Classes
 {
 	public class KeyLengthSortedDescDictionary<T> : SortedDictionary<string, T>
 	{

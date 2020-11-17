@@ -14,17 +14,17 @@
    limitations under the License.
 */
 
-using FractalMachine.Classes;
-using FractalMachine.Code;
-using FractalMachine.Ambiance;
+using FractalMachineLib.Classes;
+using FractalMachineLib.Code;
+using FractalMachineLib.Ambiance;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using FractalMachine.Code.Langs;
+using FractalMachineLib.Code.Langs;
 using System.Linq;
 
-namespace FractalMachine
+namespace FractalMachineLib
 {
     public class Project : Code.Components.File
     {

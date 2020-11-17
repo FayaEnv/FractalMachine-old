@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-using FractalMachine.Code;
+using FractalMachineLib.Code;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,7 +22,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 
-namespace FractalMachine.Classes
+namespace FractalMachineLib.Classes
 {
     public class Net
     {

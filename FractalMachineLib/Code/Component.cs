@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-using FractalMachine.Classes;
-using FractalMachine.Code.Components;
-using FractalMachine.Code.Langs;
+using FractalMachineLib.Classes;
+using FractalMachineLib.Code.Components;
+using FractalMachineLib.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -28,7 +28,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace FractalMachine.Code
+namespace FractalMachineLib.Code
 {
     abstract public class Component
     {

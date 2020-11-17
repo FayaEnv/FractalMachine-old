@@ -1,11 +1,11 @@
-﻿using FractalMachine.Classes;
-using FractalMachine.Code.Langs;
+﻿using FractalMachineLib.Classes;
+using FractalMachineLib.Code.Langs;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace FractalMachine.Code.Components
+namespace FractalMachineLib.Code.Components
 {
     public class File : Container
     {

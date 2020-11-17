@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine
+namespace FractalMachineLib
 {
     public class Debug
     {

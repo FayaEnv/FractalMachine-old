@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Code.Components
+namespace FractalMachineLib.Code.Components
 {
     public class Function : Component
     {

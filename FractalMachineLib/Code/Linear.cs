@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-using FractalMachine.Classes;
+using FractalMachineLib.Classes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using static FractalMachine.Code.AST;
+using static FractalMachineLib.Code.AST;
 
-namespace FractalMachine.Code
+namespace FractalMachineLib.Code
 {
     public class Linear
     {

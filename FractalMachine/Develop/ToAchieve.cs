@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace FractalMachine.Develop
+namespace FractalMachineLib.Develop
 {
     public class ToAchieve
     {

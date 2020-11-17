@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-using FractalMachine.Code;
+using FractalMachineLib.Code;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace FractalMachine.Classes
+namespace FractalMachineLib.Classes
 {
     public static class Extensions
     {

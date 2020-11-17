@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Develop
+namespace FractalMachineLib.Develop
 {
     /*
         Todo, but this gives me some point to think about:

@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Ambiance.Environments.Windows
+namespace FractalMachineLib.Ambiance.Environments.Windows
 {
     public class MSYS2 : Unix.Unix
     {

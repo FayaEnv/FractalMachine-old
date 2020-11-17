@@ -1,9 +1,9 @@
-﻿using FractalMachine.Classes;
+﻿using FractalMachineLib.Classes;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace FractalMachine.Code.Components
+namespace FractalMachineLib.Code.Components
 {
     public class Operation : Component
     {

@@ -1,3 +1,5 @@
 ﻿- Crea la gestione degli errori
 - Introdurre '' per char
-- test tipi composti [] comportamento Linear converter
+- Interpretare class property in Component
+- Implementare generic type <> in Linear
+- Introdurre new operator in Linear

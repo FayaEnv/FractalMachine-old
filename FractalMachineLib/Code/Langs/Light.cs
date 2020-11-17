@@ -17,15 +17,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static FractalMachine.Code.AST;
-using FractalMachine.Classes;
+using static FractalMachineLib.Code.AST;
+using FractalMachineLib.Classes;
 using System.Transactions;
 using System.ComponentModel.DataAnnotations;
-using static FractalMachine.Code.Type;
+using static FractalMachineLib.Code.Type;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml.XPath;
 
-namespace FractalMachine.Code.Langs
+namespace FractalMachineLib.Code.Langs
 {
     public class Light : Lang
     {
@@ -835,6 +835,14 @@ namespace FractalMachine.Code.Langs
                 }
             }
 
+            public bool IsAngularBracket
+            {
+                get
+                {
+                    return ast.subject == "<";
+                }
+            }
+
             public bool IsBlockSquareBrackets
             {
                 get
@@ -936,27 +944,38 @@ namespace FractalMachine.Code.Langs
                 codes.Add(oAst);
             }
 
+            #region CascadeHandlers
+
             void CloseAngularBrackets()
             {
                 if (Subject == "<")
                 {
-                    OrderedAST nav = this;
-                    while (nav.Subject != ">") 
-                    {
-                        nav = nav.LastCode;
-                        if (nav == null)
-                            throw new Exception("This angular bracket is not closing");
-                    }
-
-                    int pos = Parent.codes.IndexOf(this)+1;
-                    foreach (var c in nav.codes)
-                        Parent.codes.Insert(pos, c);
-
-                    nav.Parent.codes.Remove(nav);
+                    if(!CloseCascade(delegate(OrderedAST nav){ return nav.Subject == ">"; }))
+                        throw new Exception("This angular bracket is not closing");
                 }
                 else
                     throw new Exception("Marcello, what are you doing?");
             }
+            bool CloseCascade(OnScheduler OnCheck)
+            {
+                OrderedAST nav = this;
+                while (!OnCheck(nav))
+                {
+                    nav = nav.LastCode;
+                    if (nav == null)
+                        return false;
+                }
+
+                int pos = Parent.codes.IndexOf(this) + 1;
+                foreach (var c in nav.codes)
+                    Parent.codes.Insert(pos, c);
+
+                nav.Parent.codes.Remove(nav);
+
+                return true;
+            }
+
+            #endregion
 
             #endregion
 
@@ -1955,6 +1974,7 @@ namespace FractalMachine.Code.Langs
                 int SchedulerPos = 0;
 
                 bool killed = false;
+
                 public Statement(OrderedAST oast)
                 {
                     parentOrderedAST = oast;
@@ -2134,12 +2154,13 @@ namespace FractalMachine.Code.Langs
                 /// <summary>
                 /// This is your branch for sure, so destroy the competion
                 /// </summary>
-                internal void AbsoluteWinner(Statement winner = null)
+                internal void AbsoluteWinner(Statement winner = null, bool ToNextScheduler = true)
                 {
                     if(winner == null)
                     {
                         parent.AbsoluteWinner(this);
-                        NextScheduler();
+                        if(ToNextScheduler)
+                            NextScheduler();
                     }
                     else
                     {
@@ -2527,6 +2548,10 @@ namespace FractalMachine.Code.Langs
                     string Modifier;
                     string DeclType;
                     string[] Names; // names because declaration supports accumulators
+
+                    // Helpers
+                    AngularBracketsHelper angularHelper = new AngularBracketsHelper();
+
                     public Declaration()
                     {
                         AddDisk(new Function());
@@ -2609,6 +2634,15 @@ namespace FractalMachine.Code.Langs
                             return true;
                         }
 
+                        if (angularHelper.Check(ast))
+                        {
+                            ast.CloseAngularBrackets();
+
+                            //todo: Handle angular brackets
+
+                            NextScheduler();
+                        }
+
                         if (!ast.IsAttribute)
                             return false;
 
@@ -2635,7 +2669,7 @@ namespace FractalMachine.Code.Langs
                         }
 
                         /// Completed!
-                        AbsoluteWinner();
+                        AbsoluteWinner(ToNextScheduler: !angularHelper.NextIsAngular);
 
                         return true;
                     }
@@ -2840,6 +2874,23 @@ namespace FractalMachine.Code.Langs
             }
 
             #endregion
+        }
+
+        #endregion
+
+        #region Helpers
+
+        public class AngularBracketsHelper
+        {
+            public bool NextIsAngular = false;
+
+            public bool Check(OrderedAST oAst)
+            {
+                if (oAst.Right?.IsAngularBracket ?? false)
+                    NextIsAngular = true;
+
+                return oAst.IsAngularBracket;
+            }
         }
 
         #endregion

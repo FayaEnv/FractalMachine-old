@@ -1,11 +1,11 @@
-﻿using FractalMachine.Classes;
+﻿using FractalMachineLib.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace FractalMachine.Code.Components 
+namespace FractalMachineLib.Code.Components 
 {
     abstract public class Container : Component
     {

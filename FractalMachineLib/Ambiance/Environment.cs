@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-using FractalMachine.Code;
+using FractalMachineLib.Code;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,7 +26,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 
-namespace FractalMachine.Ambiance
+namespace FractalMachineLib.Ambiance
 {
     public abstract class Environment
     {
