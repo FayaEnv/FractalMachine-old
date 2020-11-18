@@ -978,9 +978,9 @@ namespace FractalMachineLib.Code.Langs
                 Parent.LastCode.next = nav.FirstCode;
                 nav.FirstCode.prev = Parent.LastCode;
 
-                int pos = Parent.codes.IndexOf(this) + 1;
+                int pos = Parent.codes.IndexOf(this)+1;
                 foreach (var c in nav.codes)
-                    Parent.codes.Insert(pos, c);
+                    Parent.codes.Insert(pos++, c);
 
                 nav.Parent.codes.Remove(nav);
 
@@ -1721,12 +1721,17 @@ namespace FractalMachineLib.Code.Langs
                     }
                     else if (csType == "Retrieve")
                     {
+                        var retrieve = (Statement.Retrieve)completedStatement;
+
                         ///
                         /// Here parameters are simply collected from bag.Paramas
                         ///
                         lin = new Linear(bag.Linear, ast);
                         lin.Op = "call";
                         lin.Name = bag.Params.Pull().StrValue;
+
+                        if (retrieve.Types.Count > 0)
+                            throw new Exception("todo: handle generic types");
 
                         bag = bag.subBag();
 
@@ -2280,9 +2285,10 @@ namespace FractalMachineLib.Code.Langs
                                 genericType = new GenericType(this);
                                 genericType.startParamsFrom = ast.bag.Params.Count;
                                 genericType.PrepareAst(right);
+
+                                return true;
                             }
 
-                            return true;
                         }
 
                         return false;
@@ -2305,10 +2311,9 @@ namespace FractalMachineLib.Code.Langs
                             return true;
                         }
 
-                        if (ast.IsAttribute)
-                            return false;
+                        //if (ast.IsAttribute) return false;
 
-                        return true;
+                        return false;
                     }
 
                     #region Statements
@@ -2693,7 +2698,6 @@ namespace FractalMachineLib.Code.Langs
                     ///
                     /// Name
                     ///
-                    internal bool hasGenericType = false;
                     GenericType genericType; // i have changed idea about this 30 times
 
                     bool scheduler_2(OrderedAST ast)
@@ -2732,7 +2736,6 @@ namespace FractalMachineLib.Code.Langs
                         {
                             genericType = new GenericType(lin);
                             genericType.PrepareAst(right);
-                            hasGenericType = true;
                         }
 
                         ///
@@ -2782,7 +2785,6 @@ namespace FractalMachineLib.Code.Langs
                         string[] dataStructures = new string[] { "struct", "class" };
 
                         Inheritance inheritance;
-                        WhereClause whereClause;
 
                         public DataStructure()
                         {
@@ -2832,29 +2834,12 @@ namespace FractalMachineLib.Code.Langs
                                     inheritance = null;
                             }
 
-                            checkWhereClause(ast);
+                            decl.genericType?.checkWhereClause(ast);
 
-                            if (whereClause != null)
-                            {
-                                if (whereClause.OnPostCode(ast))
-                                    return true;
-                                else
-                                    whereClause = null;
-                            }
-
+                            if (decl.genericType?.continueWithWhereClause(ast) ?? false)
+                                return true;
 
                             return true;
-                        }
-
-                        public void checkWhereClause(OrderedAST ast)
-                        {
-                            if (WhereClause.Is(ast))
-                            {
-                                if (!decl.hasGenericType)
-                                    throw new Exception("Where not valid");
-
-                                whereClause = new WhereClause(decl.lin);
-                            }
                         }
 
                         #region Statement                    
@@ -2901,7 +2886,7 @@ namespace FractalMachineLib.Code.Langs
                     public class GenericType : Statement
                     {
                         Linear lin;
-                        WhereClause whereClause;
+                        internal WhereClause whereClause;
 
                         public GenericType(Linear lin)
                         {
@@ -2936,6 +2921,26 @@ namespace FractalMachineLib.Code.Langs
 
                             return false;
                         }
+
+                        public void checkWhereClause(OrderedAST ast)
+                        {
+                            if (WhereClause.Is(ast))
+                            {
+                                whereClause = new WhereClause(lin);
+                            }
+                        }
+
+                        public bool continueWithWhereClause(OrderedAST ast)
+                        {
+                            if (whereClause != null)
+                            {
+                                if (whereClause.OnPostCode(ast))
+                                    return true;
+                                else
+                                    whereClause = null;
+                            }
+                            return false;
+                        }
                     }
 
                     public class WhereClause : Statement
@@ -2944,7 +2949,9 @@ namespace FractalMachineLib.Code.Langs
                         public WhereClause(Linear lin)
                         {
                             this.lin = lin;
+
                             Scheduler.Add(scheduler_0);
+                            Scheduler.Add(scheduler_1);
                         }
 
                         public static bool Is(OrderedAST oAst)
@@ -2955,11 +2962,22 @@ namespace FractalMachineLib.Code.Langs
                         bool scheduler_0(OrderedAST ast)
                         {
                             if (Is(ast))
+                            {
+                                NextScheduler();
                                 return true;
+                            }
+
+                            return false;
+                        }
+
+                        bool scheduler_1(OrderedAST ast)
+                        {
+                            if (ast.IsBlockContainer)
+                                return false;
 
                             //todo save where clause
 
-                            return false;
+                            return true;
                         }
                     }
 
@@ -2974,8 +2992,6 @@ namespace FractalMachineLib.Code.Langs
                     {
                         Declaration decl;
                         bool isDefaultType = false;
-
-                        WhereClause whereClause;
 
                         // A function has simply a BlockParenthesis and a Block
                         public Function()
@@ -3023,6 +3039,7 @@ namespace FractalMachineLib.Code.Langs
 
                         bool scheduler_0(OrderedAST ast)
                         {
+                            NextScheduler();
                             return ast.IsBlockParenthesis;
                         }
 
@@ -3035,15 +3052,10 @@ namespace FractalMachineLib.Code.Langs
                             ///
                             /// Where clause
                             ///
-                            checkWhereClause(ast);
+                            decl.genericType?.checkWhereClause(ast);
 
-                            if (whereClause != null)
-                            {
-                                if (whereClause.OnPostCode(ast))
-                                    return true;
-                                else
-                                    whereClause = null;
-                            }
+                            if (decl.genericType?.continueWithWhereClause(ast) ?? false)
+                                return true;
 
                             ///
                             /// Check cascade call 
@@ -3081,17 +3093,6 @@ namespace FractalMachineLib.Code.Langs
                             OrderedAST.bag.NewParam(name); 
 
                             return true;
-                        }
-
-                        public void checkWhereClause(OrderedAST ast)
-                        {
-                            if (WhereClause.Is(ast))
-                            {
-                                if (!decl.hasGenericType)
-                                    throw new Exception("Where not valid");
-
-                                whereClause = new WhereClause(decl.lin);
-                            }
                         }
 
                         #region Statements

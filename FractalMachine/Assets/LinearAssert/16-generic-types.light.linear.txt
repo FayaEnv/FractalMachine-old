@@ -1,0 +1,24 @@
+| 0. 
+==| Instructions:
+====| 0. class
+======| Name: Test
+======| Return: class
+======| Instructions:
+========| 0. call
+==========| Name: {}
+==========| Return: £0
+========| 1. function
+==========| Name: Call
+==========| Return: void
+==========| Attributes: public  |  
+==========| Settings:
+============|parameters
+============| 0. parameters
+========| 2. declare
+==========| Name: Fun
+==========| Return: void
+==========| Attributes: public  |  
+==========| Instructions:
+============| 0. call
+==============| Name: {}
+==============| Return: £1
