@@ -2732,12 +2732,6 @@ namespace FractalMachineLib.Code.Langs
                             return true;
                         }
 
-                        if (GenericType.Is(right))
-                        {
-                            genericType = new GenericType(lin);
-                            genericType.PrepareAst(right);
-                        }
-
                         ///
                         /// Name analyzing
                         ///
@@ -2769,6 +2763,14 @@ namespace FractalMachineLib.Code.Langs
 
                         /// Completed!
                         AbsoluteWinner();
+
+                        // Check if next is generic type
+                        if (GenericType.Is(right))
+                        {
+                            genericType = new GenericType(lin);
+                            genericType.PrepareAst(right);
+                            genericType.paramsStartFrom = bag.Params.Count;
+                        }
 
                         if (genericType == null)
                             NextScheduler();
@@ -2863,7 +2865,10 @@ namespace FractalMachineLib.Code.Langs
                             bool scheduler_0(OrderedAST ast)
                             {
                                 if (Is(ast))
+                                {
+                                    NextScheduler();
                                     return true;
+                                }
 
                                 //todo: create setting
                                 string read = "";
@@ -2887,11 +2892,11 @@ namespace FractalMachineLib.Code.Langs
                     {
                         Linear lin;
                         internal WhereClause whereClause;
+                        internal int paramsStartFrom = 0;
 
                         public GenericType(Linear lin)
                         {
                             this.lin = lin;
-
                             Scheduler.Add(scheduler_0);
                         }
 
@@ -2911,9 +2916,13 @@ namespace FractalMachineLib.Code.Langs
                             if (Is(ast))
                             {
                                 var bag = ast.bag;
-                                foreach(var param in bag.Params)
+                                int pos = 0;
+                                var sett = lin.SetSettings("genericTypes", ast.ast);
+                                for(int p= paramsStartFrom; p<bag.Params.Count; p++)
                                 {
-                                    //todo
+                                    var param = bag.Params[p];
+                                    var lp = new Linear(sett, ast.codes[pos++].ast);
+                                    lp.Name = param.StrValue;
                                 }
 
                                 return false;
