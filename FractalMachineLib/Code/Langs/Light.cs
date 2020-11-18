@@ -843,6 +843,14 @@ namespace FractalMachineLib.Code.Langs
                 }
             }
 
+            public bool IsColon
+            {
+                get
+                {
+                    return ast.subject == ":";
+                }
+            }
+
             public bool IsBlockSquareBrackets
             {
                 get
@@ -956,15 +964,19 @@ namespace FractalMachineLib.Code.Langs
                 else
                     throw new Exception("Marcello, what are you doing?");
             }
-            bool CloseCascade(OnScheduler OnCheck)
+
+            bool CloseCascade(OnScheduler OnCheck = null)
             {
                 OrderedAST nav = this;
-                while (!OnCheck(nav))
+                while (OnCheck != null && !OnCheck(nav))
                 {
                     nav = nav.LastCode;
                     if (nav == null)
                         return false;
                 }
+
+                Parent.LastCode.next = nav.FirstCode;
+                nav.FirstCode.prev = Parent.LastCode;
 
                 int pos = Parent.codes.IndexOf(this) + 1;
                 foreach (var c in nav.codes)
@@ -1800,6 +1812,9 @@ namespace FractalMachineLib.Code.Langs
             }
 
             #endregion
+
+            bool ignoreOperator = false;
+
             void toLinear_ground_instruction_operator()
             {
                 if (IsFastIncrement)
@@ -1807,6 +1822,9 @@ namespace FractalMachineLib.Code.Langs
                     Subject = Subject[0].ToString();
                     bag.NewParam("1");
                 }
+
+                if (ignoreOperator)
+                    return;
 
                 switch (Subject)
                 {
@@ -2154,13 +2172,11 @@ namespace FractalMachineLib.Code.Langs
                 /// <summary>
                 /// This is your branch for sure, so destroy the competion
                 /// </summary>
-                internal void AbsoluteWinner(Statement winner = null, bool ToNextScheduler = true)
+                internal void AbsoluteWinner(Statement winner = null)
                 {
                     if(winner == null)
                     {
                         parent.AbsoluteWinner(this);
-                        if(ToNextScheduler)
-                            NextScheduler();
                     }
                     else
                     {
@@ -2206,6 +2222,7 @@ namespace FractalMachineLib.Code.Langs
                         if (spar == "return")
                         {
                             AbsoluteWinner();
+                            NextScheduler();
                             return true;
                         }
 
@@ -2234,7 +2251,10 @@ namespace FractalMachineLib.Code.Langs
 
                 public class Retrieve : Statement
                 {
-                    string Name;
+                    internal string Name;
+                    internal List<Parameter> Types = new List<Parameter>();
+                    GenericType genericType;
+
                     public Retrieve()
                     {
                         Scheduler.Add(scheduler_0);
@@ -2252,7 +2272,15 @@ namespace FractalMachineLib.Code.Langs
                             NextScheduler();
                             ImCompleted = true;
                             var pull = Pull(Remove: false);
-                            //Name = pull.StrValue;
+                            Name = pull.StrValue;
+
+                            var right = ast.Right;
+                            if (GenericType.Is(right))
+                            {
+                                genericType = new GenericType(this);
+                                genericType.startParamsFrom = ast.bag.Params.Count;
+                                genericType.PrepareAst(right);
+                            }
 
                             return true;
                         }
@@ -2263,6 +2291,13 @@ namespace FractalMachineLib.Code.Langs
                     bool scheduler_1(OrderedAST ast)
                     {
                         var bag = OrderedAST.bag;
+
+                        if (genericType != null)
+                        {
+                            genericType.OnPostCode(ast);
+                            genericType = null;
+                            return true;
+                        }
 
                         // Is array call
                         if (ast.IsBlockSquareBrackets)
@@ -2275,6 +2310,44 @@ namespace FractalMachineLib.Code.Langs
 
                         return true;
                     }
+
+                    #region Statements
+                    public class GenericType : Statement
+                    {
+                        internal int startParamsFrom;
+                        Retrieve retrieve;
+
+                        public GenericType(Retrieve retrieve)
+                        {
+                            this.retrieve = retrieve;
+
+                            Scheduler.Add(scheduler_0);
+                        }
+
+                        public static bool Is(OrderedAST oAst)
+                        {
+                            return oAst?.IsAngularBracket ?? false;
+                        }
+
+                        public void PrepareAst(OrderedAST ast)
+                        {
+                            ast.ignoreOperator = true;
+                            ast.CloseAngularBrackets();
+                        }
+
+                        bool scheduler_0(OrderedAST ast)
+                        {
+                            if (Is(ast))
+                            {
+                                var bag = ast.bag;
+                                for (int p=startParamsFrom; p<bag.Params.Count; p++)
+                                    retrieve.Types.Add(bag.Params[p]);
+                            }
+
+                            return false;
+                        }
+                    }
+                    #endregion
                 }
                 public class Block : Statement
                 {
@@ -2313,7 +2386,8 @@ namespace FractalMachineLib.Code.Langs
                         if (isBlock)
                         {
                             AbsoluteWinner();
-                            
+                            NextScheduler();
+
                             // Parameters checking
                             var parenthesis = ast.Right;
                             var brackets = parenthesis?.Right;
@@ -2380,6 +2454,7 @@ namespace FractalMachineLib.Code.Langs
                         if (spar == "import")
                         {
                             AbsoluteWinner();
+                            NextScheduler();
 
                             return true;
                         }
@@ -2497,7 +2572,8 @@ namespace FractalMachineLib.Code.Langs
 
                         if (spar == "namespace")
                         {
-                            AbsoluteWinner();  
+                            AbsoluteWinner();
+                            NextScheduler();
 
                             return true;
                         }
@@ -2550,7 +2626,7 @@ namespace FractalMachineLib.Code.Langs
                     string[] Names; // names because declaration supports accumulators
 
                     // Helpers
-                    AngularBracketsHelper angularHelper = new AngularBracketsHelper();
+                    //AngularBracketsHelper angularHelper = new AngularBracketsHelper();
 
                     public Declaration()
                     {
@@ -2614,7 +2690,12 @@ namespace FractalMachineLib.Code.Langs
                         return true;
                     }
 
-                    // Name
+                    ///
+                    /// Name
+                    ///
+                    internal bool hasGenericType = false;
+                    GenericType genericType; // i have changed idea about this 30 times
+
                     bool scheduler_2(OrderedAST ast)
                     {
                         var bag = OrderedAST.bag;
@@ -2634,14 +2715,29 @@ namespace FractalMachineLib.Code.Langs
                             return true;
                         }
 
-                        if (angularHelper.Check(ast))
+                        var right = ast.Right;
+
+                        ///
+                        /// Generic type
+                        /// 
+                        if (genericType != null)
                         {
-                            ast.CloseAngularBrackets();
+                            if (!genericType.OnPostCode(ast))
+                                NextScheduler();
 
-                            //todo: Handle angular brackets
-
-                            NextScheduler();
+                            return true;
                         }
+
+                        if (GenericType.Is(right))
+                        {
+                            genericType = new GenericType(lin);
+                            genericType.PrepareAst(right);
+                            hasGenericType = true;
+                        }
+
+                        ///
+                        /// Name analyzing
+                        ///
 
                         if (!ast.IsAttribute)
                             return false;
@@ -2669,7 +2765,10 @@ namespace FractalMachineLib.Code.Langs
                         }
 
                         /// Completed!
-                        AbsoluteWinner(ToNextScheduler: !angularHelper.NextIsAngular);
+                        AbsoluteWinner();
+
+                        if (genericType == null)
+                            NextScheduler();
 
                         return true;
                     }
@@ -2682,15 +2781,31 @@ namespace FractalMachineLib.Code.Langs
 
                         string[] dataStructures = new string[] { "struct", "class" };
 
+                        Inheritance inheritance;
+                        WhereClause whereClause;
+
                         public DataStructure()
                         {
+                            Scheduler.Add(scheduler_0);
                         }
 
                         internal override bool YourTurn(OrderedAST currentOrderedAst)
                         {
                             decl = (Declaration)parent;
 
-                            if ((!currentOrderedAst.next?.IsBlockBrackets) ?? false)
+                            var right = currentOrderedAst.Right;
+
+                            // Inheritance
+                            if (Inheritance.Is(right))
+                                inheritance = new Inheritance(decl.lin);
+
+                            Tetris<OrderedAST> tetris = new Tetris<OrderedAST>();
+                            tetris.Check(delegate (OrderedAST oAst)
+                            {
+                                return oAst.IsBlockBrackets;
+                            });
+
+                            if (!tetris.Ensure(OrderedAST.codes))
                                 return false;
 
                             if (dataStructures.Contains(decl.DeclType))
@@ -2707,7 +2822,148 @@ namespace FractalMachineLib.Code.Langs
                             return true;
                         }
 
+                        bool scheduler_0(OrderedAST ast)
+                        {
+                            if (inheritance != null)
+                            {
+                                if (inheritance.OnPostCode(ast))
+                                    return true;
+                                else
+                                    inheritance = null;
+                            }
+
+                            checkWhereClause(ast);
+
+                            if (whereClause != null)
+                            {
+                                if (whereClause.OnPostCode(ast))
+                                    return true;
+                                else
+                                    whereClause = null;
+                            }
+
+
+                            return true;
+                        }
+
+                        public void checkWhereClause(OrderedAST ast)
+                        {
+                            if (WhereClause.Is(ast))
+                            {
+                                if (!decl.hasGenericType)
+                                    throw new Exception("Where not valid");
+
+                                whereClause = new WhereClause(decl.lin);
+                            }
+                        }
+
+                        #region Statement                    
+
+                        public class Inheritance : Statement
+                        {
+                            Linear lin;
+
+                            public Inheritance(Linear lin)
+                            {
+                                this.lin = lin;
+                                Scheduler.Add(scheduler_0);
+                                Scheduler.Add(scheduler_1);
+                            }
+
+                            public static bool Is(OrderedAST oAst)
+                            {
+                                return oAst?.IsColon ?? false;
+                            }
+
+                            bool scheduler_0(OrderedAST ast)
+                            {
+                                if (Is(ast))
+                                    return true;
+
+                                //todo: create setting
+                                string read = "";
+
+                                return false;
+                            }
+
+                            bool scheduler_1(OrderedAST ast)
+                            {
+                                return false;
+                            }
+                        }
+
+                        #endregion
+
                     }
+
+                    #region Extensions
+
+                    public class GenericType : Statement
+                    {
+                        Linear lin;
+                        WhereClause whereClause;
+
+                        public GenericType(Linear lin)
+                        {
+                            this.lin = lin;
+
+                            Scheduler.Add(scheduler_0);
+                        }
+
+                        public static bool Is(OrderedAST oAst)
+                        {
+                            return oAst?.IsAngularBracket ?? false;
+                        }
+
+                        public void PrepareAst(OrderedAST ast)
+                        {
+                            ast.ignoreOperator = true;
+                            ast.CloseAngularBrackets();
+                        }
+
+                        bool scheduler_0(OrderedAST ast)
+                        {
+                            if (Is(ast))
+                            {
+                                var bag = ast.bag;
+                                foreach(var param in bag.Params)
+                                {
+                                    //todo
+                                }
+
+                                return false;
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    public class WhereClause : Statement
+                    {
+                        Linear lin;
+                        public WhereClause(Linear lin)
+                        {
+                            this.lin = lin;
+                            Scheduler.Add(scheduler_0);
+                        }
+
+                        public static bool Is(OrderedAST oAst)
+                        {
+                            return oAst?.Subject == "where";
+                        }
+
+                        bool scheduler_0(OrderedAST ast)
+                        {
+                            if (Is(ast))
+                                return true;
+
+                            //todo save where clause
+
+                            return false;
+                        }
+                    }
+
+                    #endregion
 
 
                     /// <summary>
@@ -2719,6 +2975,8 @@ namespace FractalMachineLib.Code.Langs
                         Declaration decl;
                         bool isDefaultType = false;
 
+                        WhereClause whereClause;
+
                         // A function has simply a BlockParenthesis and a Block
                         public Function()
                         {
@@ -2729,6 +2987,8 @@ namespace FractalMachineLib.Code.Langs
                         internal override bool YourTurn(OrderedAST currentOrderedAst)
                         {
                             decl = (Declaration)parent;
+
+                            var right = currentOrderedAst.Right;
 
                             Tetris<OrderedAST> tetris = new Tetris<OrderedAST>();
                             tetris.Check(delegate (OrderedAST oAst)
@@ -2759,43 +3019,42 @@ namespace FractalMachineLib.Code.Langs
                         /// 
                         /// Block parenthesis
                         ///
+                        CascadeCall cascadeCall;
+
                         bool scheduler_0(OrderedAST ast)
                         {
-                            var right = ast.Right;
-
-                            if (right == null)
-                                return false;
-
-                            bool validNext = right.IsBlockBrackets;
-                            validNext = validNext || (right.IsAttribute && right.Subject == ":");
-
-                            if (validNext)
-                            {
-                                NextScheduler();
-                                return true;
-                            }
-
-                            return false;
+                            return ast.IsBlockParenthesis;
                         }
 
                         /// 
                         /// Block brackets
                         /// 
-                        CascadeCall cascadeCall;
+                        
                         bool scheduler_1(OrderedAST ast)
                         {
                             ///
+                            /// Where clause
+                            ///
+                            checkWhereClause(ast);
+
+                            if (whereClause != null)
+                            {
+                                if (whereClause.OnPostCode(ast))
+                                    return true;
+                                else
+                                    whereClause = null;
+                            }
+
+                            ///
                             /// Check cascade call 
                             ///
+                            if (CascadeCall.Is(ast))
+                                cascadeCall = new CascadeCall(decl.lin);
+
                             if (cascadeCall != null)
                             {
                                 if (cascadeCall.OnPostCode(ast))
                                     return true;
-                            }
-                            else if (ast.IsAttribute && ast.Subject == ":")
-                            {
-                                cascadeCall = new CascadeCall(decl.lin);
-                                return true;
                             }
 
                             ///
@@ -2824,6 +3083,17 @@ namespace FractalMachineLib.Code.Langs
                             return true;
                         }
 
+                        public void checkWhereClause(OrderedAST ast)
+                        {
+                            if (WhereClause.Is(ast))
+                            {
+                                if (!decl.hasGenericType)
+                                    throw new Exception("Where not valid");
+
+                                whereClause = new WhereClause(decl.lin);
+                            }
+                        }
+
                         #region Statements
 
                         /// ie Constructor(var i):base(i)
@@ -2841,9 +3111,14 @@ namespace FractalMachineLib.Code.Langs
                                 Scheduler.Add(scheduler_3);
                             }
 
+                            public static bool Is(OrderedAST ast)
+                            {
+                                return ast?.IsAttribute ?? false && ast.Subject == ":";
+                            }
+
                             bool scheduler_0(OrderedAST ast)
                             {
-                                return ast.IsAttribute && ast.Subject == ":"; 
+                                return Is(ast); 
                             }
 
                             bool scheduler_1(OrderedAST ast)
@@ -2880,18 +3155,35 @@ namespace FractalMachineLib.Code.Langs
 
         #region Helpers
 
-        public class AngularBracketsHelper
+        /*public abstract class Helper
         {
-            public bool NextIsAngular = false;
+            public bool NextIs = false;
 
-            public bool Check(OrderedAST oAst)
+            public abstract bool Check(OrderedAST oAst);
+        }
+
+        public class AngularBracketsHelper : Helper
+        {
+            public override bool Check(OrderedAST oAst)
             {
                 if (oAst.Right?.IsAngularBracket ?? false)
-                    NextIsAngular = true;
+                    NextIs = true;
 
                 return oAst.IsAngularBracket;
             }
         }
+
+        // Either this kid has a light bulb up his butt or his colon has a great idea.
+        public class ColonHelper : Helper
+        {
+            public override bool Check(OrderedAST oAst)
+            {
+                if (oAst.Right?.IsColon ?? false)
+                    NextIs = true;
+
+                return oAst.IsColon;
+            }
+        }*/
 
         #endregion
     }

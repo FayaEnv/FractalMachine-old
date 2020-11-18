@@ -33,7 +33,7 @@ namespace FractalMachineLib
         string entryPoint;
         string directory;
 
-        internal string exeOutPath;
+        public string exeOutPath;
 
         /// Context
         internal Code.Components.File mainComp;

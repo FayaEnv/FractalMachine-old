@@ -1,4 +1,11 @@
 
 class Test<T> {
-	
+
+	public void Call(){
+		Fun<T>();
+	}
+
+	public void Fun<D>() where ciao{
+		
+	}
 }
