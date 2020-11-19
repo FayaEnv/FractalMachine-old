@@ -2726,6 +2726,7 @@ namespace FractalMachineLib.Code.Langs
                         /// 
                         if (genericType != null)
                         {
+                            // Is false when it ends, ready for next statement
                             if (!genericType.OnPostCode(ast))
                                 NextScheduler();
 
@@ -2855,6 +2856,7 @@ namespace FractalMachineLib.Code.Langs
                                 this.lin = lin;
                                 Scheduler.Add(scheduler_0);
                                 Scheduler.Add(scheduler_1);
+                                Scheduler.Add(scheduler_2);
                             }
 
                             public static bool Is(OrderedAST oAst)
@@ -2870,13 +2872,19 @@ namespace FractalMachineLib.Code.Langs
                                     return true;
                                 }
 
-                                //todo: create setting
-                                string read = "";
-
                                 return false;
                             }
 
                             bool scheduler_1(OrderedAST ast)
+                            {
+                                var sett = lin.SetSettings("inherit", ast.ast);
+                                sett.Op = "inherit";
+                                sett.Name = Pull().StrValue;
+
+                                NextScheduler();
+                            }
+
+                            bool scheduler_2(OrderedAST ast)
                             {
                                 return false;
                             }
@@ -2924,8 +2932,6 @@ namespace FractalMachineLib.Code.Langs
                                     var lp = new Linear(sett, ast.codes[pos++].ast);
                                     lp.Name = param.StrValue;
                                 }
-
-                                return false;
                             }
 
                             return false;
