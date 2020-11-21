@@ -82,7 +82,7 @@ namespace FractalMachineLib.Code.Components
             ///
             if(_linear.HasOperator)
             {
-                if (_linear.Op == "=")
+                if (_linear.Type == "=")
                 {
                     writeAttributeVariable(Lang, _linear.Name, returnType);
                 }
@@ -90,7 +90,7 @@ namespace FractalMachineLib.Code.Components
                 {
                     string t1 = null, t2 = _linear.Attributes[0];
 
-                    if (_linear.Op != "!")
+                    if (_linear.Type != "!")
                     {
                         t1 = t2;
                         t2 = _linear.Attributes[1];
@@ -99,7 +99,7 @@ namespace FractalMachineLib.Code.Components
                     if (t1 != null)
                         writeAttributeVariable(Lang, t1, returnType);
 
-                    writeToCont(_linear.Op);
+                    writeToCont(_linear.Type);
                     writeAttributeVariable(Lang, t2, returnType);
                 }
             }

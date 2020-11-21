@@ -37,7 +37,8 @@ namespace FractalMachineLib.Code.Components
             File,
             DataStructure,
             Overload,
-            Namespace
+            Namespace,
+            Block
         }
 
         public void InjectLinear(Linear instr)
@@ -157,14 +158,23 @@ namespace FractalMachineLib.Code.Components
                         readLinear_cast(instr);
                         break;
 
-                    default:
-                        if (instr.Type == "oprt")
-                            readLinear_operator(instr);
-                        else
-                            throw new Exception("Unassigned operation");
+                    case "oprt":
+                        readLinear_operator(instr);
                         break;
+
+                    case "block":
+                        readLinear_block(instr);
+                        break;
+
+                    default:
+                        throw new Exception("Unassigned operation");
                 }
             }
+        }
+
+        internal virtual void readLinear_block(Linear instr)
+        {
+            throw new Exception("todo");
         }
 
         internal virtual void readLinear_cast(Linear instr)
@@ -376,6 +386,7 @@ namespace FractalMachineLib.Code.Components
             if (ns == null)
             {
                 ns = new Components.File(this, instr.Name, instr, null);
+                ns.containerType = ContainerTypes.Namespace;
             }
             else
             {

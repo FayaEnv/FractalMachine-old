@@ -1858,10 +1858,10 @@ namespace FractalMachineLib.Code.Langs
                         var condition = bag.Params.Pull().StrValue;
 
                         lin = new Linear(bag.Linear, ast);
-                        lin.Op = "assignIf";
+                        lin.Op = "oprt";
+                        lin.Type = "assignIf";
                         lin.Name = condition;
-                        lin.Type = "operation";
-
+                        
                         onEnd = delegate
                         {
                             lin.Attributes.Add(bag.Params.Pull(-2).StrValue);
@@ -1873,8 +1873,8 @@ namespace FractalMachineLib.Code.Langs
 
                     default:
                         lin = new Linear(Parent.bag.Linear, ast);
-                        lin.Op = Subject;                    
-                        lin.Type = "oprt";
+                        lin.Op = "oprt";                    
+                        lin.Type = Subject;
 
                         if (Subject == "!")
                         {
@@ -1943,8 +1943,8 @@ namespace FractalMachineLib.Code.Langs
                         else
                         {
                             lin = new Linear(Parent.bag.Linear, ast);
-                            lin.Op = Subject;
-                            lin.Type = "oprt";
+                            lin.Op = "oprt";
+                            lin.Type = Subject;
                             lin.Return = parName.StrValue;
                             lin.List();
                             lin.Name = attr;
@@ -2412,8 +2412,8 @@ namespace FractalMachineLib.Code.Langs
 
                             // Create linear
                             var lin = new Linear(OrderedAST.bag.Linear, OrderedAST.ast);
-                            lin.Op = Name;
-                            lin.Type = "block";                            
+                            lin.Op = "block";
+                            lin.Type = Name;                            
                             lin.List();
 
                             var b = OrderedAST.bag = OrderedAST.bag.subBag();

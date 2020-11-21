@@ -88,7 +88,7 @@ namespace FractalMachineLib.Code
         {
             get
             {
-                return Type == "oprt";
+                return Op == "oprt";
             }
         }
 
