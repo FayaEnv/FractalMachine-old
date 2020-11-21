@@ -748,7 +748,7 @@ namespace FractalMachineLib.Code.Langs
             {
                 get
                 {
-                    //todo: there is another type of accumulator: the SquareBrackets accumulato
+                    //todo: there is another type of accumulator: the SquareBrackets accumulator
                     // could be found if it has an operator in front of it
                     if (ast.type != AST.Type.Block || ast.subject == "[")
                         return false;
@@ -982,7 +982,10 @@ namespace FractalMachineLib.Code.Langs
                 foreach (var c in nav.codes)
                     Parent.codes.Insert(pos++, c);
 
-                nav.Parent.codes.Remove(nav);
+                if (OnCheck == null)
+                    nav.ast.type = AST.Type.Attribute;
+                else
+                    nav.Parent.codes.Remove(nav);
 
                 return true;
             }
@@ -2718,13 +2721,12 @@ namespace FractalMachineLib.Code.Langs
                         if (type.OnPostCode(ast))
                             return true;
 
-                        var bag = OrderedAST.bag;
                         var spar = type.ResType;
-
                         if (spar == null)
                             return false;
 
-                        if(bag.Linear.Op == "class" && spar == bag.Linear.Name)
+                        var bag = OrderedAST.bag;
+                        if (bag.Linear.Op == "class" && spar == bag.Linear.Name)
                         {
                             //Is fast constructor declaration
                             throw new Exception("todo");
@@ -2916,6 +2918,7 @@ namespace FractalMachineLib.Code.Langs
                             {
                                 if (Is(ast))
                                 {
+                                    ast.CloseCascade();
                                     NextScheduler();
                                     return true;
                                 }
