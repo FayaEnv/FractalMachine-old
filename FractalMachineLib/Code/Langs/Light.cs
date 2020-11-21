@@ -2882,6 +2882,7 @@ namespace FractalMachineLib.Code.Langs
                                 sett.Name = Pull().StrValue;
 
                                 NextScheduler();
+                                return true;
                             }
 
                             bool scheduler_2(OrderedAST ast)
