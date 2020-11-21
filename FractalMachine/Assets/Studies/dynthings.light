@@ -1,0 +1,26 @@
+
+function Main(){
+	// Array
+	var arr = [];
+	arr.Push(1);
+	arr.Push(2);
+	arr.Push(3);
+	passArray(arr);
+	
+	// Object
+	var obj = {};
+	obj.var = "hi!";
+	obj.fun = function(){
+		Console.Print(this.var);
+	};
+	passObject(obj);
+}
+
+function passArray(int[] arr){
+	foreach(var a in arr)
+		Console.Print(a);
+}
+
+function passObject($obj){
+	$obj.fun();
+}
