@@ -15,6 +15,7 @@ class DynVar {
         // https://stackoverflow.com/questions/25392935/wrap-a-function-pointer-in-c-with-variadic-template
         // https://stackoverflow.com/questions/26575303/create-function-call-dynamically-in-c
         // https://softwareengineering.stackexchange.com/questions/360083/how-to-design-a-c-program-to-allow-for-runtime-import-of-functions
+        // https://www.bfilipek.com/2018/06/any.html
         void Call(const char* fmt...) {
             va_list args;
             va_start(args, fmt);

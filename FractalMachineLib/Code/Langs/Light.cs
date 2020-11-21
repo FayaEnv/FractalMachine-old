@@ -1576,7 +1576,7 @@ namespace FractalMachineLib.Code.Langs
             void toLinear_ground_block_brackets()
             {
                 var completedStatement = firstStatement.GetCompletedStatement;
-                var csType = completedStatement.Type;
+                var csType = completedStatement.StatType;
 
                 if (csType.StartsWith("Declaration.") || csType == "Block")
                 {
@@ -1659,7 +1659,7 @@ namespace FractalMachineLib.Code.Langs
                 else
                 {
                     var completedStatement = firstStatement.GetCompletedStatement;
-                    var csType = completedStatement.Type;
+                    var csType = completedStatement.StatType;
 
                     if (csType == "Declaration.Function")
                     {
@@ -2058,7 +2058,7 @@ namespace FractalMachineLib.Code.Langs
                     }
                 }
 
-                public string Type
+                public string StatType
                 {
                     get
                     {
@@ -2208,6 +2208,48 @@ namespace FractalMachineLib.Code.Langs
                 #endregion
 
                 #region Statements
+
+                #region Extensions
+
+                public class Type : Statement
+                {
+                    /// 
+                    /// TODO
+                    /// 
+
+                    public string ResType;
+
+                    public Type()
+                    {
+                        Scheduler.Add(scheduler_0);
+                        Scheduler.Add(scheduler_1);
+                    }
+
+                    bool scheduler_0(OrderedAST ast)
+                    {
+                        if (!ast.IsAttribute)
+                            return false;
+
+                        var par = Pull();
+                        ResType = par.StrValue;
+
+                        if (ast.Right?.IsAngularBracket ?? false)
+                        {
+                            NextScheduler();
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    bool scheduler_1(OrderedAST ast)
+                    {
+                        throw new Exception("todo");
+                        return false;
+                    }
+                }
+
+                #endregion
 
                 public class Return : Statement
                 {
@@ -2666,15 +2708,21 @@ namespace FractalMachineLib.Code.Langs
                         return true;
                     }
 
-                    // Type
+                    /// 
+                    /// Type
+                    /// 
+                    Type type = new Type();
+
                     bool scheduler_1(OrderedAST ast)
                     {
+                        if (type.OnPostCode(ast))
+                            return true;
+
                         var bag = OrderedAST.bag;
+                        var spar = type.ResType;
 
-                        if (!ast.IsAttribute)
+                        if (spar == null)
                             return false;
-
-                        var spar = Pull().StrValue;
 
                         if(bag.Linear.Op == "class" && spar == bag.Linear.Name)
                         {
